@@ -22,7 +22,7 @@ from pathlib import Path
 import mujoco
 
 from source import SRC_PATH
-from mjlab.actuator import BuiltinPositionActuatorCfg
+from mjlab.actuator import DcMotorActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
@@ -62,7 +62,7 @@ K1_REV1_INIT_STATE = EntityCfg.InitialStateCfg(
 )
 
 
-K1_REV1_LEGS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
+K1_REV1_LEGS_ACTUATOR_CFG = DcMotorActuatorCfg(
   target_names_expr=(
     ".*_hip_yaw_joint",
     ".*_hip_roll_joint",
@@ -72,34 +72,42 @@ K1_REV1_LEGS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
   stiffness=STIFFNESS_QC080_240_R020_RE,
   damping=DAMPING_QC080_240_R020_RE,
   effort_limit=MAX_TORQUE_QC080_240_R020_RE,
+  saturation_effort=MAX_TORQUE_QC080_240_R020_RE,
+  velocity_limit=MAX_SPEED_QC080_240_R020_RE,
   armature=ARMATURE_QC080_240_R020_RE,
 )
 
-K1_REV1_ANKLE_PITCH_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
+K1_REV1_ANKLE_PITCH_ACTUATOR_CFG = DcMotorActuatorCfg(
   target_names_expr=(".*_ankle_pitch_joint",),
   stiffness=STIFFNESS_QC080_240_R020_RE,
   damping=DAMPING_QC080_240_R020_RE,
   effort_limit=MAX_TORQUE_QC080_240_R020_RE,
+  saturation_effort=MAX_TORQUE_QC080_240_R020_RE,
+  velocity_limit=MAX_SPEED_QC080_240_R020_RE,
   armature=ARMATURE_QC080_240_R020_RE,
 )
 
-K1_REV1_ANKLE_ROLL_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
+K1_REV1_ANKLE_ROLL_ACTUATOR_CFG = DcMotorActuatorCfg(
   target_names_expr=(".*_ankle_roll_joint",),
   stiffness=STIFFNESS_QC060_200_R020_RE,
   damping=DAMPING_QC060_200_R020_RE,
   effort_limit=MAX_TORQUE_QC060_200_R020_RE,
+  saturation_effort=MAX_TORQUE_QC060_200_R020_RE,
+  velocity_limit=MAX_SPEED_QC060_200_R020_RE,
   armature=ARMATURE_QC060_200_R020_RE,
 )
 
-K1_REV1_WAIST_YAW_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
+K1_REV1_WAIST_YAW_ACTUATOR_CFG = DcMotorActuatorCfg(
   target_names_expr=("waist_yaw_joint",),
   stiffness=STIFFNESS_QC080_240_R020_RE,
   damping=DAMPING_QC080_240_R020_RE,
   effort_limit=MAX_TORQUE_QC080_240_R020_RE,
+  saturation_effort=MAX_TORQUE_QC080_240_R020_RE,
+  velocity_limit=MAX_SPEED_QC080_240_R020_RE,
   armature=ARMATURE_QC080_240_R020_RE,
 )
 
-K1_REV1_ARMS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
+K1_REV1_ARMS_ACTUATOR_CFG = DcMotorActuatorCfg(
   target_names_expr=(
     ".*_shoulder_pitch_joint",
     ".*_shoulder_roll_joint",
@@ -110,6 +118,8 @@ K1_REV1_ARMS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
   stiffness=STIFFNESS_QC060_200_R020_RE,
   damping=DAMPING_QC060_200_R020_RE,
   effort_limit=MAX_TORQUE_QC060_200_R020_RE,
+  saturation_effort=MAX_TORQUE_QC060_200_R020_RE,
+  velocity_limit=MAX_SPEED_QC060_200_R020_RE,
   armature=ARMATURE_QC060_200_R020_RE,
 )
 
@@ -175,7 +185,7 @@ def _action_scale_from_actuators(
 ) -> dict[str, float]:
   scale = {}
   for actuator in cfg.actuators:
-    assert isinstance(actuator, BuiltinPositionActuatorCfg)
+    assert isinstance(actuator, DcMotorActuatorCfg)
     assert actuator.effort_limit is not None
     for name in actuator.target_names_expr:
       scale[name] = 0.25 * actuator.effort_limit / actuator.stiffness

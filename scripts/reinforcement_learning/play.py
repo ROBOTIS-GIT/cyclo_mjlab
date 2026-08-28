@@ -17,7 +17,7 @@ from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
 from mjlab.rl.exporter_utils import attach_metadata_to_onnx, get_base_metadata
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
-from mjlab.utils.os import get_wandb_checkpoint_path
+from mjlab.utils.os import get_checkpoint_path, get_wandb_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
@@ -135,11 +135,7 @@ def run_play(task_id: str, cfg: PlayConfig):
       if not resume_path.exists():
         raise FileNotFoundError(f"Checkpoint file not found: {resume_path}")
       print(f"[INFO]: Loading checkpoint: {resume_path.name}")
-    else:
-      if cfg.wandb_run_path is None:
-        raise ValueError(
-          "`wandb_run_path` is required when `checkpoint_file` is not provided."
-        )
+    elif cfg.wandb_run_path is not None:
       resume_path, was_cached = get_wandb_checkpoint_path(
         log_root_path, Path(cfg.wandb_run_path)
       )
@@ -150,6 +146,13 @@ def run_play(task_id: str, cfg: PlayConfig):
       print(
         f"[INFO]: Loading checkpoint: {checkpoint_name} (run: {run_id}, {cached_str})"
       )
+    else:
+      resume_path = get_checkpoint_path(
+        log_root_path,
+        run_dir=r".*",
+        checkpoint=r"model_\d+\.pt",
+      )
+      print(f"[INFO]: Auto-selected latest checkpoint: {resume_path}")
     log_dir = resume_path.parent
 
   if cfg.num_envs is not None:
@@ -182,6 +185,7 @@ def run_play(task_id: str, cfg: PlayConfig):
   if TRAINED_MODE and cfg.video:
     print("[INFO] Recording videos during play")
     assert log_dir is not None  # log_dir is set in TRAINED_MODE block
+    has_base_velocity_command = "base_velocity" in env_cfg.commands
 
     follow_robot = None
     follow_body_index = None
@@ -282,21 +286,34 @@ def run_play(task_id: str, cfg: PlayConfig):
           and raw_progress >= cfg.viewer_follow_start
         ):
           assert central_env_ids is not None
-          velocity_commands = self._wrapped_env.command_manager.get_command(
-            "base_velocity"
-          )
-          movement_score = torch.linalg.vector_norm(
-            velocity_commands[central_env_ids, :2], dim=1
-          ) + 0.25 * torch.abs(velocity_commands[central_env_ids, 2])
+          if has_base_velocity_command:
+            velocity_commands = self._wrapped_env.command_manager.get_command(
+              "base_velocity"
+            )
+            movement_score = torch.linalg.vector_norm(
+              velocity_commands[central_env_ids, :2], dim=1
+            ) + 0.25 * torch.abs(velocity_commands[central_env_ids, 2])
+          else:
+            assert follow_robot is not None
+            movement_score = torch.linalg.vector_norm(
+              follow_robot.data.root_link_lin_vel_w[central_env_ids, :2], dim=1
+            )
           follow_env_index = int(
             central_env_ids[torch.argmax(movement_score)].item()
           )
-          selected_command = velocity_commands[follow_env_index].tolist()
-          print(
-            f"[INFO] Auto-selected follow env {follow_env_index} with command "
-            f"({selected_command[0]:.2f}, {selected_command[1]:.2f}, "
-            f"{selected_command[2]:.2f})"
-          )
+          if has_base_velocity_command:
+            selected_command = velocity_commands[follow_env_index].tolist()
+            print(
+              f"[INFO] Auto-selected follow env {follow_env_index} with command "
+              f"({selected_command[0]:.2f}, {selected_command[1]:.2f}, "
+              f"{selected_command[2]:.2f})"
+            )
+          else:
+            selected_speed = float(torch.max(movement_score).item())
+            print(
+              f"[INFO] Auto-selected follow env {follow_env_index} with planar "
+              f"speed {selected_speed:.2f} m/s"
+            )
         if (
           follow_env_index is not None
           and follow_robot is not None

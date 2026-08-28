@@ -9,7 +9,7 @@ from typing import Any, Sequence
 import torch
 import yaml
 
-from mjlab.actuator import BuiltinPositionActuator
+from mjlab.actuator import BuiltinPositionActuator, IdealPdActuator
 from mjlab.entity import Entity
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.envs.mdp.actions import JointPositionAction
@@ -48,7 +48,7 @@ _OBSERVATION_NAME_MAP = {
   "base_ang_vel": "base_ang_vel",
   "projected_gravity": "projected_gravity",
   "velocity_commands": "velocity_commands",
-  "phase": "gait_phase",
+  "walking_cycle": "gait_phase",
   "joint_pos": "joint_pos",
   "joint_vel": "joint_vel",
   "actions": "actions",
@@ -111,7 +111,7 @@ def _pd_gains(
 ) -> tuple[list[float], list[float]]:
   gains: dict[str, tuple[float, float]] = {}
   for actuator in robot.actuators:
-    if not isinstance(actuator, BuiltinPositionActuator):
+    if not isinstance(actuator, (BuiltinPositionActuator, IdealPdActuator)):
       continue
     for name in actuator.target_names:
       gains[name] = (
@@ -215,12 +215,10 @@ def _observations(
     params = _plain_value(term_cfg.params)
     if not is_mimic and name == "velocity_commands":
       params = {"command_name": "base_velocity"}
-    elif not is_mimic and name == "phase":
-      params = {
-        "period": float(term_cfg.params["period"]),
-        "command_name": "base_velocity",
-      }
-
+    elif not is_mimic and name == "walking_cycle":
+      # The deployment schema calls this observation gait_phase and owns the
+      # clock update; it only needs the cycle period.
+      params = {"period": float(term_cfg.params["cycle_time_s"])}
     exported_name = name if is_mimic else _OBSERVATION_NAME_MAP[name]
     exported[exported_name] = {
       "params": _plain_value(params),

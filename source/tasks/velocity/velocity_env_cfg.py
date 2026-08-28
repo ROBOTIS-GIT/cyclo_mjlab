@@ -1,7 +1,7 @@
 """Velocity task configuration.
 
-This module provides a factory function to create a base velocity task config.
-Robot-specific configurations call the factory and customize as needed.
+The generic reward and command semantics follow official MJLab 1.2.0. Cyclo
+K1-specific observation and penalty overrides live in the robot configuration.
 """
 
 import math
@@ -21,7 +21,6 @@ from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.scene import SceneCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
-from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.terrains import TerrainEntityCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -35,11 +34,20 @@ def make_locomotion_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
 
   # Observation terms
 
+  # Match Cyclo Lab's asymmetric interface: the actor excludes privileged base
+  # linear velocity and foot-state signals, while the critic receives them.
   actor_observation_terms = {
     "base_ang_vel": ObservationTermCfg(func=mdp.builtin_sensor, params={"sensor_name": "robot/imu_ang_vel"}, noise=Unoise(n_min=-0.2, n_max=0.2)),
     "projected_gravity": ObservationTermCfg(func=mdp.projected_gravity, noise=Unoise(n_min=-0.05, n_max=0.05)),
     "velocity_commands": ObservationTermCfg(func=mdp.generated_commands, params={"command_name": "base_velocity"}),
-    "phase": ObservationTermCfg(func=mdp.phase, params={"period": 0.6, "command_name": "base_velocity"}),
+    "walking_cycle": ObservationTermCfg(
+      func=mdp.walking_cycle,
+      params={
+        "cycle_time_s": 0.6,
+        "command_name": "base_velocity",
+        "motion_threshold": 0.1,
+      },
+    ),
     "joint_pos": ObservationTermCfg(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01)),
     "joint_vel": ObservationTermCfg(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5)),
     "actions": ObservationTermCfg(func=mdp.last_action),
@@ -168,16 +176,16 @@ def make_locomotion_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
   reward_terms = {
     "track_linear_velocity": RewardTermCfg(
       func=mdp.track_linear_velocity,
-      weight=1.0,
+      weight=2.0,
       params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     ),
     "track_angular_velocity": RewardTermCfg(
       func=mdp.track_angular_velocity,
-      weight=1.0,
+      weight=2.0,
       params={"command_name": "base_velocity", "std": math.sqrt(0.5)},
     ),
     "upright": RewardTermCfg(
-      func=mdp.upright,
+      func=mdp.flat_orientation,
       weight=1.0,
       params={
         "std": math.sqrt(0.2),
@@ -188,60 +196,44 @@ def make_locomotion_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
       func=mdp.variable_posture,
       weight=1.0,
       params={
-        "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+        "asset_cfg": SceneEntityCfg("robot", joint_names=(".*",)),
         "command_name": "base_velocity",
         "std_standing": {},  # Set per-robot.
         "std_walking": {},  # Set per-robot.
         "std_running": {},  # Set per-robot.
-        "walking_threshold": 0.1,
+        "walking_threshold": 0.05,
         "running_threshold": 1.5,
       },
     ),
     "body_ang_vel": RewardTermCfg(
       func=mdp.body_angular_velocity_penalty,
-      weight=-0.05,  # Override per-robot
+      weight=0.0,  # Override per-robot.
       params={"asset_cfg": SceneEntityCfg("robot", body_names=())},  # Set per-robot.
     ),
     "angular_momentum": RewardTermCfg(
       func=mdp.angular_momentum_penalty,
-      weight=-0.025,  # Override per-robot
+      weight=0.0,  # Override per-robot.
       params={"sensor_name": "robot/root_angmom"},
     ),
-    "termination_penalty": RewardTermCfg(
-      func=mdp.is_terminated, weight=-200.0
-    ),
-    "dof_acc_l2": RewardTermCfg(func=mdp.joint_acc_l2, weight=-2.5e-7),
-    "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=-10.0),
-    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.05),
-    "gait_contact_tracking": RewardTermCfg(
-      func=mdp.gait_contact_tracking,
-      weight=0.5,
-      params={
-        "period": 0.6,
-        "offset": [0.0, 0.5],
-        "threshold": 0.56,
-        "command_threshold": 0.1,
-        "command_name": "base_velocity",
-        "sensor_name": "feet_ground_contact",
-      }
-    ),
+    "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=-1.0),
+    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.1),
     "foot_clearance": RewardTermCfg(
       func=mdp.feet_clearance,
-      weight=-1.0,
+      weight=-2.0,
       params={
         "target_height": 0.10,
         "command_name": "base_velocity",
-        "command_threshold": 0.1,
+        "command_threshold": 0.05,
         "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set per-robot.
       },
     ),
     "foot_slip": RewardTermCfg(
       func=mdp.feet_slip,
-      weight=-0.25,
+      weight=-0.1,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "base_velocity",
-        "command_threshold": 0.1,
+        "command_threshold": 0.05,
         "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set per-robot.
       },
     ),
@@ -257,20 +249,11 @@ def make_locomotion_velocity_env_cfg() -> ManagerBasedRlEnvCfg:
     ),
     "soft_landing": RewardTermCfg(
       func=mdp.soft_landing,
-      weight=-1e-3,
+      weight=-1e-5,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "base_velocity",
-        "command_threshold": 0.1,
-      },
-    ),
-    "stand_still_joint_deviation": RewardTermCfg(
-      func=mdp.stand_still_joint_deviation_l2,
-      weight=-1.0,
-      params={
-        "command_name": "base_velocity",
-        "command_threshold": 0.1,
-        "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+        "command_threshold": 0.05,
       },
     ),
   }

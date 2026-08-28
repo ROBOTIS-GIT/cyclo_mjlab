@@ -77,18 +77,34 @@ def cyclo_k1_rev1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   ].geom_names = K1_REV1_FOOT_COLLISION_GEOM_NAMES
   env_cfg.events["base_com"].params["asset_cfg"].body_names = ("torso_link",)
 
-  # Keep the current task and clock/contact rewards, but replace its generic
-  # penalties with the non-contact penalty set from Cyclo Lab's K1 task.
+  # Keep the official MJLab task/contact rewards and add Cyclo Lab's K1
+  # non-contact penalties. Robot-specific pose shaping is expressed by the
+  # joint-deviation terms below instead of a borrowed posture-tolerance table.
   for reward_name in (
     "body_ang_vel",
     "angular_momentum",
-    "stand_still_joint_deviation",
+    "pose",
   ):
     env_cfg.rewards.pop(reward_name, None)
 
   leg_joints = (".*_hip_.*", ".*_knee_joint", ".*_ankle_.*")
   env_cfg.rewards.update(
     {
+      "termination_penalty": RewardTermCfg(
+        func=mdp.is_terminated, weight=-200.0
+      ),
+      "alternating_support": RewardTermCfg(
+        func=mdp.alternating_support_tracking,
+        weight=0.5,
+        params={
+          "cycle_time_s": 0.6,
+          "phase_offsets": (0.0, 0.5),
+          "stance_fraction": 0.56,
+          "motion_threshold": 0.1,
+          "command_name": "base_velocity",
+          "contact_sensor_name": feet_contact_sensor_cfg.name,
+        },
+      ),
       "base_height": RewardTermCfg(
         func=mdp.base_height_l2,
         weight=-10.0,
@@ -178,37 +194,6 @@ def cyclo_k1_rev1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       ),
     }
   )
-
-  # K1 posture tolerances for its 23-DOF leg, waist, and arm structure.
-  env_cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
-  env_cfg.rewards["pose"].params["std_walking"] = {
-    r".*hip_pitch.*": 0.5,
-    r".*hip_roll.*": 0.15,
-    r".*hip_yaw.*": 0.15,
-    r".*knee.*": 0.5,
-    r".*ankle_pitch.*": 0.15,
-    r".*ankle_roll.*": 0.1,
-    r".*waist_yaw.*": 0.15,
-    r".*shoulder_pitch.*": 0.15,
-    r".*shoulder_roll.*": 0.1,
-    r".*shoulder_yaw.*": 0.1,
-    r".*elbow.*": 0.1,
-    r".*wrist.*": 0.1,
-  }
-  env_cfg.rewards["pose"].params["std_running"] = {
-    r".*hip_pitch.*": 0.5,
-    r".*hip_roll.*": 0.25,
-    r".*hip_yaw.*": 0.25,
-    r".*knee.*": 0.5,
-    r".*ankle_pitch.*": 0.25,
-    r".*ankle_roll.*": 0.1,
-    r".*waist_yaw.*": 0.25,
-    r".*shoulder_pitch.*": 0.25,
-    r".*shoulder_roll.*": 0.1,
-    r".*shoulder_yaw.*": 0.1,
-    r".*elbow.*": 0.1,
-    r".*wrist.*": 0.1,
-  }
 
   env_cfg.rewards["upright"].params["asset_cfg"].body_names = (
     "torso_link",
