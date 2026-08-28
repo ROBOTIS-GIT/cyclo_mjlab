@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyclo_mjlab"
+version = "0.0.1"
+requires-python = ">=3.11"
+dependencies = [
+    "mjlab==1.2.0",
+    # Keep MuJoCo aligned with mujoco-warp. Newer MuJoCo releases may remove
+    # enum values that mujoco-warp 3.5.0 imports at module initialization.
+    "mujoco==3.5.0",
+    "mujoco-warp==3.5.0",
+    # mjlab 1.2.0 accesses warp.context, which was removed in newer Warp.
+    "warp-lang==1.12.0",
+    # Required by mjlab's terrain modules but not declared by mjlab 1.2.0.
+    "scipy",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["source", "source.*"]
