@@ -26,11 +26,11 @@ The repository currently provides:
 
 ### Locomotion
 
-https://github.com/user-attachments/assets/de4b9974-1ab2-4f0d-875b-0e72b5f6bdd8
+[Watch the locomotion demo](docs/videos/k1_rl_locomotion_mjlab.mp4)
 
 ### Motion imitation
 
-https://github.com/user-attachments/assets/5c8adaf6-e098-494c-a2de-e6d2f6bf8468
+[Watch the motion-imitation demo](docs/videos/k1_mimic_dance_mjlab.mp4)
 
 ## Installation (Docker)
 
