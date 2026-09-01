@@ -27,16 +27,10 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_K1_XML = (
-PROJECT_ROOT
-    / "source"
-    / "assets"
-    / "robots"
-    / "robotis_k1"
-    / "xmls"
-    / "k1.xml"
-)
+from source.assets.robots import K1_REV1_XML_PATH
+
+
+DEFAULT_K1_XML = K1_REV1_XML_PATH
 
 K1_REV1_MOTION_CSV_JOINT_NAMES = (
     "left_hip_pitch_joint",

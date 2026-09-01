@@ -16,7 +16,6 @@
 
 import copy
 import math
-from functools import partial
 from pathlib import Path
 
 import mujoco
@@ -27,8 +26,26 @@ from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
 
-K1_REV1_XML_PATH: Path = (SRC_PATH / "assets" / "robots" / "robotis_k1" / "xmls" / "k1.xml")
-assert K1_REV1_XML_PATH.exists()
+K1_REV1_XML_PATH: Path = (
+  SRC_PATH.parent
+  / "third_party"
+  / "ai_sapiens"
+  / "ai_sapiens_description"
+  / "mujoco"
+  / "k1"
+  / "k1.xml"
+)
+assert K1_REV1_XML_PATH.is_file()
+
+K1_REV1_FOOT_SITE_NAMES = ("left_foot", "right_foot")
+K1_REV1_FOOT_COLLISION_GEOM_NAMES = tuple(
+  f"{side}_ankle_roll_link_collision_{index}"
+  for side in ("left", "right")
+  for index in range(9)
+)
+K1_REV1_FOOT_COLLISION_GEOM_PATTERN = (
+  r"^(left|right)_ankle_roll_link_collision_[0-8]$"
+)
 
 NATURAL_FREQ = 10.0 * 2.0 * math.pi
 DAMPING_RATIO = 2.0
@@ -113,11 +130,11 @@ K1_REV1_ARMS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
 FULL_COLLISION = CollisionCfg(
   geom_names_expr=(".*_collision.*",),
   condim={
-    r"^(left|right)_foot[1-7]_collision$": 3,
+    K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 3,
     ".*_collision.*": 1,
   },
-  priority={r"^(left|right)_foot[1-7]_collision$": 1},
-  friction={r"^(left|right)_foot[1-7]_collision$": (0.6,)},
+  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1},
+  friction={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: (0.6,)},
 )
 
 FULL_COLLISION_WITHOUT_SELF = CollisionCfg(
@@ -125,15 +142,15 @@ FULL_COLLISION_WITHOUT_SELF = CollisionCfg(
   contype=0,
   conaffinity=1,
   condim={
-    r"^(left|right)_foot[1-7]_collision$": 3,
+    K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 3,
     ".*_collision.*": 1,
   },
-  priority={r"^(left|right)_foot[1-7]_collision$": 1},
-  friction={r"^(left|right)_foot[1-7]_collision$": (0.6,)},
+  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1},
+  friction={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: (0.6,)},
 )
 
 FEET_ONLY_COLLISION = CollisionCfg(
-  geom_names_expr=(r"^(left|right)_foot[1-7]_collision$",),
+  geom_names_expr=(K1_REV1_FOOT_COLLISION_GEOM_PATTERN,),
   contype=0,
   conaffinity=1,
   condim=3,
@@ -154,10 +171,55 @@ K1_REV1_ARTICULATION_CFG = EntityArticulationInfoCfg(
 )
 
 
+def _load_k1_rev1_spec() -> mujoco.MjSpec:
+  """Load the upstream K1 MJCF and add MJLab runtime-only elements."""
+  spec = mujoco.MjSpec.from_file(str(K1_REV1_XML_PATH))
+
+  # MJLab supplies position actuators below. Drop the upstream torque motors
+  # so the robot still exposes exactly the 23 policy-controlled actuators.
+  for actuator in tuple(spec.actuators):
+    spec.delete(actuator)
+
+  pelvis = spec.body("pelvis")
+  pelvis.add_site(
+    name="imu",
+    pos=(0.0, 0.0, 0.0),
+    size=(0.01, 0.01, 0.01),
+    group=5,
+  )
+  for side in ("left", "right"):
+    spec.body(f"{side}_ankle_roll_link").add_site(
+      name=f"{side}_foot",
+      pos=(0.0325, 0.0, -0.0635),
+      size=(0.01, 0.01, 0.01),
+      group=5,
+    )
+
+  for name, sensor_type in (
+    ("imu_ang_vel", mujoco.mjtSensor.mjSENS_GYRO),
+    ("imu_lin_vel", mujoco.mjtSensor.mjSENS_VELOCIMETER),
+    ("imu_lin_acc", mujoco.mjtSensor.mjSENS_ACCELEROMETER),
+  ):
+    spec.add_sensor(
+      name=name,
+      type=sensor_type,
+      objtype=mujoco.mjtObj.mjOBJ_SITE,
+      objname="imu",
+    )
+  spec.add_sensor(
+    name="root_angmom",
+    type=mujoco.mjtSensor.mjSENS_SUBTREEANGMOM,
+    objtype=mujoco.mjtObj.mjOBJ_BODY,
+    objname="pelvis",
+  )
+
+  return spec
+
+
 K1_REV1_CFG = EntityCfg(
   init_state=K1_REV1_INIT_STATE,
   collisions=(FULL_COLLISION,),
-  spec_fn=partial(mujoco.MjSpec.from_file, str(K1_REV1_XML_PATH)),
+  spec_fn=_load_k1_rev1_spec,
   articulation=K1_REV1_ARTICULATION_CFG,
 )
 
