@@ -1,6 +1,31 @@
+# Copyright 2026 ROBOTIS CO., LTD.
+# Copyright 2025, The mjlab Developers
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Author: Insu Park
+#
+# This file includes modifications by ROBOTIS CO., LTD. to code derived
+# from mujocolab/mjlab.
+
 """Cyclo K1 Rev.1 flat velocity environment configuration."""
 
-from source.assets.robots import K1_REV1_ACTION_SCALE, get_k1_rev1_cfg
+from source.assets.robots import (
+  K1_REV1_ACTION_SCALE,
+  K1_REV1_FOOT_COLLISION_GEOM_NAMES,
+  K1_REV1_FOOT_SITE_NAMES,
+  get_k1_rev1_cfg,
+)
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.reward_manager import RewardTermCfg
@@ -11,12 +36,6 @@ from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 import source.tasks.velocity.mdp as mdp
 from source.tasks.velocity.velocity_env_cfg import (
   make_locomotion_velocity_env_cfg,
-)
-
-
-K1_REV1_FOOT_SITE_NAMES = ("left_foot", "right_foot")
-K1_REV1_FOOT_COLLISION_GEOM_NAMES = tuple(
-  f"{side}_foot{i}_collision" for side in ("left", "right") for i in range(1, 8)
 )
 
 

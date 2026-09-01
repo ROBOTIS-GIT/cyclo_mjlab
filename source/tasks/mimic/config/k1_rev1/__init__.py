@@ -1,4 +1,5 @@
 # Copyright 2026 ROBOTIS CO., LTD.
+# Copyright 2025, The mjlab Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Author: Insu Park
+#
+# This file includes modifications by ROBOTIS CO., LTD. to code derived
+# from mujocolab/mjlab.
 
 """K1 Rev.1 Mimic task registration."""
 
 from mjlab.tasks.registry import register_mjlab_task
-from source.tasks.mimic.rl import MotionTrackingOnPolicyRunner
 
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
@@ -27,7 +32,6 @@ register_mjlab_task(
   env_cfg=k1_rev1_dance1_env_cfg(),
   play_env_cfg=k1_rev1_dance1_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
-  runner_cls=MotionTrackingOnPolicyRunner,
 )
 
 register_mjlab_task(
@@ -35,5 +39,4 @@ register_mjlab_task(
   env_cfg=k1_rev1_dance2_env_cfg(),
   play_env_cfg=k1_rev1_dance2_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
-  runner_cls=MotionTrackingOnPolicyRunner,
 )
