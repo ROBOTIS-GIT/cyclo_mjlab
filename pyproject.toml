@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cyclo_mjlab"
-version = "0.0.1"
+version = "0.0.2"
 requires-python = ">=3.11"
 dependencies = [
     "mjlab==1.2.0",
