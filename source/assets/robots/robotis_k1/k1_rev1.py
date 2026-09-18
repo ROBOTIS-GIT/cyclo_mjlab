@@ -183,13 +183,7 @@ def _load_k1_rev1_spec() -> mujoco.MjSpec:
   for actuator in tuple(spec.actuators):
     spec.delete(actuator)
 
-  pelvis = spec.body("pelvis")
-  pelvis.add_site(
-    name="imu",
-    pos=(0.0, 0.0, 0.0),
-    size=(0.01, 0.01, 0.01),
-    group=5,
-  )
+  # ai_sapiens supplies the pelvis IMU site; reuse it for MJLab sensors.
   for side in ("left", "right"):
     spec.body(f"{side}_ankle_roll_link").add_site(
       name=f"{side}_foot",

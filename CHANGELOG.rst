@@ -2,6 +2,13 @@
 Changelog for package cyclo_mjlab
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.3 (2026-09-18)
+------------------
+* Updated the ``ai_sapiens`` submodule from 0.1.1 to 0.2.2.
+* Updated K1 masses, centers of mass, inertias, and meshes from the upstream model.
+* Fixed duplicate IMU site errors by reusing the upstream ``imu`` site.
+* Contributors: Insu Park
+
 0.0.2 (2026-09-02)
 ------------------
 * Updated the K1 MJCF source to use the ``ai_sapiens`` submodule.
