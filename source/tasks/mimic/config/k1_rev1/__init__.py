@@ -25,6 +25,7 @@ from mjlab.tasks.registry import register_mjlab_task
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
 from .dance2_env_cfg import k1_rev1_dance2_env_cfg
+from .umr_getup_env_cfg import k1_rev1_umr_getup_env_cfg
 
 
 register_mjlab_task(
@@ -38,5 +39,12 @@ register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-Dance2",
   env_cfg=k1_rev1_dance2_env_cfg(),
   play_env_cfg=k1_rev1_dance2_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-Getup",
+  env_cfg=k1_rev1_umr_getup_env_cfg(),
+  play_env_cfg=k1_rev1_umr_getup_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
 )

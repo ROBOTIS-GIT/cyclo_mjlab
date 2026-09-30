@@ -159,6 +159,30 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance2 \
 Replace `<run>` and `<iteration>` with the timestamped run directory and model
 iteration to use.
 
+#### Train UMR Get-Up
+
+The UMR task tracks the standing → prone → standing reference on a plane.
+It uses the converted 50 Hz motion and the same K1 model and PPO configuration
+as the dance tasks. Only this task disables the dance-specific undesired-contact
+penalty because knee, arm, and torso contacts are intentional in this motion.
+Reference-relative termination checks remain enabled.
+
+```bash
+python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-UMR-Getup \
+  --env.scene.num-envs 1024 \
+  --agent.run-name umr_getup
+```
+
+For a short integration check, use `--env.scene.num-envs 32
+--agent.max-iterations 2`. This checks initialization and PPO updates, not
+successful physical tracking of the complete motion.
+
+```bash
+python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-UMR-Getup \
+  --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
+  --num-envs 1
+```
+
 ## Motion Utilities
 
 The motion tools convert K1 CSV motion data into the MuJoCo-ordered NPZ format
@@ -167,6 +191,17 @@ and validate or replay the converted trajectory:
 ```bash
 python scripts/tools/motion/csv_to_npz.py --help
 python scripts/tools/motion/replay_npz.py --help
+```
+
+The headered UMR CSV can be converted directly, without removing its time column.
+Input FPS is inferred from `time_s`; output defaults to 50 Hz. Root quaternion
+components and joint columns are read by name. Outputs use the `_converted`
+suffix so the original UMR files are preserved.
+
+```bash
+python scripts/tools/motion/umr_csv_to_npz.py \
+  -f source/assets/motions/K1_rev1/umr_getup/k1_getup_12s_30hz.csv \
+  --output_fps 50
 ```
 
 ## License
