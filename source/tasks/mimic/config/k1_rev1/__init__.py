@@ -21,6 +21,7 @@
 """K1 Rev.1 Mimic task registration."""
 
 from mjlab.tasks.registry import register_mjlab_task
+from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner
 
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
@@ -81,4 +82,5 @@ register_mjlab_task(
   env_cfg=k1_rev1_umr_stand_up_scratch_env_cfg(),
   play_env_cfg=k1_rev1_umr_stand_up_scratch_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=StandUpCurriculumRunner,
 )
