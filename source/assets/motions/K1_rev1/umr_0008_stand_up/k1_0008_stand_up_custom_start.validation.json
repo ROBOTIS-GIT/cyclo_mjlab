@@ -1,0 +1,22 @@
+{
+  "result": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/k1_0008_stand_up_custom_start.npz",
+  "robot_xml": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/assets/k1/mujoco/k1/k1_0008_stand_up.floating_mjcf.xml",
+  "frames": 300,
+  "fps": 30.00029945373535,
+  "playback_duration_seconds": 9.999900183084568,
+  "nq": 30,
+  "actuated_joints": 23,
+  "finite": true,
+  "quaternion_max_norm_error": 3.8245232536482376e-08,
+  "joint_limit_violations_rad": {},
+  "max_joint_step_rad": 0.17217779159545898,
+  "max_joint_velocity_rad_s": 5.165385307146607,
+  "visual_mesh_floor_min_z_m": -0.00586947648873902,
+  "frames_visual_mesh_below_minus_1cm": 0,
+  "deepest_enabled_self_collision_m": -0.0025237512880291768,
+  "deepest_enabled_self_collision_bodies": [
+    "left_hip_pitch_link",
+    "left_wrist_roll_rubber_hand"
+  ],
+  "scope": "Forward kinematics only. Visual mesh floor audit uses z=0. Self collisions cover enabled MJCF collision pairs only. No balance, torque, friction, tracking-policy or hardware validation."
+}

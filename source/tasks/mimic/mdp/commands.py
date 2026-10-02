@@ -313,6 +313,14 @@ class ReferenceTrajectoryCommand(CommandTerm):
         failed_start_bins, minlength=self.start_bin_count
       )
 
+    # Reserve a stable subset of environments for full-motion starts.
+    env_ids = torch.as_tensor(env_ids, device=self.device, dtype=torch.long)
+    fixed_mask = env_ids < int(self.num_envs * self.cfg.first_frame_env_fraction)
+    self.frame_ids[env_ids[fixed_mask]] = 0
+    env_ids = env_ids[~fixed_mask]
+    if len(env_ids) == 0:
+      return
+
     start_bin_probabilities = (
       self.failure_score_by_bin
       + self.cfg.failure_sampling_uniform_ratio / float(self.start_bin_count)
@@ -327,6 +335,10 @@ class ReferenceTrajectoryCommand(CommandTerm):
     ).view(-1)
     start_bin_probabilities = (
       start_bin_probabilities / start_bin_probabilities.sum()
+    )
+    mix = self.cfg.start_sampling_uniform_mix
+    start_bin_probabilities = (
+      (1.0 - mix) * start_bin_probabilities + mix / self.start_bin_count
     )
 
     sampled_start_bins = torch.multinomial(
@@ -400,6 +412,18 @@ class ReferenceTrajectoryCommand(CommandTerm):
       joint_pos.shape,
       joint_pos.device,
     )
+    # Replace ordinary noise for the fixed group, rather than adding both.
+    if self.cfg.first_frame_joint_position_noise is not None:
+      reset_ids = torch.as_tensor(env_ids, device=self.device, dtype=torch.long)
+      fixed_ids = reset_ids[
+        reset_ids < int(self.num_envs * self.cfg.first_frame_env_fraction)
+      ]
+      if len(fixed_ids) > 0:
+        joint_pos[fixed_ids] = self.joint_pos[fixed_ids] + sample_uniform(
+          *self.cfg.first_frame_joint_position_noise,
+          joint_pos[fixed_ids].shape,
+          self.device,
+        )
     soft_joint_pos_limits = self.robot.data.soft_joint_pos_limits[env_ids]
     joint_pos[env_ids] = torch.clip(
       joint_pos[env_ids],
@@ -573,6 +597,12 @@ class ReferenceTrajectoryCommandCfg(CommandTermCfg):
   failure_sampling_uniform_ratio: float = 0.1
   failure_sampling_ema_alpha: float = 0.001
   start_from_zero: bool = False
+  first_frame_env_fraction: float = 0.0
+  start_sampling_uniform_mix: float = 0.0
+  """True uniform mixture weight after normalizing adaptive probabilities."""
+  """Fraction of fixed environment IDs resetting to frame zero (rounded down)."""
+  first_frame_joint_position_noise: tuple[float, float] | None = None
+  """Replacement joint reset noise for the fixed group, in radians."""
 
   @dataclass
   class VizCfg:
@@ -583,4 +613,12 @@ class ReferenceTrajectoryCommandCfg(CommandTermCfg):
   viz: VizCfg = field(default_factory=VizCfg)
 
   def build(self, env: ManagerBasedRlEnv) -> ReferenceTrajectoryCommand:
+    if not 0.0 <= self.start_sampling_uniform_mix <= 1.0:
+      raise ValueError("start_sampling_uniform_mix must be between 0 and 1.")
+    if not 0.0 <= self.first_frame_env_fraction <= 1.0:
+      raise ValueError("first_frame_env_fraction must be between 0 and 1.")
+    if self.first_frame_joint_position_noise is not None:
+      low, high = self.first_frame_joint_position_noise
+      if not math.isfinite(low) or not math.isfinite(high) or low > high:
+        raise ValueError("first_frame_joint_position_noise must be finite and ordered.")
     return ReferenceTrajectoryCommand(self, env)

@@ -51,6 +51,8 @@ class PlayConfig:
   checkpoint_file: str | None = None
   wandb_run_path: str | None = None
   motion_file: str | None = None
+  support_friction: float | None = None
+  """Fixed robot/floor sliding friction for tasks using randomize_support_friction."""
   reference_ghost_offset: tuple[float, float, float] | None = None
   """World-frame offset for the Mimic reference ghost."""
   num_envs: int | None = None
@@ -109,6 +111,22 @@ def run_play(task_id: str, cfg: PlayConfig):
 
   env_cfg = load_env_cfg(task_id, play=True)
   agent_cfg = load_rl_cfg(task_id)
+
+  if cfg.support_friction is not None:
+    import math
+    from source.tasks.mimic.mdp.friction_events import randomize_support_friction
+
+    if not math.isfinite(cfg.support_friction) or cfg.support_friction <= 0:
+      raise ValueError("--support-friction must be finite and positive.")
+    material = env_cfg.events.get("physics_material")
+    if material is None or material.func is not randomize_support_friction:
+      raise ValueError("--support-friction requires a LowFriction task.")
+    material.params.update(
+      low_range=(cfg.support_friction, cfg.support_friction),
+      low_probability_start=1.0,
+      low_probability_end=1.0,
+    )
+    print(f"[INFO]: Fixed robot/floor sliding friction: {cfg.support_friction}")
 
   DUMMY_MODE = cfg.agent in {"zero", "random"}
   TRAINED_MODE = not DUMMY_MODE

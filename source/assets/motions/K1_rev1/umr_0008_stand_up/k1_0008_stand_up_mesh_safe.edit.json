@@ -1,0 +1,61 @@
+{
+  "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/k1_0008_stand_up_custom_start.npz",
+  "source_sha256": "1e7a13b2e4027cca57bbd8e7906181076cdf77c0f4d73828e02a4f2eb07e4ffb",
+  "collision_model": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/assets/k1/mujoco/k1/k1_stand_up_mesh_collision.xml",
+  "model_confirmation": "User confirmed laptop uses the same model as the local mesh diagnostic.",
+  "method": "Repair the standing reference against the user-confirmed mesh collision model.\n\nArm trajectory sequential QP; preserve leg/waist angles, root orientation, and\ntiming. A small smooth root-height correction removes body/foot ground overlap.\nThis is collision-aware postprocessing of UMR output, not a new UMR solve.\n",
+  "arm_edit_frames": [
+    85,
+    259
+  ],
+  "root_lift_max_m": 0.004557680859317934,
+  "arms": {
+    "left": {
+      "iterations": 4,
+      "history": [
+        [
+          -0.05217248793015125,
+          -0.0040345751303782346,
+          0.014820908119600004
+        ],
+        [
+          -0.02423991463382539,
+          -0.0001135640895877782,
+          0.013472958653619777
+        ],
+        [
+          -0.003839778979792096,
+          0.0004998699566195336,
+          0.010644495350914038
+        ],
+        [
+          0.0,
+          0.0004999999996890964,
+          0.010080151435683457
+        ]
+      ],
+      "max_angle_change_rad": 0.13712956590453107,
+      "max_velocity_rad_s": 2.6707939303743693
+    },
+    "right": {
+      "iterations": 2,
+      "history": [
+        [
+          -0.021439178942145608,
+          -0.002475225074089926,
+          0.009905941973957347
+        ],
+        [
+          0.0,
+          0.0007393179645019815,
+          0.01000911603388177
+        ]
+      ],
+      "max_angle_change_rad": 0.19054528855052932,
+      "max_velocity_rad_s": 2.8827505131202433
+    }
+  },
+  "output": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/k1_0008_stand_up_mesh_safe.npz",
+  "initial_joint_angles_preserved": true,
+  "leg_waist_root_orientation_preserved": true
+}

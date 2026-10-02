@@ -1,0 +1,30 @@
+{
+  "model": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/assets/k1/mujoco/k1/k1_stand_up_mesh_collision.xml",
+  "results": {
+    "before": {
+      "samples_checked": 300,
+      "max_self_penetration_m": 0.05217248793015128,
+      "pair": [
+        "left_hip_roll_link",
+        "left_wrist_roll_rubber_hand"
+      ],
+      "worst_time_s": 6.466602118394687,
+      "frames_with_self_penetration_over_0_01mm": 46,
+      "max_floor_contact_penetration_m": 0.00586947648873902,
+      "visual_mesh_min_z_original_frames_m": -0.00586947648873902
+    },
+    "after": {
+      "samples_checked": 1496,
+      "max_self_penetration_m": -0.0,
+      "pair": null,
+      "worst_time_s": null,
+      "frames_with_self_penetration_over_0_01mm": 0,
+      "max_floor_contact_penetration_m": -0.0,
+      "visual_mesh_min_z_original_frames_m": 0.0004994094220987649
+    }
+  },
+  "initial_angles_unchanged": true,
+  "leg_waist_angles_and_root_orientation_unchanged": true,
+  "root_height_max_change_m": 0.004557680859317931,
+  "scope": "Kinematic contact check of enabled model pairs, including 4 subframes per interval. Does not validate balance, frictional support, torques or learned-policy performance."
+}
