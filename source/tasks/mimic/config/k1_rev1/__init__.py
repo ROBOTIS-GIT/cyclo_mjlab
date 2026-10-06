@@ -33,6 +33,7 @@ from .umr_stand_up_low_friction_env_cfg import (
   k1_rev1_umr_stand_up_low_friction_env_cfg,
 )
 from .umr_stand_up_scratch_env_cfg import k1_rev1_umr_stand_up_scratch_env_cfg
+from .umr_stand_up_soft_landing_env_cfg import k1_rev1_umr_stand_up_soft_landing_env_cfg
 
 
 register_mjlab_task(
@@ -81,6 +82,15 @@ register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-Scratch",
   env_cfg=k1_rev1_umr_stand_up_scratch_env_cfg(),
   play_env_cfg=k1_rev1_umr_stand_up_scratch_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=StandUpCurriculumRunner,
+)
+
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-SoftLanding",
+  env_cfg=k1_rev1_umr_stand_up_soft_landing_env_cfg(),
+  play_env_cfg=k1_rev1_umr_stand_up_soft_landing_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
   runner_cls=StandUpCurriculumRunner,
 )

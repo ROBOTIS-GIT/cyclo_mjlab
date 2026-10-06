@@ -25,8 +25,8 @@ command -v "$PYTHON_BIN" >/dev/null
 # Check both inputs before spending time training the first policy.
 MOTION_DIR="source/assets/motions/K1_rev1"
 for motion in \
-  "$MOTION_DIR/umr_0008_lie_down/k1_0008_lie_down_locomotion_start_footlock_converted.npz" \
-  "$MOTION_DIR/umr_0008_stand_up/k1_0008_stand_up_mesh_safe_converted.npz"; do
+  "$MOTION_DIR/umr_lie_down/k1_0008_lie_down_locomotion_start_footlock_converted.npz" \
+  "$MOTION_DIR/umr_stand_up/k1_0008_stand_up_soft_landing_converted.npz"; do
   if [[ ! -r "$motion" ]]; then
     echo "Missing motion: $motion" >&2
     exit 1
@@ -53,5 +53,5 @@ train_task() {
 }
 
 train_task Cyclo-Mimic-K1-Rev1-UMR-LieDown umr_0008_lie_down
-train_task Cyclo-Mimic-K1-Rev1-UMR-StandUp umr_0008_stand_up
+train_task Cyclo-Mimic-K1-Rev1-UMR-StandUp-SoftLanding umr_stand_up_soft_landing
 echo "[$(date -Is)] Both training runs completed."

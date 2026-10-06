@@ -23,6 +23,8 @@ def k1_rev1_umr_stand_up_scratch_env_cfg(play=False):
     return cfg
   old = cfg.commands["reference_trajectory"]
   command = StandUpCurriculumCommandCfg(**{f.name: getattr(old, f.name) for f in fields(old)})
+  # Preparation poses mapped to the retimed SoftLanding reference.
+  command.preparation_start_seconds = (5.4875, 8.2)
   command.start_sampling_uniform_mix = 0.5
   command.first_frame_joint_position_noise = (-0.05, 0.05)
   command.reset_joint_position_noise = (-0.05, 0.05)

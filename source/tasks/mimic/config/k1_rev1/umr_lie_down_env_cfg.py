@@ -23,7 +23,7 @@ from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
 from .base_env_cfg import k1_rev1_mimic_env_cfg
 
 TRAJECTORY_FILE = (
-  SRC_PATH / "assets" / "motions" / "K1_rev1" / "umr_0008_lie_down"
+  SRC_PATH / "assets" / "motions" / "K1_rev1" / "umr_lie_down"
   / "k1_0008_lie_down_locomotion_start_footlock_converted.npz"
 )
 
