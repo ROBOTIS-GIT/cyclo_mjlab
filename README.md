@@ -131,6 +131,122 @@ python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance2 \
   --env.scene.num-envs 4096
 ```
 
+#### Train and play Koryo
+
+The Koryo task uses `k1_koryo_converted.npz`: 4,293 frames at 50 Hz
+(about 85.84 seconds), converted from the headered 60 Hz source CSV.
+It uses the standard K1 Mimic rewards and PPO configuration. Training samples
+across the full reference with 30-second episodes; playback starts at frame zero.
+
+```bash
+python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Koryo \
+  --env.scene.num-envs 1024 \
+  --agent.run-name koryo
+```
+
+For a short integration check, append `--agent.max-iterations 2` and use
+`--env.scene.num-envs 32`. This verifies PPO updates, not motion mastery.
+
+```bash
+python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Koryo \
+  --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
+  --num-envs 1 \
+  --reference-ghost-offset 1.4,0,0
+```
+
+To regenerate the motion files while preserving the original CSV:
+
+```bash
+python scripts/tools/motion/umr_csv_to_npz.py \
+  -f source/assets/motions/K1_rev1/koryo/k1_koryo.csv \
+  --output_fps 50
+```
+
+#### Koryo perturbation curriculum
+
+`Cyclo-Mimic-K1-Rev1-Koryo-Curriculum` retains Koryo's rewards, 25 cm
+body-height termination and 30-second episode cap. Reset/observation noise,
+encoder bias and COM offsets start at 25% amplitude and progress through
+50%, 75%, and 100%. Friction expands from `[0.6375, 0.8625]` to the original
+`[0.3, 1.2]`; push velocity scales are 0%, 25%, 50%, and 100%.
+Physics randomization is sampled on episode resets so new stages take effect.
+
+Ten percent of environments start at frame zero. Each stage requires at least
+1,024 completed attempts from this group and an 80% 30-second survival rate
+before advancing. Failures at the time limit count as failures; interrupted
+attempts and attempts begun at an older stage are excluded. This gate measures
+the first 30 seconds, not completion of the full 85.84-second motion.
+The remaining environments mix adaptive starts with 25% uniform sampling.
+
+Resume an existing Koryo run with the curriculum (stop the old training process
+first if replacing it):
+
+```bash
+python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Koryo-Curriculum \
+  --env.scene.num-envs 2048 \
+  --agent.run-name koryo_curriculum \
+  --agent.resume True \
+  --agent.load-run 2026-10-08_12-01-23_koryo \
+  --agent.load-checkpoint 'model_.*.pt' \
+  --agent.max-iterations 15000
+```
+
+The checkpoint selector loads the latest matching checkpoint from that run.
+`max-iterations` specifies **additional** iterations when resuming. A baseline
+checkpoint starts at curriculum stage 0; curriculum checkpoints restore stage
+and outcome counters. New logs/checkpoints use a separate run directory.
+TensorBoard reports `Curriculum/koryo_difficulty/{stage,noise_scale,push_scale,
+frame_zero_30s_success_rate,attempts_in_window}`. Success rate is updated after
+each completed 1,024-attempt window and is zero before the first window.
+
+Evaluate a saved policy with fixed starts (default: every integer second from
+0 to 85). Use `--condition train` for the original full perturbations, or
+`--condition clean` without perturbations. Evaluation always uses deterministic
+policy actions and does not update the checkpoint or curriculum.
+
+```bash
+python scripts/reinforcement_learning/evaluate_koryo.py \
+  --checkpoint logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
+  --condition clean \
+  --output outputs/koryo_fixed_clean.json
+
+# Attempt the full reference from frame zero.
+python scripts/reinforcement_learning/evaluate_koryo.py \
+  --checkpoint logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
+  --condition clean --start-times 0 --duration 86 \
+  --output outputs/koryo_full_clean.json
+```
+
+The evaluator records failures, time-limit successes and reference-end successes
+separately. Reaching the end of the clip never credits a subsequent teleported
+segment as continuous tracking. Repeat with different `--seed` values for a
+more reliable comparison.
+
+#### Train and play Taeguek01
+
+The Taeguek01 task uses `taeguek_01/k1_taeguek01_converted.npz`: 1,582
+frames at 50 Hz (about 31.62 seconds), converted from the headered 60 Hz CSV.
+It uses the standard K1 Mimic rewards and PPO configuration.
+
+```bash
+python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Taeguek01 \
+  --env.scene.num-envs 1024 \
+  --agent.run-name taeguek01
+
+python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Taeguek01 \
+  --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
+  --num-envs 1 \
+  --reference-ghost-offset 1.4,0,0
+```
+
+To regenerate the motion files while preserving the original CSV:
+
+```bash
+python scripts/tools/motion/umr_csv_to_npz.py \
+  -f source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01.csv \
+  --output_fps 50
+```
+
 #### Play Dance1
 
 ```bash

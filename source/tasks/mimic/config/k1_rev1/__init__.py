@@ -21,11 +21,14 @@
 """K1 Rev.1 Mimic task registration."""
 
 from mjlab.tasks.registry import register_mjlab_task
-from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner
+from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner, KoryoCurriculumRunner
 
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
 from .dance2_env_cfg import k1_rev1_dance2_env_cfg
+from .koryo_env_cfg import k1_rev1_koryo_env_cfg
+from .koryo_curriculum_env_cfg import k1_rev1_koryo_curriculum_env_cfg
+from .taeguek01_env_cfg import k1_rev1_taeguek01_env_cfg
 from .umr_getup_env_cfg import k1_rev1_umr_getup_env_cfg
 from .umr_stand_up_env_cfg import k1_rev1_umr_stand_up_env_cfg
 from .umr_lie_down_env_cfg import k1_rev1_umr_lie_down_env_cfg
@@ -93,4 +96,26 @@ register_mjlab_task(
   play_env_cfg=k1_rev1_umr_stand_up_soft_landing_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
   runner_cls=StandUpCurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Koryo",
+  env_cfg=k1_rev1_koryo_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Taeguek01",
+  env_cfg=k1_rev1_taeguek01_env_cfg(),
+  play_env_cfg=k1_rev1_taeguek01_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Koryo-Curriculum",
+  env_cfg=k1_rev1_koryo_curriculum_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_curriculum_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=KoryoCurriculumRunner,
 )
