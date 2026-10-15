@@ -51,6 +51,7 @@ class TrainConfig:
   env: ManagerBasedRlEnvCfg
   agent: RslRlBaseRunnerCfg
   motion_file: str | None = None
+  checkpoint: str | None = None
   video: bool = False
   video_length: int = 200
   video_interval: int = 2000
@@ -127,7 +128,11 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
   log_root_path = log_dir.parent  # Go up from specific run dir to experiment dir.
 
   resume_path: Path | None = None
-  if cfg.agent.resume:
+  if cfg.checkpoint is not None:
+      resume_path = Path(cfg.checkpoint).expanduser().resolve()
+      if not resume_path.is_file():
+        raise FileNotFoundError(f"Checkpoint not found: {resume_path}")
+  elif cfg.agent.resume:
       # Load checkpoint from local filesystem.
       resume_path = get_checkpoint_path(
         log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint

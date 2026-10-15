@@ -9,6 +9,9 @@ from source.tasks.mimic.mdp.koryo_curriculum import (
 )
 from source.tasks.mimic.curriculum_runner import KoryoCurriculumRunner as Runner
 from mjlab.rl import MjlabOnPolicyRunner
+from source.tasks.mimic.koryo_schedule import (
+  initial_state, migrate_state, record_full_evaluation, NOISE_SCALES, PUSH_SCALES,
+)
 
 
 def command():
@@ -17,9 +20,8 @@ def command():
   c._env = S(num_envs=4, device='cpu', max_episode_length=1500,
              episode_length_buf=torch.tensor([1500, 1500, 1500, 1500]),
              termination_manager=S(terminated=torch.zeros(4, dtype=torch.bool)))
-  c.difficulty_stage = 0
-  c.attempts = c.successes = 0
-  c.last_success_rate = 0.
+  for key, value in initial_state().items():
+    setattr(c, key, value)
   c.trial_stage = torch.zeros(4, dtype=torch.long)
   return c
 
@@ -44,14 +46,14 @@ class KoryoCurriculumTests(unittest.TestCase):
     c.record_outcomes(slice(None))
     self.assertEqual(c.attempts, 0)
 
-  def test_promotes_only_after_enough_successes(self):
+  def test_30s_successes_are_diagnostics_and_never_promote(self):
     c = command()
     c.record_outcomes(slice(None))
     self.assertEqual(c.difficulty_stage, 0)
     c.trial_stage[:] = 0
     c._env.termination_manager.terminated[1] = True
     c.record_outcomes(slice(None))
-    self.assertEqual(c.difficulty_stage, 1)
+    self.assertEqual(c.difficulty_stage, 0)
     self.assertEqual(c.last_success_rate, 0.75)
     self.assertEqual(c.attempts, 0)
 
@@ -78,12 +80,16 @@ class KoryoCurriculumTests(unittest.TestCase):
 
   def test_checkpoint_roundtrip_and_actor_only(self):
     c = command(); c.difficulty_stage = 2; c.attempts = 50; c.successes = 40
+    c.failure_score_by_bin = torch.tensor([.1, .2, .3])
     runner = object.__new__(Runner)
     runner.env = S(unwrapped=S(command_manager=S(get_term=lambda _: c)), reset=Mock())
     runner._refresh_reference = Mock()
+    runner.current_learning_iteration = 100
+    runner.alg = S(learning_rate=.001, optimizer=S(param_groups=[{"lr": .00005}]))
     with patch.object(MjlabOnPolicyRunner, 'save') as save:
       runner.save('unused.pt'); infos = save.call_args.args[1]
     c.difficulty_stage = 0
+    c.failure_score_by_bin.zero_()
     with patch.object(MjlabOnPolicyRunner, 'load', return_value=infos):
       runner.load('unused.pt', load_cfg={'actor': True})
       self.assertEqual(c.difficulty_stage, 0)
@@ -91,12 +97,72 @@ class KoryoCurriculumTests(unittest.TestCase):
     self.assertEqual((c.difficulty_stage, c.attempts, c.successes), (2, 50, 40))
     self.assertTrue(torch.all(c.trial_stage == -1))
     runner.env.reset.assert_called_once()
+    self.assertEqual(runner.current_learning_iteration, 101)
+    self.assertEqual(runner.alg.learning_rate, .00005)
+    torch.testing.assert_close(c.failure_score_by_bin, torch.tensor([.1, .2, .3]))
 
   def test_random_initial_clock_is_disabled(self):
     runner = object.__new__(Runner)
     with patch.object(MjlabOnPolicyRunner, 'learn') as learn:
       runner.learn(2, init_at_random_ep_len=True)
     learn.assert_called_once_with(2, init_at_random_ep_len=False)
+
+  def test_old_max_stage_migrates_to_full_noise_half_push(self):
+    state = migrate_state({"difficulty_stage": 3, "attempts": 900,
+                           "successes": 500, "last_success_rate": .57})
+    self.assertEqual((state["noise_scale"], state["push_scale"]), (1., .5))
+    self.assertEqual((state["attempts"], state["evaluation_streak"]), (0, 0))
+    self.assertEqual(migrate_state(state), state)
+
+  def test_invalid_version_and_scale_fail_closed(self):
+    for field, value in (("version", 999), ("push_scale", 1.), ("mastered", True)):
+      state = initial_state(3)
+      state[field] = value
+      with self.assertRaises(ValueError):
+        migrate_state(state)
+
+  @staticmethod
+  def evaluation(state, successes=30):
+    return [{"condition": "train", "seed": seed, "episodes": 32,
+             "reference_end_successes": successes, "full_motion_from_zero": True,
+             "deterministic": True,
+             "noise_scale": state["noise_scale"], "push_scale": state["push_scale"]}
+            for seed in (42, 43, 44)]
+
+  def test_full_motion_gate_resets_streak_and_requires_two_new_checkpoints(self):
+    state = initial_state(3)
+    first = record_full_evaluation(state, self.evaluation(state), 1000)
+    self.assertEqual(first["evaluation_streak"], 1)
+    self.assertEqual(first["difficulty_stage"], 3)
+    with self.assertRaises(ValueError):
+      record_full_evaluation(first, self.evaluation(first), 1000)
+    failed = record_full_evaluation(first, self.evaluation(first, successes=20), 2000)
+    self.assertEqual(failed["evaluation_streak"], 0)
+    second = record_full_evaluation(first, self.evaluation(first), 2000)
+    self.assertEqual((second["difficulty_stage"], second["push_scale"]), (4, .6))
+    self.assertEqual(second["evaluation_streak"], 0)
+
+  def test_partial_wrong_scale_small_and_duplicate_seed_evaluations_rejected(self):
+    state = initial_state(3)
+    for field, value in (("full_motion_from_zero", False), ("push_scale", 1.),
+                         ("deterministic", False), ("episodes", 31)):
+      summaries = self.evaluation(state)
+      summaries[0][field] = value
+      with self.assertRaises(ValueError):
+        record_full_evaluation(state, summaries, 1000)
+    summaries = self.evaluation(state)
+    summaries[1]["seed"] = 42
+    with self.assertRaises(ValueError):
+      record_full_evaluation(state, summaries, 1000)
+
+  def test_only_final_stage_can_be_mastered(self):
+    state = initial_state(len(NOISE_SCALES)-1)
+    self.assertEqual(PUSH_SCALES[-1], 1.)
+    state = record_full_evaluation(state, self.evaluation(state), 1000)
+    self.assertFalse(state["mastered"])
+    state = record_full_evaluation(state, self.evaluation(state), 2000)
+    self.assertTrue(state["mastered"])
+    self.assertEqual(migrate_state(state), state)
 
 
 if __name__ == '__main__':

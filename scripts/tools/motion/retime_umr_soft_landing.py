@@ -1,6 +1,6 @@
 # Copyright 2026 ROBOTIS CO., LTD.
 # SPDX-License-Identifier: Apache-2.0
-"""Slow the UMR pelvis landing while retiming every channel together.
+"""Slow a selected UMR landing interval while retiming every channel together.
 
 Produces a new headered UMR CSV; convert it with umr_csv_to_npz.py.
 The spatial path is preserved by linear interpolation and quaternion SLERP.
@@ -49,10 +49,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input_file', type=Path, required=True)
     parser.add_argument('--output_file', type=Path, required=True)
+    parser.add_argument('--input_fps', type=float, default=None)
+    parser.add_argument('--output_fps', type=int, default=50)
+    parser.add_argument('--start', type=float, default=4.85)
+    parser.add_argument('--end', type=float, default=5.3)
+    parser.add_argument('--ramp', type=float, default=0.35)
+    parser.add_argument('--stretch', type=float, default=2.5)
     args = parser.parse_args()
     if args.input_file.resolve() == args.output_file.resolve():
         raise ValueError('The original UMR motion must not be overwritten.')
-    rows, metadata = retime(*load_umr_csv(args.input_file))
+    rows, metadata = retime(
+        *load_umr_csv(args.input_file, input_fps=args.input_fps),
+        output_fps=args.output_fps, start=args.start, end=args.end,
+        ramp=args.ramp, stretch=args.stretch,
+    )
     args.output_file.parent.mkdir(parents=True, exist_ok=True)
     np.savetxt(args.output_file, rows, delimiter=',', header=','.join(UMR_REQUIRED_COLUMNS), comments='', fmt='%.10g')
     metadata['source'] = args.input_file.name

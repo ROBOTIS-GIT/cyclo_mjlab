@@ -18,10 +18,8 @@ from source.tasks.mimic.mdp.koryo_curriculum import (
 from .koryo_env_cfg import k1_rev1_koryo_env_cfg
 
 
-def k1_rev1_koryo_curriculum_env_cfg(play=False):
-  cfg = k1_rev1_koryo_env_cfg(play=play)
-  if play:
-    return cfg
+def apply_taekwondo_curriculum(cfg, metric_name="koryo_difficulty"):
+  """Share the tested disturbance schedule without replacing the motion file."""
   old = cfg.commands["reference_trajectory"]
   command = KoryoCurriculumCommandCfg(**{
     f.name: getattr(old, f.name) for f in fields(old) if f.init
@@ -29,7 +27,7 @@ def k1_rev1_koryo_curriculum_env_cfg(play=False):
   command.first_frame_env_fraction = 0.1
   command.start_sampling_uniform_mix = 0.25
   cfg.commands["reference_trajectory"] = command
-  cfg.curriculum["koryo_difficulty"] = CurriculumTermCfg(func=update_koryo_difficulty)
+  cfg.curriculum[metric_name] = CurriculumTermCfg(func=update_koryo_difficulty)
   for name, func in (
     ("physics_material", koryo_material),
     ("torso_com_offset_noise", koryo_com_offset),
@@ -45,3 +43,8 @@ def k1_rev1_koryo_curriculum_env_cfg(play=False):
         operation=term.noise.operation,
       )
   return cfg
+
+
+def k1_rev1_koryo_curriculum_env_cfg(play=False):
+  cfg = k1_rev1_koryo_env_cfg(play=play)
+  return cfg if play else apply_taekwondo_curriculum(cfg)

@@ -1,12 +1,13 @@
 # Copyright 2026 ROBOTIS CO., LTD.
 # SPDX-License-Identifier: Apache-2.0
-"""Koryo perturbation curriculum gated by frame-zero, 30-second attempts."""
+"""Koryo perturbations; full-motion promotion is handled by the training driver."""
 
 from dataclasses import dataclass
 
 import torch
 from mjlab.envs.mdp.events import push_by_setting_velocity
 from mjlab.utils.noise import UniformNoiseCfg
+from ..koryo_schedule import NOISE_SCALES, PUSH_SCALES, initial_state, migrate_state
 
 from .commands import ReferenceTrajectoryCommand, ReferenceTrajectoryCommandCfg
 from .events import (
@@ -14,10 +15,6 @@ from .events import (
   apply_link_com_offset_noise,
   randomize_rigid_body_material,
 )
-
-NOISE_SCALES = (0.25, 0.5, 0.75, 1.0)
-PUSH_SCALES = (0.0, 0.25, 0.5, 1.0)
-
 
 def scaled_ranges(ranges, scale):
   return {key: (low * scale, high * scale) for key, (low, high) in ranges.items()}
@@ -37,30 +34,22 @@ class KoryoObservationNoise(UniformNoiseCfg):
 class KoryoCurriculumCommand(ReferenceTrajectoryCommand):
   def __init__(self, cfg, env):
     super().__init__(cfg, env)
-    self.difficulty_stage = 0
-    self.attempts = 0
-    self.successes = 0
-    self.last_success_rate = 0.0
+    for key, value in initial_state().items():
+      setattr(self, key, value)
     self.trial_stage = torch.full((self.num_envs,), -1, device=self.device)
     self.base_pose_noise = dict(cfg.reset_pose_noise)
     self.base_velocity_noise = dict(cfg.reset_velocity_noise)
     self.base_joint_noise = cfg.reset_joint_position_noise
 
   def curriculum_state_dict(self):
-    return {key: getattr(self, key) for key in (
-      "difficulty_stage", "attempts", "successes", "last_success_rate",
-    )}
+    state = {key: getattr(self, key) for key in initial_state()}
+    state.update(noise_scale=NOISE_SCALES[self.difficulty_stage],
+                 push_scale=PUSH_SCALES[self.difficulty_stage])
+    return state
 
   def load_curriculum_state_dict(self, state):
-    stage, attempts, successes = (
-      int(state[key]) for key in ("difficulty_stage", "attempts", "successes")
-    )
-    rate = float(state["last_success_rate"])
-    if not (0 <= stage < len(NOISE_SCALES) and 0 <= successes <= attempts
-            and 0 <= rate <= 1):
-      raise ValueError("Invalid Koryo curriculum checkpoint state.")
-    self.difficulty_stage, self.attempts, self.successes = stage, attempts, successes
-    self.last_success_rate = rate
+    for key, value in migrate_state(state).items():
+      setattr(self, key, value)
     # Checkpoints contain no in-flight physics state.
     self.trial_stage.fill_(-1)
 
@@ -83,8 +72,7 @@ class KoryoCurriculumCommand(ReferenceTrajectoryCommand):
     self.trial_stage[ids] = -1
     if self.attempts >= self.cfg.curriculum_min_attempts:
       self.last_success_rate = self.successes / self.attempts
-      if self.last_success_rate >= self.cfg.curriculum_success_threshold:
-        self.difficulty_stage = min(self.difficulty_stage + 1, len(NOISE_SCALES) - 1)
+      # Diagnostic only: a 30-second timeout never promotes the curriculum.
       self.attempts = self.successes = 0
 
   def _resample_command(self, env_ids):
@@ -99,14 +87,12 @@ class KoryoCurriculumCommand(ReferenceTrajectoryCommand):
 @dataclass(kw_only=True)
 class KoryoCurriculumCommandCfg(ReferenceTrajectoryCommandCfg):
   curriculum_min_attempts: int = 1024
-  curriculum_success_threshold: float = 0.8
 
   def build(self, env):
     if not (0 < self.first_frame_env_fraction <= 1
             and int(env.num_envs * self.first_frame_env_fraction) >= 1
             and 0 <= self.start_sampling_uniform_mix <= 1
-            and self.curriculum_min_attempts >= 1
-            and 0 < self.curriculum_success_threshold <= 1):
+            and self.curriculum_min_attempts >= 1):
       raise ValueError("Invalid Koryo curriculum gate or fixed-start group size.")
     if self.start_from_zero or self.first_frame_joint_position_noise is not None:
       raise ValueError("Koryo curriculum requires mixed starts and shared reset noise.")
@@ -130,6 +116,9 @@ def update_koryo_difficulty(env, env_ids):
     "push_scale": PUSH_SCALES[command.difficulty_stage],
     "frame_zero_30s_success_rate": command.last_success_rate,
     "attempts_in_window": command.attempts,
+    "full_motion_success_rate": command.last_full_success_rate,
+    "full_motion_pass_streak": command.evaluation_streak,
+    "mastered": int(command.mastered),
   }
 
 

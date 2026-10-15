@@ -21,17 +21,29 @@
 """K1 Rev.1 Mimic task registration."""
 
 from mjlab.tasks.registry import register_mjlab_task
-from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner, KoryoCurriculumRunner
+from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner, KoryoCurriculumRunner, Taeguek01CurriculumRunner, Taeguek02CurriculumRunner
 
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
 from .dance2_env_cfg import k1_rev1_dance2_env_cfg
 from .koryo_env_cfg import k1_rev1_koryo_env_cfg
 from .koryo_curriculum_env_cfg import k1_rev1_koryo_curriculum_env_cfg
+from .koryo_performance_env_cfg import k1_rev1_koryo_performance_env_cfg, k1_rev1_koryo_performance_ppo_cfg
+from source.tasks.mimic.performance_runner import KoryoPerformanceRunner, KoryoContactV2Runner, KoryoContactCurriculumRunner
+from .koryo_contact_v2_env_cfg import k1_rev1_koryo_contact_v2_env_cfg, k1_rev1_koryo_contact_v2_ppo_cfg, k1_rev1_koryo_contact_curriculum_env_cfg
+from .koryo_contact_max_env_cfg import k1_rev1_koryo_contact_max_env_cfg, k1_rev1_koryo_contact_max_ppo_cfg
+from source.tasks.mimic.performance_runner import KoryoContactMaxRunner
 from .taeguek01_env_cfg import k1_rev1_taeguek01_env_cfg
+from .taeguek01_curriculum_env_cfg import k1_rev1_taeguek01_curriculum_env_cfg
+from .taeguek02_env_cfg import k1_rev1_taeguek02_env_cfg
+from .taeguek02_curriculum_env_cfg import k1_rev1_taeguek02_curriculum_env_cfg
 from .umr_getup_env_cfg import k1_rev1_umr_getup_env_cfg
 from .umr_stand_up_env_cfg import k1_rev1_umr_stand_up_env_cfg
+from .umr_stand_up_back_env_cfg import k1_rev1_umr_stand_up_back_env_cfg
 from .umr_lie_down_env_cfg import k1_rev1_umr_lie_down_env_cfg
+from .umr_lie_down_back_env_cfg import k1_rev1_umr_lie_down_back_env_cfg
+from .umr_lie_down_back_soft_contact_env_cfg import k1_rev1_umr_lie_down_back_soft_contact_env_cfg
+from .umr_lie_down_back_toe_stable_env_cfg import k1_rev1_umr_lie_down_back_toe_stable_env_cfg
 from .umr_stand_up_low_friction_env_cfg import (
   k1_rev1_umr_stand_up_low_friction_env_cfg,
 )
@@ -99,10 +111,71 @@ register_mjlab_task(
 )
 
 register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-LieDownBack",
+  env_cfg=k1_rev1_umr_lie_down_back_env_cfg(),
+  play_env_cfg=k1_rev1_umr_lie_down_back_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUpBack",
+  env_cfg=k1_rev1_umr_stand_up_back_env_cfg(),
+  play_env_cfg=k1_rev1_umr_stand_up_back_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=StandUpCurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-LieDownBack-SoftContact",
+  env_cfg=k1_rev1_umr_lie_down_back_soft_contact_env_cfg(),
+  play_env_cfg=k1_rev1_umr_lie_down_back_soft_contact_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-LieDownBack-ToeStable",
+  env_cfg=k1_rev1_umr_lie_down_back_toe_stable_env_cfg(),
+  play_env_cfg=k1_rev1_umr_lie_down_back_toe_stable_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-Koryo",
   env_cfg=k1_rev1_koryo_env_cfg(),
   play_env_cfg=k1_rev1_koryo_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Koryo-Performance',
+  env_cfg=k1_rev1_koryo_performance_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_performance_env_cfg(play=True),
+  rl_cfg=k1_rev1_koryo_performance_ppo_cfg(),
+  runner_cls=KoryoPerformanceRunner,
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Koryo-ContactV2',
+  env_cfg=k1_rev1_koryo_contact_v2_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_contact_v2_env_cfg(play=True),
+  rl_cfg=k1_rev1_koryo_contact_v2_ppo_cfg(),
+  runner_cls=KoryoContactV2Runner,
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Koryo-ContactV2-Curriculum',
+  env_cfg=k1_rev1_koryo_contact_curriculum_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_contact_curriculum_env_cfg(play=True),
+  rl_cfg=k1_rev1_koryo_contact_v2_ppo_cfg(),
+  runner_cls=KoryoContactCurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Koryo-ContactV2-Max',
+  env_cfg=k1_rev1_koryo_contact_max_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_contact_max_env_cfg(play=True),
+  rl_cfg=k1_rev1_koryo_contact_max_ppo_cfg(),
+  runner_cls=KoryoContactMaxRunner,
 )
 
 register_mjlab_task(
@@ -118,4 +191,27 @@ register_mjlab_task(
   play_env_cfg=k1_rev1_koryo_curriculum_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
   runner_cls=KoryoCurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Taeguek01-Curriculum",
+  env_cfg=k1_rev1_taeguek01_curriculum_env_cfg(),
+  play_env_cfg=k1_rev1_taeguek01_curriculum_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=Taeguek01CurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Taeguek02",
+  env_cfg=k1_rev1_taeguek02_env_cfg(),
+  play_env_cfg=k1_rev1_taeguek02_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-Taeguek02-Curriculum",
+  env_cfg=k1_rev1_taeguek02_curriculum_env_cfg(),
+  play_env_cfg=k1_rev1_taeguek02_curriculum_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=Taeguek02CurriculumRunner,
 )

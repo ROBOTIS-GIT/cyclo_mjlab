@@ -108,8 +108,9 @@ class StandUpCurriculumCommand(ReferenceTrajectoryCommand):
     self.trial_stage[env_ids] = stage
     # Clip-end teleportation does not trigger an environment reset event.
     # Resample the material here as well so every new attempt uses its stage.
-    material = self._env.event_manager.get_term_cfg("physics_material")
-    material.func(self._env, env_ids, **material.params)
+    if self.cfg.resample_material_on_reset:
+      material = self._env.event_manager.get_term_cfg("physics_material")
+      material.func(self._env, env_ids, **material.params)
     self.metrics["full_motion_success_rate"][:] = self.last_success_rate
     self.metrics["difficulty_stage"][:] = stage
     self.metrics["full_motion_attempts"][:] = self.attempts
@@ -120,6 +121,8 @@ class StandUpCurriculumCommand(ReferenceTrajectoryCommand):
 
 @dataclass(kw_only=True)
 class StandUpCurriculumCommandCfg(ReferenceTrajectoryCommandCfg):
+  resample_material_on_reset: bool = True
+  """Resample stage-dependent friction on every new attempt, including clip ends."""
   preparation_start_fraction: float = 0.4
   """Fraction of non-fixed resets replaced with uniform preparation-window starts."""
   preparation_start_seconds: tuple[float, float] = (5.0, 7.0)
