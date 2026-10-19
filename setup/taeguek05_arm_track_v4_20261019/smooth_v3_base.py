@@ -152,4 +152,3 @@ def agent_cfg():
     cfg.upload_model = False
     cfg.run_name = 'taeguek05_smooth_v3_finetune'
     return cfg
-
