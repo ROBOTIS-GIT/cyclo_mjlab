@@ -1,0 +1,4 @@
+source/
+validation*.json
+*.log
+*.lock
