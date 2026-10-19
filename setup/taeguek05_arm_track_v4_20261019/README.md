@@ -57,7 +57,7 @@ SHA256: 00678994ac8fff241f521e9251520f2b562507bc1e9a0a10d25755e6bc4011a3
 ## 노트북 전용 체크아웃
 
 노트북의 기존 `/home/robotis-insu/cyclo_mjlab`에는 미커밋 작업이 있어 그곳에서 바로 pull하지 않는다.
-현재 컨테이너의 bind mount 안에 별도 Git 저장소를 만든다. 아래 clone은 최초 한 번만 실행한다.
+기존 저장소의 `work` 안에 별도 Git 저장소를 만든다. 아래 clone은 최초 한 번만 실행한다.
 
 ```bash
 git clone --recurse-submodules --single-branch --branch codex/taeguek05-arm-track-v4 \
@@ -84,11 +84,24 @@ scp hc@192.168.60.143:/home/hc/robotis/cyclo_mjlab/setup/taeguek05_arm_track_v4_
 
 ## 학습 실행
 
-노트북 호스트 터미널에서 사용자 권한으로 컨테이너에 들어간다:
+2026-10-19 검증 당시 기존 `cyclo_mjlab` 컨테이너는 NVML Unknown Error로
+CUDA를 사용할 수 없었다. 기존 컨테이너를 재시작하지 않고 같은 이미지로
+`cyclo_mjlab_taeguek05_v4` 전용 컨테이너를 만들었으며 RTX 5070 인식을 확인했다.
+이 컨테이너에서는 별도 체크아웃이 `/workspace/cyclo_mjlab`에 바로 마운트된다.
+
+다른 노트북에서 처음 준비하는 경우에만 호스트에서 생성한다:
+
+```bash
+docker run -d --name cyclo_mjlab_taeguek05_v4 --gpus all --shm-size=2g \
+  -v "$HOME/cyclo_mjlab/work/taeguek05_arm_v4_20261019:/workspace/cyclo_mjlab" \
+  -w /workspace/cyclo_mjlab cyclo-mjlab:latest sleep infinity
+```
+
+준비된 노트북 호스트 터미널에서 사용자 권한으로 들어간다:
 
 ```bash
 docker exec -it --user "$(id -u):$(id -g)" \
-  -w /workspace/cyclo_mjlab/work/taeguek05_arm_v4_20261019 cyclo_mjlab bash
+  -w /workspace/cyclo_mjlab cyclo_mjlab_taeguek05_v4 bash
 ```
 
 컨테이너 내부에서:
