@@ -1,0 +1,17 @@
+# Generated experiment outputs; keep source, inputs and selected audit manifests.
+*.log
+*.pid
+*.lock
+*.exit
+*.started
+*.status.json
+*.complete.json
+warp_cache/
+source_snapshot/
+exports/
+evaluation_*/
+smoke_export_*/
+manual_resume_check.json
+manual_stop_result.json
+launch_validation.json
+startup_verified.json

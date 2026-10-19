@@ -1,0 +1,38 @@
+[
+  {
+    "chapter": 3,
+    "steps": 128,
+    "initial_reset_terminations": 32,
+    "later_terminations": 0,
+    "longest_live_episode_steps": 127,
+    "max_targeted_cost": 2.831669807434082,
+    "every_step_terminated": false
+  },
+  {
+    "chapter": 4,
+    "steps": 128,
+    "initial_reset_terminations": 32,
+    "later_terminations": 3,
+    "longest_live_episode_steps": 127,
+    "max_targeted_cost": 4.785363674163818,
+    "every_step_terminated": false
+  },
+  {
+    "chapter": 7,
+    "steps": 128,
+    "initial_reset_terminations": 32,
+    "later_terminations": 1,
+    "longest_live_episode_steps": 127,
+    "max_targeted_cost": 3.6010384559631348,
+    "every_step_terminated": false
+  },
+  {
+    "chapter": 8,
+    "steps": 128,
+    "initial_reset_terminations": 32,
+    "later_terminations": 1,
+    "longest_live_episode_steps": 127,
+    "max_targeted_cost": 4.250678062438965,
+    "every_step_terminated": false
+  }
+]

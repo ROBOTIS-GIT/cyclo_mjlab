@@ -1,0 +1,49 @@
+{
+  "source": "/home/hc/Documents/ChatGPT/\ud0dc\uad8c\ub3c4 \ud559\uc2b5 .. \ub85c\ubd80\uc6d4\ub4dc/work/taeguek_selected_stability_20261019/continuous.csv",
+  "source_sha256": "28fadba0202147fa28aea3ecd954887edb0fcd72666a0b79185e94f50a467e46",
+  "model_sha256": "933b262dc9b0dd4f94a50887533faf563b0432a8506100910487a2a8248c358f",
+  "banks": {
+    "4": {
+      "previous_chapter": 2,
+      "samples": 31,
+      "policy_time_range": [
+        30.485,
+        30.785
+      ],
+      "root_height_range": [
+        0.7884388295,
+        0.7896800778
+      ],
+      "max_joint_velocity": 0.7373019449998865,
+      "sha256": "7e5001fe007ee56f3fad637938cfea74942342243a6d391a12e43ae8a715a007"
+    },
+    "7": {
+      "previous_chapter": 6,
+      "samples": 32,
+      "policy_time_range": [
+        17.785,
+        18.095
+      ],
+      "root_height_range": [
+        0.7431022323,
+        0.7879003106
+      ],
+      "max_joint_velocity": 18.26347282000363,
+      "sha256": "4b9dd627c6b26188200538426ac0286864e6912d72f8029588a924e58bdf7d7e"
+    },
+    "8": {
+      "previous_chapter": 7,
+      "samples": 32,
+      "policy_time_range": [
+        45.7,
+        46.01
+      ],
+      "root_height_range": [
+        0.7911027031,
+        0.7912397861
+      ],
+      "max_joint_velocity": 0.31106835999984056,
+      "sha256": "3473bbfcfb4ae1d00137c7a7c07d800caa8cedbb46c7547c828921d06323b2ea"
+    }
+  }
+}

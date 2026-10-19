@@ -75,6 +75,19 @@ environment are not required.
 After entering the container, the training and playback commands below can be
 run directly from `/workspace/cyclo_mjlab`.
 
+### Docker workspace identity
+
+This checkout defaults to Compose project/container `cyclo_mjlab` and image
+`cyclo-mjlab:latest`. The checkout root is mounted at `/workspace/cyclo_mjlab`.
+`container.sh` checks both the mounted host path and Compose project before
+operating on an existing container, so another checkout cannot be entered or
+recreated accidentally. For additional checkouts, set distinct
+`CYCLO_MJLAB_PROJECT`, `CYCLO_MJLAB_CONTAINER`, and `CYCLO_MJLAB_IMAGE` values.
+Because networking uses host mode, simultaneous viewers must use different ports.
+
+For the server02 training code, pinned Docker environment, and checkpoint
+restoration requirements, see [the migration notes](docs/server02_code_migration.md).
+
 ### Docker commands
 
 | Command | Description |
@@ -631,6 +644,14 @@ python scripts/tools/motion/umr_csv_to_npz.py \
   -f source/assets/motions/K1_rev1/umr_getup/k1_getup_12s_30hz.csv \
   --output_fps 50
 ```
+
+### Koryo support quality from scratch at full disturbances
+
+`Cyclo-Mimic-K1-Rev1-Koryo-SupportV3-Max` keeps the existing maximum noise,
+randomization and push settings from the first reset. It starts a new policy and
+adds persistent support-loss, unexpected liftoff and reference-aware sole-motion
+costs. Old checkpoints are rejected for training. See
+[the task configuration and evaluation guide](docs/koryo_support_v3_max.md).
 
 ## License
 

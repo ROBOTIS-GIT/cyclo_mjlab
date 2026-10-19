@@ -1,0 +1,77 @@
+[
+  {
+    "chapter": 2,
+    "frames": 1647,
+    "fps": 50.0,
+    "old_support_frames": [
+      1527,
+      1464
+    ],
+    "new_support_frames": [
+      1128,
+      1123
+    ],
+    "excluded_frames": [
+      399,
+      341
+    ],
+    "kick_left_23_66_24_24": 1.0,
+    "relocation_left_9_74_9_90": 0.0,
+    "relocation_right_7_22_7_52": 0.0,
+    "finite_steps": 64
+  },
+  {
+    "chapter": 3,
+    "frames": 1871,
+    "fps": 50.0,
+    "old_support_frames": [
+      1715,
+      1684
+    ],
+    "new_support_frames": [
+      1284,
+      1362
+    ],
+    "excluded_frames": [
+      431,
+      322
+    ],
+    "finite_steps": 64
+  },
+  {
+    "chapter": 4,
+    "frames": 1871,
+    "fps": 50.0,
+    "old_support_frames": [
+      1739,
+      1613
+    ],
+    "new_support_frames": [
+      1365,
+      1313
+    ],
+    "excluded_frames": [
+      374,
+      300
+    ],
+    "finite_steps": 64
+  },
+  {
+    "chapter": 5,
+    "frames": 2017,
+    "fps": 50.0,
+    "old_support_frames": [
+      1877,
+      1764
+    ],
+    "new_support_frames": [
+      1492,
+      1423
+    ],
+    "excluded_frames": [
+      385,
+      341
+    ],
+    "finite_steps": 64
+  }
+]

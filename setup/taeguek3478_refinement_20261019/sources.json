@@ -1,0 +1,58 @@
+{
+  "3": {
+    "chapter": 3,
+    "label": "SupportV1 최종",
+    "bundle": "/home/hc/Documents/ChatGPT/태권도 학습 .. 로부월드/work/taeguek2_5_final_audit_20261018/bundles/t3_support_29999",
+    "reason": "15000회 모델의 안정적 지지를 유지하면서 관절 추종이 개선된 완료본.",
+    "installed_folder": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_selected_20261019/taeguek_03",
+    "source_run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-16_18-04-59_taeguek03_support_v1_scratch_20261016_support_v1",
+    "checkpoint": "model_29999.pt",
+    "checkpoint_sha256": "d7290e257517a9a31cfe486b53b6bf51f4cd4bfa596eb7c4c3ac7a6551f5c014",
+    "csv": "k1_taeguek03_collision_only_50hz_converted.csv",
+    "frames": 1871,
+    "fps": 50.0,
+    "csv_sha256": "1520b6059a88ea0efa393a77009731759f4b3832177fb1e14e66a1863cdb9d52"
+  },
+  "4": {
+    "chapter": 4,
+    "label": "SupportV1 최종",
+    "bundle": "/home/hc/Documents/ChatGPT/태권도 학습 .. 로부월드/work/taeguek2_5_final_audit_20261018/bundles/t4_support_29999",
+    "reason": "V2보다 발차기 높이는 낮지만, V2에서 새로 생긴 14.24초의 더 큰 지지발 홉을 피하는 보수적 선택. 기존 잔발은 남아 있음.",
+    "installed_folder": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_selected_20261019/taeguek_04",
+    "source_run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-17_02-37-59_taeguek04_support_v1_scratch_20261016_support_v1",
+    "checkpoint": "model_29999.pt",
+    "checkpoint_sha256": "f6c93349928034400017e6dc7c6bba92b853a8c57fa27a56ca43bceb1d193a62",
+    "csv": "k1_taeguek04_collision_only_50hz_converted.csv",
+    "frames": 1871,
+    "fps": 50.0,
+    "csv_sha256": "fe65bdcaaf06472a3ed0e0297625d592f01d13c03cbc8bd0d7af7ac0582b5659"
+  },
+  "7": {
+    "chapter": 7,
+    "label": "SupportV1 진행 중 저장본",
+    "bundle": "/home/hc/Documents/ChatGPT/태권도 학습 .. 로부월드/work/taeguek2_8_selection_20261019/bundles/t7_support_16500",
+    "reason": "기존 착지 후 약23mm 재이륙이 검출되지 않고 골반 XY 오차가 감소. 잔발/경로를 우선해 선택했으며 관절·신체 추종과 발차기 높이는 기존 완료본보다 나쁨. 16500회 고정 snapshot.",
+    "installed_folder": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_selected_20261019/taeguek_07",
+    "source_run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-18_19-12-31_taeguek07_support_v1_scratch_20261018_103041_2822",
+    "checkpoint": "model_16500.pt",
+    "checkpoint_sha256": "bd0fc276cf3d3b14a57f720ccba7f232bf5528638a5b1bef2b80d26d51c63c00",
+    "csv": "k1_taeguek07_collision_only_50hz_converted.csv",
+    "frames": 2320,
+    "fps": 50.0,
+    "csv_sha256": "f0fdda954f5fb4cc6c72f711bd2ef2dfc55d145cb9128b4f65a27fd79d67ef90"
+  },
+  "8": {
+    "chapter": 8,
+    "label": "기존 XY 최종",
+    "bundle": "/home/hc/Documents/ChatGPT/태권도 학습 .. 로부월드/work/taeguek6_8_final_audit_20261018/bundles/t8_baseline_19999",
+    "reason": "기존 완료/전체 평가본. 새 SupportV1 본 학습은 대기 중. 작은 지지발 홉 및 점프 높이 부족은 남아 있음.",
+    "installed_folder": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_selected_20261019/taeguek_08",
+    "source_run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-16_17-50-19_taeguek08_xy_20261016_071656_912",
+    "checkpoint": "model_19999.pt",
+    "checkpoint_sha256": "cf3bf57815837c5944d31ecbc0bc986d74ec1f60c75eb25cf80f03837cc3bd77",
+    "csv": "k1_taeguek08_collision_only_50hz_converted.csv",
+    "frames": 2519,
+    "fps": 50.0,
+    "csv_sha256": "54f0fc016883614bb695b6362efc348697a2a20e140992745f8aa142ae77c339"
+  }
+}
