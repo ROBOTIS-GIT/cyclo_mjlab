@@ -101,3 +101,8 @@ class Taeguek01CurriculumRunner(KoryoCurriculumRunner):
 class Taeguek02CurriculumRunner(KoryoCurriculumRunner):
   """Persist Taeguek02 curriculum and sampler independently of other motions."""
   motion_name = "taeguek02"
+
+
+class GeumgangCurriculumRunner(KoryoCurriculumRunner):
+  """Persist Geumgang curriculum state separately from the other motions."""
+  motion_name = "geumgang"

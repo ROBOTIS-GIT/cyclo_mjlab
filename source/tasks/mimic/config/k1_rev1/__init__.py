@@ -33,6 +33,13 @@ from source.tasks.mimic.performance_runner import KoryoPerformanceRunner, KoryoC
 from .koryo_contact_v2_env_cfg import k1_rev1_koryo_contact_v2_env_cfg, k1_rev1_koryo_contact_v2_ppo_cfg, k1_rev1_koryo_contact_curriculum_env_cfg
 from .koryo_contact_max_env_cfg import k1_rev1_koryo_contact_max_env_cfg, k1_rev1_koryo_contact_max_ppo_cfg
 from source.tasks.mimic.performance_runner import KoryoContactMaxRunner
+from source.tasks.mimic.performance_runner import GeumgangContactMaxRunner
+from source.tasks.mimic.curriculum_runner import GeumgangCurriculumRunner
+from .taeguek_collision_only_env_cfg import register_taeguek_collision_only_tasks
+from .geumgang_env_cfg import (
+  k1_rev1_geumgang_env_cfg, k1_rev1_geumgang_curriculum_env_cfg,
+  k1_rev1_geumgang_contact_max_env_cfg, k1_rev1_geumgang_contact_max_ppo_cfg, k1_rev1_geumgang_ppo_cfg,
+)
 from .taeguek01_env_cfg import k1_rev1_taeguek01_env_cfg
 from .taeguek01_curriculum_env_cfg import k1_rev1_taeguek01_curriculum_env_cfg
 from .taeguek02_env_cfg import k1_rev1_taeguek02_env_cfg
@@ -49,6 +56,16 @@ from .umr_stand_up_low_friction_env_cfg import (
 )
 from .umr_stand_up_scratch_env_cfg import k1_rev1_umr_stand_up_scratch_env_cfg
 from .umr_stand_up_soft_landing_env_cfg import k1_rev1_umr_stand_up_soft_landing_env_cfg
+from .umr_stand_up_ready_handoff_env_cfg import k1_rev1_umr_stand_up_ready_handoff_env_cfg
+from source.tasks.mimic.ready_handoff_runner import ReadyHandoffRunner
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-ReadyHandoff",
+  env_cfg=k1_rev1_umr_stand_up_ready_handoff_env_cfg(),
+  play_env_cfg=k1_rev1_umr_stand_up_ready_handoff_env_cfg(play=True),
+  rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  runner_cls=ReadyHandoffRunner,
+)
 
 
 register_mjlab_task(
@@ -179,6 +196,29 @@ register_mjlab_task(
 )
 
 register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Geumgang',
+  env_cfg=k1_rev1_geumgang_env_cfg(),
+  play_env_cfg=k1_rev1_geumgang_env_cfg(play=True),
+  rl_cfg=k1_rev1_geumgang_ppo_cfg(),
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Geumgang-Curriculum',
+  env_cfg=k1_rev1_geumgang_curriculum_env_cfg(),
+  play_env_cfg=k1_rev1_geumgang_curriculum_env_cfg(play=True),
+  rl_cfg=k1_rev1_geumgang_ppo_cfg(),
+  runner_cls=GeumgangCurriculumRunner,
+)
+
+register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Geumgang-ContactV2-Max',
+  env_cfg=k1_rev1_geumgang_contact_max_env_cfg(),
+  play_env_cfg=k1_rev1_geumgang_contact_max_env_cfg(play=True),
+  rl_cfg=k1_rev1_geumgang_contact_max_ppo_cfg(),
+  runner_cls=GeumgangContactMaxRunner,
+)
+
+register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-Taeguek01",
   env_cfg=k1_rev1_taeguek01_env_cfg(),
   play_env_cfg=k1_rev1_taeguek01_env_cfg(play=True),
@@ -214,4 +254,40 @@ register_mjlab_task(
   play_env_cfg=k1_rev1_taeguek02_curriculum_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
   runner_cls=Taeguek02CurriculumRunner,
+)
+
+
+register_taeguek_collision_only_tasks()
+
+# Standalone deployment-matched fine-tune; existing tasks retain their behavior.
+from .umr_stand_up_ai_sapiens_env_cfg import (
+  k1_rev1_umr_stand_up_ai_sapiens_env_cfg,
+  k1_rev1_umr_stand_up_ai_sapiens_ppo_cfg,
+)
+from source.tasks.mimic.ai_sapiens_runner import AiSapiensRunner
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-AiSapiens",
+  env_cfg=k1_rev1_umr_stand_up_ai_sapiens_env_cfg(),
+  play_env_cfg=k1_rev1_umr_stand_up_ai_sapiens_env_cfg(play=True),
+  rl_cfg=k1_rev1_umr_stand_up_ai_sapiens_ppo_cfg(),
+  runner_cls=AiSapiensRunner,
+)
+
+# Settled reference and early body dynamics fine-tune, isolated from prior tasks.
+from .umr_stand_up_soft_entry_env_cfg import soft_entry_env_cfg, soft_entry_ppo_cfg
+from source.tasks.mimic.soft_entry_runner import SoftEntryRunner
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-AiSapiens-SoftEntry",
+  env_cfg=soft_entry_env_cfg(), play_env_cfg=soft_entry_env_cfg(play=True),
+  rl_cfg=soft_entry_ppo_cfg(), runner_cls=SoftEntryRunner,
+)
+
+
+# SoftEntry with restored original StandUp domain randomization.
+from .umr_stand_up_soft_entry_dr_env_cfg import soft_entry_dr_env_cfg, soft_entry_dr_ppo_cfg
+from source.tasks.mimic.soft_entry_dr_runner import SoftEntryDRRunner
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-UMR-StandUp-AiSapiens-SoftEntry-DR",
+  env_cfg=soft_entry_dr_env_cfg(), play_env_cfg=soft_entry_dr_env_cfg(play=True),
+  rl_cfg=soft_entry_dr_ppo_cfg(), runner_cls=SoftEntryDRRunner,
 )

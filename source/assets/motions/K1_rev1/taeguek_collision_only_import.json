@@ -1,0 +1,295 @@
+{
+  "files": [
+    {
+      "chapter": 1,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only.csv",
+      "sha256": "be36d24c4079a878c901bb88403d68065e189b5befa88b4b9bc8cd7f6c38bef2",
+      "bytes": 1216619
+    },
+    {
+      "chapter": 1,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_converted.csv",
+      "sha256": "c5b566fbe53686076dccab05c41245e0b37983661d7af71f8603cc9e648f5071",
+      "bytes": 709463
+    },
+    {
+      "chapter": 1,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_converted.npz",
+      "sha256": "3186170a0fd15d9463353e7fafa757e087072ae3f364c1c0c67290aba456ea1c",
+      "bytes": 2828268
+    },
+    {
+      "chapter": 2,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only.csv",
+      "sha256": "cda6dbd669b87dcc4fef45e181b0c4a48aa105816b3399fe0731d2400f7b957e",
+      "bytes": 1265845
+    },
+    {
+      "chapter": 2,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_converted.csv",
+      "sha256": "57e7f8c4dc06d49da1c9d5940e094dae87075c93db1098cb77d27b20b999a7cb",
+      "bytes": 738871
+    },
+    {
+      "chapter": 2,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_converted.npz",
+      "sha256": "98095b4e9cb9d67c0fc425a2a0ca2847abe4cd85eadfe293cad904eef2c80088",
+      "bytes": 2944020
+    },
+    {
+      "chapter": 3,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only.csv",
+      "sha256": "803c57156962e21880e21789ab9e337a5f56539de43ff4a1930e82a7bd88f434",
+      "bytes": 1434932
+    },
+    {
+      "chapter": 3,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_converted.csv",
+      "sha256": "5eb268c5f68096109a360ecbfe99029e0f550c2232e4e23f8a1df0f77ec69fe5",
+      "bytes": 839074
+    },
+    {
+      "chapter": 3,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_converted.npz",
+      "sha256": "5938cafa7473bda2d44ec3d2f67d730da0b8971ae979e85fd43702329368727e",
+      "bytes": 3343216
+    },
+    {
+      "chapter": 4,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only.csv",
+      "sha256": "c79806eae30d2f091bc9f2903c7dbacb876d0ee8f254107a8837be97c00cf18d",
+      "bytes": 1432692
+    },
+    {
+      "chapter": 4,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_converted.csv",
+      "sha256": "d61ead3aa678f6ae0623cc8ee5b73de42013d53d78c2957b34494ae6ed39a0ab",
+      "bytes": 839675
+    },
+    {
+      "chapter": 4,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_converted.npz",
+      "sha256": "b5e393ce9932ed47f7b384e950a853a1f713d098f57dd5972b1615235539eedb",
+      "bytes": 3343216
+    },
+    {
+      "chapter": 5,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only.csv",
+      "sha256": "627f08c5ec4812f32b7756e89a4bd4647c000a1f83548e6cb351f4073dac56da",
+      "bytes": 1543664
+    },
+    {
+      "chapter": 5,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_converted.csv",
+      "sha256": "cb976184cceb313835ea5afcd49ded2151d4870a6341532b922009ad9a8a86a6",
+      "bytes": 905714
+    },
+    {
+      "chapter": 5,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_converted.npz",
+      "sha256": "b011e22c89cf515a419de83bf7d673c27a6511364f7a4d4487c04bdbd3bc043c",
+      "bytes": 3602916
+    },
+    {
+      "chapter": 6,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only.csv",
+      "sha256": "92c19f2892c1b03038b0f5bf38afea7da670dae385106cb6a8fb750597e9ab1a",
+      "bytes": 1628901
+    },
+    {
+      "chapter": 6,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_converted.csv",
+      "sha256": "89bcbf67579d625ed20a4435ff866826d6ef87150981866b9157715ae31bbd26",
+      "bytes": 953165
+    },
+    {
+      "chapter": 6,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_converted.npz",
+      "sha256": "7a4486baf189b413f33646b79e2e26881f39d836c2d3d8e3d963cee9c287770b",
+      "bytes": 3792868
+    },
+    {
+      "chapter": 7,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only.csv",
+      "sha256": "c9216623b81010c79342e6eccb7ecdea2e0d3ffc1c4ac3c54a0dd3a15f92fc9f",
+      "bytes": 1779083
+    },
+    {
+      "chapter": 7,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_converted.csv",
+      "sha256": "8275bc7f4d2cc02c3ca5e1cfd06c0eeb76e096f14cb18f74f062fcfcd9149c9c",
+      "bytes": 1042211
+    },
+    {
+      "chapter": 7,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_converted.npz",
+      "sha256": "4c40cffb6bc504e8d875305ec9a2c82d01cdc913f8dd0a266c7394a180dce590",
+      "bytes": 4141608
+    },
+    {
+      "chapter": 8,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only.csv",
+      "sha256": "a7bbfcfdc75c59eb85ff2f376e2e14183a10a72abfdf02757eb200dc76958fb8",
+      "bytes": 1926017
+    },
+    {
+      "chapter": 8,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_converted.csv",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_converted.csv",
+      "sha256": "d735cd0708d22e48b053b8ae08c508b6f38ab0b676c01ade3c0f47607f167039",
+      "bytes": 1131942
+    },
+    {
+      "chapter": 8,
+      "source_host": "hc-desktop",
+      "source_path": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_converted.npz",
+      "local_path": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_converted.npz",
+      "sha256": "a7a74a7cafc656f4d270270d090941e52247fbdc94f6e2b1dd4cd90ea9955294",
+      "bytes": 4496284
+    }
+  ],
+  "training_conversion": [
+    {
+      "chapter": 1,
+      "source_fps": 60.0,
+      "source_frames": 1899,
+      "source_duration_s": 31.633333333333333,
+      "training_fps": 50,
+      "training_frames": 1582,
+      "training_duration_s": 31.62,
+      "source_fk_error_m": 9.023138026044247e-08,
+      "source_fk_error_rad": 2.3397622978709326e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 2,
+      "source_fps": 60.0,
+      "source_frames": 1977,
+      "source_duration_s": 32.93333333333333,
+      "training_fps": 50,
+      "training_frames": 1647,
+      "training_duration_s": 32.92,
+      "source_fk_error_m": 8.682974325126805e-08,
+      "source_fk_error_rad": 2.46582401748125e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 3,
+      "source_fps": 60.0,
+      "source_frames": 2246,
+      "source_duration_s": 37.416666666666664,
+      "training_fps": 50,
+      "training_frames": 1871,
+      "training_duration_s": 37.4,
+      "source_fk_error_m": 9.74305311385758e-08,
+      "source_fk_error_rad": 2.3752214300772048e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 4,
+      "source_fps": 60.0,
+      "source_frames": 2246,
+      "source_duration_s": 37.416666666666664,
+      "training_fps": 50,
+      "training_frames": 1871,
+      "training_duration_s": 37.4,
+      "source_fk_error_m": 1.5252835177719453e-07,
+      "source_fk_error_rad": 2.3110878726938973e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 5,
+      "source_fps": 60.0,
+      "source_frames": 2421,
+      "source_duration_s": 40.333333333333336,
+      "training_fps": 50,
+      "training_frames": 2017,
+      "training_duration_s": 40.32,
+      "source_fk_error_m": 1.372952798568051e-07,
+      "source_fk_error_rad": 2.2453740682214933e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 6,
+      "source_fps": 60.0,
+      "source_frames": 2549,
+      "source_duration_s": 42.46666666666667,
+      "training_fps": 50,
+      "training_frames": 2124,
+      "training_duration_s": 42.46,
+      "source_fk_error_m": 1.267214627749425e-07,
+      "source_fk_error_rad": 2.3004061954271617e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 7,
+      "source_fps": 60.0,
+      "source_frames": 2784,
+      "source_duration_s": 46.38333333333333,
+      "training_fps": 50,
+      "training_frames": 2320,
+      "training_duration_s": 46.38,
+      "source_fk_error_m": 1.4002522137282025e-07,
+      "source_fk_error_rad": 2.3277638857775604e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_50hz.npz"
+    },
+    {
+      "chapter": 8,
+      "source_fps": 60.0,
+      "source_frames": 3023,
+      "source_duration_s": 50.36666666666667,
+      "training_fps": 50,
+      "training_frames": 2519,
+      "training_duration_s": 50.36,
+      "source_fk_error_m": 1.4447477486184737e-07,
+      "source_fk_error_rad": 2.2921027192690932e-07,
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_50hz.npz"
+    }
+  ],
+  "timing_note": "Source 60 Hz preserved; separate 50 Hz training files use the original timestamps, no smoothing or speed limiting. Final interval truncation is less than one 20 ms sample."
+}

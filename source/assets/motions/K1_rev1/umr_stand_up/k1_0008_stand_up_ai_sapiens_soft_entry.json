@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "fps": 50,
+  "frames": 560,
+  "settled_prefix_seconds": 0.3,
+  "original_trajectory_restored_at_seconds": 1.5,
+  "interpolation": "quintic + quaternion slerp",
+  "original_height_m": 0.117544157,
+  "settled_height_m": 0.07993727922439575,
+  "initial_joint_command_vs_measured_max_rad": 0.10591627955436705,
+  "max_initial_root_speed_m_s": 0.05827139373322243,
+  "max_initial_joint_speed_rad_s": 0.9200415732150191,
+  "fk_max_position_error_m": 2.451592361603569e-07,
+  "fk_max_orientation_error_rad": 2.3774572840964296e-07,
+  "bank_sha256": "39f38ea2538eb04d3546e86016aa37191f3a43ba9084a6a832ff14b429ebbbf0",
+  "source_sha256": "7a3b35887aa968fd612c327666c94aeea535f1968cd538d471a9624ada3a2844",
+  "csv_sha256": "bd6f10b4de603cf072f93d167e02f46cf428f50e0b60884db9839863c8395a61",
+  "npz_sha256": "66f7422bc6964d5c975c437d177d85bd619b6f22396190d138a83915a47ddf6d"
+}

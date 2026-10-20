@@ -1,6 +1,6 @@
 # Copyright 2026 ROBOTIS CO., LTD.
 # SPDX-License-Identifier: Apache-2.0
-"""Record one complete, unteleported Koryo attempt at physics-rate foot contacts."""
+"""Record one complete taekwondo attempt at physics-rate foot contacts."""
 import argparse
 import json
 import os
@@ -18,19 +18,21 @@ from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
 from source.tasks.mimic.mdp.performance_contacts import add_foot_sensors, FOOT_BODIES, SENSOR
-from source.tasks.mimic.motion_curriculum import motion_identity, validate_checkpoint_motion
+from source.tasks.mimic.motion_curriculum import MOTIONS, motion_identity, validate_checkpoint_motion
 
 
 def main():
   parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument('--motion', choices=tuple(MOTIONS), default='koryo')
   parser.add_argument('--checkpoint', required=True, type=Path)
   parser.add_argument('--output-dir', required=True, type=Path)
   parser.add_argument('--seed', default=42, type=int)
   parser.add_argument('--condition', choices=('clean','play'), default='clean')
   parser.add_argument('--physics-dt', type=float, choices=(0.005,0.0025), default=0.005)
   args = parser.parse_args()
-  identity = motion_identity('koryo')
-  cfg = load_env_cfg('Cyclo-Mimic-K1-Rev1-Koryo', play=True)
+  identity = motion_identity(args.motion)
+  task = MOTIONS[args.motion].task
+  cfg = load_env_cfg(task, play=True)
   cfg.sim.mujoco.timestep = args.physics_dt
   cfg.decimation = round(0.02/args.physics_dt)
   add_foot_sensors(cfg)
@@ -46,11 +48,11 @@ def main():
     cmdcfg.reset_joint_position_noise = (0.,0.)
   env = ManagerBasedRlEnv(cfg=cfg, device='cuda:0')
   try:
-    agent = load_rl_cfg('Cyclo-Mimic-K1-Rev1-Koryo')
+    agent = load_rl_cfg(task)
     wrapped = RslRlVecEnvWrapper(env, clip_actions=agent.clip_actions)
     runner = MjlabOnPolicyRunner(wrapped, asdict(agent), device='cuda:0')
     infos = runner.load(str(args.checkpoint), load_cfg={'actor':True}, map_location='cuda:0')
-    validate_checkpoint_motion(infos, 'koryo', identity)
+    validate_checkpoint_motion(infos, args.motion, identity)
     policy = runner.get_inference_policy(device='cuda:0')
     cmd = env.command_manager.get_term('reference_trajectory')
     feet = [cmd.cfg.body_names.index(n) for n in FOOT_BODIES]

@@ -174,8 +174,8 @@ def main(default_motion="koryo", default_contact_v2=False):
     validate_checkpoint_motion(infos, args.motion, identity)
   if args.contact_v2:
     validate_contact_checkpoint(infos)
-  elif infos.get('koryo_performance'):
-    parser.error('Use --contact-v2 to retain the contact rewards for a ContactV2 checkpoint.')
+  elif infos.get(args.motion + '_performance'):
+    parser.error('Use the matching contact training task to retain contact rewards; this ordinary curriculum cannot resume a contact checkpoint.')
   state = migrate_state(infos.get(spec.state_key))
   iteration = int(checkpoint["iter"]) if checkpoint else -1
   if args.dry_run:

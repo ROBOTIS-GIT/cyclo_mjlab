@@ -399,6 +399,125 @@ The earlier Performance/ContactV2 training logs were deleted on 2026-10-14 at
 the user's request. Their concrete checkpoint paths above are historical
 examples and no longer exist; original Koryo and other motions were preserved.
 
+#### Geumgang with the Koryo ContactV2-Max settings
+
+`Cyclo-Mimic-K1-Rev1-Geumgang-ContactV2-Max` uses the same contact rewards,
+full noise/DR/push ranges, 30-second training episodes and PPO settings as
+Koryo ContactV2-Max. The reference is Geumgang: **4,994 frames at 50 Hz,
+99.86 seconds**. Contact labels are computed from this reference.
+The original numeric CSV, converted CSV/NPZ and conversion provenance are in
+`source/assets/motions/K1_rev1/geumgang/`. Frame rate and joint ordering were
+verified against the source runtime and its `source_sim2real.yaml`; that YAML
+is provenance, not the new training/deployment configuration.
+
+Start a fresh policy **inside the container**:
+
+```bash
+cd /workspace/cyclo_mjlab
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -u scripts/reinforcement_learning/train.py \
+  Cyclo-Mimic-K1-Rev1-Geumgang-ContactV2-Max \
+  --env.scene.num-envs 2048 \
+  --agent.max-iterations 60000 \
+  --agent.run-name geumgang_contact_max_from_scratch \
+  --agent.upload-model False
+```
+
+This starts from scratch, with LR 0.001/adaptive, entropy 0.005, noise/DR/push
+100% from the first reset, and the same 1,000-update contact-transition ramp.
+To resume, add `--checkpoint <geumgang-run>/model_<iteration>.pt` from this
+task. Motion identity and separate Geumgang metadata prevent resuming a Koryo
+checkpoint accidentally. Optimizer, contact ramp and sampler state are retained.
+
+Evaluate a saved policy on the **whole 99.86-second motion**:
+
+```bash
+python scripts/reinforcement_learning/evaluate_koryo.py \
+  --motion geumgang --checkpoint <geumgang-checkpoint.pt> \
+  --condition train --full-motion --trials 32 --seed 42 \
+  --noise-scale 1 --push-scale 1 --output outputs/geumgang_full.json
+python scripts/reinforcement_learning/evaluate_koryo_contacts.py \
+  --motion geumgang --checkpoint <geumgang-checkpoint.pt> \
+  --condition clean --seed 42 --output-dir outputs/geumgang_contacts
+```
+
+Repeat full-motion evaluation with several independent seeds. The shared
+evaluation scripts retain their historical filenames; `--motion` selects the
+reference, model identity and full-motion duration.
+`Cyclo-Mimic-K1-Rev1-Geumgang` is the ordinary tracking/play task;
+`Cyclo-Mimic-K1-Rev1-Geumgang-Curriculum` is the ordinary tracking curriculum
+without the added contact rewards. Neither replaces the ContactV2-Max command above.
+
+#### New Taegeuk 1–8 collision-only references
+
+The new desktop references are registered separately from the original Taegeuk
+1/2 tasks. Each `taeguek_01` through `taeguek_08` asset folder contains the
+original headered CSV, converted numeric CSV and 60 Hz NPZ. Training uses the
+separate `k1_taeguekXX_collision_only_50hz.npz`, resampled from the timestamped
+CSV to match the 50 Hz control rate. Timing is preserved to within one control
+sample; no extra smoothing or speed limiting is applied. Import hashes and
+conversion details are in `source/assets/motions/K1_rev1/taeguek_collision_only_import.json`.
+
+| Chapter | Training frames (50 Hz) | Motion duration |
+| --- | ---: | ---: |
+| 1 | 1,582 | 31.62 s |
+| 2 | 1,647 | 32.92 s |
+| 3 | 1,871 | 37.40 s |
+| 4 | 1,871 | 37.40 s |
+| 5 | 2,017 | 40.32 s |
+| 6 | 2,124 | 42.46 s |
+| 7 | 2,320 | 46.38 s |
+| 8 | 2,519 | 50.36 s |
+
+Start fresh **inside the container**; change `--chapter` to any number 1–8:
+
+```bash
+cd /workspace/cyclo_mjlab
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -u scripts/reinforcement_learning/train_taeguek_contact_max.py \
+  --chapter 1 \
+  --num-envs 2048 \
+  --max-iterations 60000
+```
+
+This selects `Cyclo-Mimic-K1-Rev1-Taeguek01-CollisionOnly-ContactV2-Max`
+(or `02`–`08`) with the same contact rewards and PPO settings as Koryo:
+LR 0.001/adaptive, entropy 0.005, initial std 1.0, full noise/DR/push ranges
+from the first reset, and a 1,000-update contact-transition reward ramp.
+Disturbance stage stays at 8. Training episodes are capped at 30 s and sample
+different reference start times; full-motion evaluation covers the longer
+durations above. Logs have separate `taeguekXX_collision_only_contact_max_from_scratch`
+run names under `logs/rsl_rl/k1_mimic/`.
+
+Add `--dry-run` to inspect the selected motion/settings without starting
+training. Add `--checkpoint <same-chapter-checkpoint.pt>` to resume with
+optimizer, contact ramp and sampler state retained; `--max-iterations` then
+means additional updates. Chapter-specific identities reject checkpoints from
+other chapters and the old Taegeuk 1/2 references.
+
+Evaluate or play a saved chapter 1 policy (replace the chapter and checkpoint
+for other motions):
+
+```bash
+python scripts/reinforcement_learning/evaluate_koryo.py \
+  --motion taeguek01_collision_only --checkpoint <checkpoint.pt> \
+  --condition train --full-motion --trials 32 --seed 42 \
+  --noise-scale 1 --push-scale 1 --output outputs/taeguek01_collision_only_full.json
+python scripts/reinforcement_learning/evaluate_koryo_contacts.py \
+  --motion taeguek01_collision_only --checkpoint <checkpoint.pt> \
+  --condition clean --seed 42 --output-dir outputs/taeguek01_collision_only_contacts
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -u scripts/reinforcement_learning/play.py \
+  Cyclo-Mimic-K1-Rev1-Taeguek01-CollisionOnly-ContactV2-Max \
+  --checkpoint-file <checkpoint.pt> --num-envs 1 --device cuda:0 \
+  --viewer viser --viewer-distance 3.5 \
+  --reference-ghost-offset '(0, 1.2, 0)' --export-policy False
+```
+
+Each chapter also has ordinary tracking (`...-CollisionOnly`) and ordinary
+curriculum (`...-CollisionOnly-Curriculum`) tasks. The ordinary curriculum
+uses the shared curriculum driver with `--motion taeguek01_collision_only`
+through `taeguek08_collision_only`; it does not add the ContactV2 rewards.
+The original `Cyclo-Mimic-K1-Rev1-Taeguek01`/`Taeguek02` tasks retain their
+original references for existing checkpoints.
+
 #### ContactV2 with automatic disturbance curriculum
 
 Use this driver to retain the ContactV2 rewards while progressively introducing

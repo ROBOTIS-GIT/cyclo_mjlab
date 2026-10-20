@@ -1,0 +1,13 @@
+{
+  "source_host": "hc-desktop",
+  "source_path": "/home/hc/robotis_mujoco/policy/Mimic/Yonsei_University/k1_mimic_tkd_geumgang/params/tkd_geumgang.csv",
+  "source_sha256": "38f4808efa48074ea9bca7e33b1258481ffe857610c728eb057fb37b32acfded",
+  "frames": 4994,
+  "fps": 50,
+  "duration_s": 99.86,
+  "fps_evidence": "source_sim2real.yaml step_dt=0.02; source policy_loader.cpp reads numeric CSV at 1 / step_dt",
+  "root_quaternion_input": "xyzw (confirmed by source reference_motion.cpp)",
+  "joint_order": "source_sim2real.yaml policy_joints, verified against K1_REV1_MOTION_CSV_JOINT_NAMES",
+  "conversion": "python -m scripts.tools.motion.csv_to_npz -f source/assets/motions/K1_rev1/geumgang/tkd_geumgang.csv --input_fps 50 --output_fps 50 --root-quat-order xyzw",
+  "smoothing": false
+}

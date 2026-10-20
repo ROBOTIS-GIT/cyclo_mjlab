@@ -34,6 +34,8 @@ class MotionCurriculum:
 
 
 MOTIONS = {
+  "geumgang": MotionCurriculum("geumgang", "Cyclo-Mimic-K1-Rev1-Geumgang",
+    SRC_PATH / "assets/motions/K1_rev1/geumgang/tkd_geumgang_converted.npz"),
   "koryo": MotionCurriculum("koryo", "Cyclo-Mimic-K1-Rev1-Koryo",
     SRC_PATH / "assets/motions/K1_rev1/koryo/k1_koryo_converted.npz"),
   "taeguek01": MotionCurriculum("taeguek01", "Cyclo-Mimic-K1-Rev1-Taeguek01",
@@ -41,6 +43,14 @@ MOTIONS = {
   "taeguek02": MotionCurriculum("taeguek02", "Cyclo-Mimic-K1-Rev1-Taeguek02",
     SRC_PATH / "assets/motions/K1_rev1/taeguek_02/k1_taeguek02_converted.npz"),
 }
+
+# Versioned identities preserve the original Taegeuk 1/2 tasks and checkpoints.
+TAEGUEK_COLLISION_ONLY_NAMES = tuple(f'taeguek{i:02d}_collision_only' for i in range(1, 9))
+for _chapter, _name in enumerate(TAEGUEK_COLLISION_ONLY_NAMES, start=1):
+  MOTIONS[_name] = MotionCurriculum(
+    _name, f'Cyclo-Mimic-K1-Rev1-Taeguek{_chapter:02d}-CollisionOnly',
+    SRC_PATH / f'assets/motions/K1_rev1/taeguek_{_chapter:02d}/k1_taeguek{_chapter:02d}_collision_only_50hz.npz',
+  )
 
 
 def motion_identity(name, trajectory=None):

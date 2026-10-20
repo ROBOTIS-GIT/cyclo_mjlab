@@ -8,16 +8,17 @@ from .koryo_schedule import migrate_state
 
 
 class KoryoPerformanceRunner(MjlabOnPolicyRunner):
+  motion_name = "koryo"
   checkpoint_version = 1
   disturbance_curriculum = False
 
   def _restore_difficulty(self, infos):
     if self.disturbance_curriculum:
       cmd = self.env.unwrapped.command_manager.get_term('reference_trajectory')
-      cmd.load_curriculum_state_dict(migrate_state(infos.get('koryo_curriculum')))
-    elif infos.get('koryo_performance', {}).get('disturbance_curriculum'):
+      cmd.load_curriculum_state_dict(migrate_state(infos.get(self.motion_name + '_curriculum')))
+    elif infos.get(self.motion_name + '_performance', {}).get('disturbance_curriculum'):
       raise ValueError('Resume this checkpoint with the ContactV2-Curriculum task.')
-    elif infos.get('koryo_performance', {}).get('fixed_disturbance_stage') is not None:
+    elif infos.get(self.motion_name + '_performance', {}).get('fixed_disturbance_stage') is not None:
       raise ValueError('Resume this checkpoint with the ContactV2-Max task.')
 
   def resumes_performance_state(self, state):
@@ -33,8 +34,8 @@ class KoryoPerformanceRunner(MjlabOnPolicyRunner):
       return super().load(path,load_cfg,strict,map_location)
     checkpoint = torch.load(path,map_location='cpu',weights_only=False)
     infos = checkpoint.get('infos') or {}
-    validate_checkpoint_motion(infos,'koryo')
-    resume = self.resumes_performance_state(infos.get('koryo_performance'))
+    validate_checkpoint_motion(infos, self.motion_name)
+    resume = self.resumes_performance_state(infos.get(self.motion_name + '_performance'))
     if resume and self.checkpoint_version == 2:
       steps = infos.get('contact_training_steps')
       if type(steps) is not int or steps < 0:
@@ -74,19 +75,19 @@ class KoryoPerformanceRunner(MjlabOnPolicyRunner):
   def save(self,path,infos=None):
     infos = dict(infos or {})
     cmd = self.env.unwrapped.command_manager.get_term('reference_trajectory')
-    infos['motion_identity'] = motion_identity('koryo',cmd.cfg.trajectory_file)
-    infos['koryo_performance'] = {'version':self.checkpoint_version,'objective':'foot_contact_quality','fixed_noise_scale':0.25,'push_scale':0.0}
+    infos['motion_identity'] = motion_identity(self.motion_name,cmd.cfg.trajectory_file)
+    infos[self.motion_name + '_performance'] = {'version':self.checkpoint_version,'objective':'foot_contact_quality','fixed_noise_scale':0.25,'push_scale':0.0}
     if self.disturbance_curriculum:
-      infos['koryo_curriculum'] = cmd.curriculum_state_dict()
-      infos['koryo_performance'] = {
+      infos[self.motion_name + '_curriculum'] = cmd.curriculum_state_dict()
+      infos[self.motion_name + '_performance'] = {
         'version': self.checkpoint_version, 'objective': 'foot_contact_quality',
         'disturbance_curriculum': True,
       }
     if self.checkpoint_version == 2:
       infos['contact_training_steps'] = self.env.unwrapped.common_step_counter
     if getattr(self, 'fixed_disturbance_stage', None) is not None:
-      infos['koryo_curriculum'] = cmd.curriculum_state_dict()
-      infos['koryo_performance'] = {
+      infos[self.motion_name + '_curriculum'] = cmd.curriculum_state_dict()
+      infos[self.motion_name + '_performance'] = {
         'version': self.checkpoint_version, 'objective': 'foot_contact_quality',
         'fixed_disturbance_stage': self.fixed_disturbance_stage,
         'fixed_noise_scale': 1.0, 'push_scale': 1.0,
@@ -121,8 +122,13 @@ class KoryoContactMaxRunner(KoryoContactV2Runner):
     return True
 
   def _restore_difficulty(self, infos):
-    state = migrate_state(infos.get('koryo_curriculum'))
+    state = migrate_state(infos.get(self.motion_name + '_curriculum'))
     if state['difficulty_stage'] != self.fixed_disturbance_stage:
       raise ValueError('Full-disturbance checkpoint must retain stage 8.')
     cmd = self.env.unwrapped.command_manager.get_term('reference_trajectory')
     cmd.load_curriculum_state_dict(state)
+
+
+class GeumgangContactMaxRunner(KoryoContactMaxRunner):
+  """Reuse ContactV2-Max while keeping Geumgang checkpoint identity separate."""
+  motion_name = "geumgang"
