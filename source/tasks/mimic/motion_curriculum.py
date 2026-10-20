@@ -38,6 +38,11 @@ TAEGUEK_TRAJECTORIES = {
   / f"k1_taeguek{chapter:02d}_collision_only_50hz_converted.npz"
   for chapter in range(1, 9)
 }
+# User-selected arm de-jitter/collision correction V1; unchanged 50 Hz timing.
+TAEGUEK_TRAJECTORIES[7] = (
+  SRC_PATH / "assets/motions/K1_rev1/taeguek_07"
+  / "k1_taeguek07_arm_corrected_v1_50hz_converted.npz"
+)
 
 
 MOTIONS = {
