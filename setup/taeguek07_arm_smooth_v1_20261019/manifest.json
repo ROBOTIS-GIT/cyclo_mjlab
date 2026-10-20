@@ -1,0 +1,15 @@
+{
+  "source_policy": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_complete/taeguek_07",
+  "source_backup": "/home/hc/Desktop/server02_backup_20261019/cyclo_mjlab/setup/taeguek3478_refinement_20261019/exports/t7_targeted_v3_9999_manual_20261019_010655_5621/checkpoint/model_9999.pt",
+  "files": {
+    "refinement.py": "646e75140d4a6bbd94c3fa6ed6665cde331fe6abb20506514e722ee99262513e",
+    "targeted_base.py": "c223bb1d69fe4ce0724f4a9b98c1a7834212fe21eee10dbb3bebe0d64b8d9f6d",
+    "entry_t7.npz": "4b9dd627c6b26188200538426ac0286864e6912d72f8029588a924e58bdf7d7e",
+    "source/model_9999.pt": "67c2f77033b43823e132f6ba136b11023d413eb38934e7178ec1ffcdb95b4704",
+    "launch.py": "27a14db5447430bd712263506f76f0bdba5015d976a0a1b4ce51eddce1d5ac78",
+    "train.py": "5b0efdce27c2a8b48cbef45429edeaaca4cd00dd2cdeccda4e421afc005805ed",
+    "test_rewards.py": "250b7551ff777ed66f1f8fce55676a540be52780f57dd5f49d6fe44ca9076b66",
+    "preflight.py": "36a291ee60d9118038f0da6b7cc07ae77f7c729165d91fe2d1f78bbaf61ee5d7",
+    "smoke_check.py": "ae0a7a9740a00a87ed0465d1d7b2c4625dfcfc6e16853b6dd5b7bd179f74a54c"
+  }
+}

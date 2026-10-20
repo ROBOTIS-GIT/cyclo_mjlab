@@ -1,0 +1,13 @@
+{
+  "source": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek.csv",
+  "source_sha256": "0d6ad3dc173faeb0496a86a42eb3d21c0276a15e93d584182a24f95a4723380b",
+  "numeric_csv": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_60hz_numeric.csv",
+  "input_fps": 60,
+  "input_frames": 4720,
+  "duration_s": 78.65,
+  "output_fps": 50,
+  "smoothing": false,
+  "joint_order_verified": true,
+  "root_quaternion_conversion": "wxyz to xyzw",
+  "training_started": false
+}

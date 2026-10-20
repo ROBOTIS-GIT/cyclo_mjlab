@@ -1,0 +1,20 @@
+{
+  "task": "Cyclo-Mimic-K1-Rev1-Taebaek-XY",
+  "npz": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_speed100_contact_corrected_50hz.npz",
+  "sha256": "0c9f0b8e28acb6c7c7a9dcfee1a0670966d56032c4b514872f1c35b405657f9f",
+  "source_fps": 100,
+  "fps": 50.0,
+  "frames": 2360,
+  "last_timestamp_s": 47.18,
+  "physics_hz": 200.0,
+  "control_hz": 50.0,
+  "train_and_play_connected": true,
+  "reference_loader_passed": true,
+  "run_name": "taebaek_xy_speed100_contact_corrected",
+  "resume": false,
+  "max_iterations": 30000,
+  "global_smoothing": false,
+  "speed_or_acceleration_limits": false,
+  "local_contact_correction": true,
+  "training_started": false
+}

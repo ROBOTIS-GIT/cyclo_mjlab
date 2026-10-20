@@ -1,0 +1,16 @@
+{
+  "task": "Cyclo-Mimic-K1-Rev1-Taebaek-XY",
+  "npz": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_umr_50hz_converted.npz",
+  "frames": 3933,
+  "fps": 50,
+  "last_timestamp_s": 78.64,
+  "source_last_timestamp_s": 78.65,
+  "max_joint_resampling_error_rad": 9.536747436200699e-08,
+  "physics_hz": 200,
+  "control_hz": 50,
+  "train_and_play_connected": true,
+  "reference_loader_passed": true,
+  "smoothing": false,
+  "speed_or_acceleration_limits": false,
+  "training_started": false
+}
