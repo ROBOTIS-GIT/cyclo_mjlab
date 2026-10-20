@@ -1,0 +1,27 @@
+{
+  "task": "Cyclo-Mimic-K1-Rev1-Taebaek-XY",
+  "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/taebaek_arm_refinement/k1_taebaek_arm_refined_50hz_converted.npz",
+  "host_npz": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_arm_refined_50hz_converted.npz",
+  "container_npz": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_arm_refined_50hz_converted.npz",
+  "host_csv": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taebaek/k1_taebaek_arm_refined_50hz_converted.csv",
+  "sha256": {
+    "npz": "6145604652ebb3aaa8fabf7be7682ff04ddea9ae1d33c11f17936127b04c47f9",
+    "csv": "ff30a8e750bef299144fb040f9929d8821bb0095c1fd8f2bce72a2e42f4848d5"
+  },
+  "canonical_entry": "/home/hc/robotis/cyclo_mjlab/setup/taebaek_local_20261018/train_taebaek.py",
+  "new_entry": "/home/hc/robotis/cyclo_mjlab/setup/taebaek_arm_refined_20261020/train_taebaek.py",
+  "backup": "/home/hc/robotis/cyclo_mjlab/setup/taebaek_arm_refined_20261020/train_taebaek_before.py",
+  "training_started": true,
+  "fps": 50,
+  "frames": 2360,
+  "duration_s": 47.18,
+  "container": "cyclo_taebaek_arm_refined_20261020",
+  "run_name": "taebaek_arm_refined_scratch50000_20261020",
+  "reference_loader_passed": true,
+  "run_dir": "/home/hc/robotis/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-20_02-35-38_taebaek_arm_refined_scratch50000_20261020",
+  "latest_observed_iteration": 13,
+  "status": "stopped_by_user",
+  "training_running": false,
+  "manual_container": "cyclo_taebaek_manual_20261020",
+  "latest_saved_checkpoint": "logs/rsl_rl/k1_mimic/2026-10-20_02-35-38_taebaek_arm_refined_scratch50000_20261020/model_0.pt"
+}

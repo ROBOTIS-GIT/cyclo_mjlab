@@ -1,4 +1,4 @@
-name: cyclo_mjlab
+name: ${CYCLO_MJLAB_PROJECT:-cyclo_mjlab}
 
 services:
   cyclo_mjlab:
@@ -6,12 +6,13 @@ services:
     container_name: ${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab}
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: ${CYCLO_MJLAB_DOCKERFILE:-docker/Dockerfile}
       args:
         PYTHON_BASE_IMAGE: ${PYTHON_BASE_IMAGE:-python:3.11-slim-bookworm}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
         PROJECT_PATH: /workspace/cyclo_mjlab
+    restart: ${CYCLO_MJLAB_RESTART:-no}
     init: true
     stdin_open: true
     tty: true

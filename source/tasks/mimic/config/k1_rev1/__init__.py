@@ -40,10 +40,14 @@ from .geumgang_env_cfg import (
   k1_rev1_geumgang_env_cfg, k1_rev1_geumgang_curriculum_env_cfg,
   k1_rev1_geumgang_contact_max_env_cfg, k1_rev1_geumgang_contact_max_ppo_cfg, k1_rev1_geumgang_ppo_cfg,
 )
+
+from .koryo_support_max_env_cfg import k1_rev1_koryo_support_max_env_cfg, k1_rev1_koryo_support_max_ppo_cfg
+from source.tasks.mimic.performance_runner import KoryoSupportMaxRunner
 from .taeguek01_env_cfg import k1_rev1_taeguek01_env_cfg
 from .taeguek01_curriculum_env_cfg import k1_rev1_taeguek01_curriculum_env_cfg
 from .taeguek02_env_cfg import k1_rev1_taeguek02_env_cfg
 from .taeguek02_curriculum_env_cfg import k1_rev1_taeguek02_curriculum_env_cfg
+from .taeguek_env_cfg import k1_rev1_taeguek_env_cfg
 from .umr_getup_env_cfg import k1_rev1_umr_getup_env_cfg
 from .umr_stand_up_env_cfg import k1_rev1_umr_stand_up_env_cfg
 from .umr_stand_up_back_env_cfg import k1_rev1_umr_stand_up_back_env_cfg
@@ -219,6 +223,14 @@ register_mjlab_task(
 )
 
 register_mjlab_task(
+  task_id='Cyclo-Mimic-K1-Rev1-Koryo-SupportV3-Max',
+  env_cfg=k1_rev1_koryo_support_max_env_cfg(),
+  play_env_cfg=k1_rev1_koryo_support_max_env_cfg(play=True),
+  rl_cfg=k1_rev1_koryo_support_max_ppo_cfg(),
+  runner_cls=KoryoSupportMaxRunner,
+)
+
+register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-Taeguek01",
   env_cfg=k1_rev1_taeguek01_env_cfg(),
   play_env_cfg=k1_rev1_taeguek01_env_cfg(play=True),
@@ -291,3 +303,34 @@ register_mjlab_task(
   env_cfg=soft_entry_dr_env_cfg(), play_env_cfg=soft_entry_dr_env_cfg(play=True),
   rl_cfg=soft_entry_dr_ppo_cfg(), runner_cls=SoftEntryDRRunner,
 )
+
+for chapter in range(3, 9):
+  register_mjlab_task(
+    task_id=f"Cyclo-Mimic-K1-Rev1-Taeguek{chapter:02d}",
+    env_cfg=k1_rev1_taeguek_env_cfg(chapter),
+    play_env_cfg=k1_rev1_taeguek_env_cfg(chapter, play=True),
+    rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
+  )
+
+# Separate scratch tasks for phase-aware support refinement, chapters 2–8.
+from .taeguek_support_env_cfg import k1_rev1_taeguek_support_env_cfg, k1_rev1_taeguek_support_ppo_cfg
+for _support_chapter in range(2,9):
+  register_mjlab_task(
+    task_id=f"Cyclo-Mimic-K1-Rev1-Taeguek{_support_chapter:02d}-SupportV1",
+    env_cfg=k1_rev1_taeguek_support_env_cfg(_support_chapter),
+    play_env_cfg=k1_rev1_taeguek_support_env_cfg(_support_chapter,play=True),
+    rl_cfg=k1_rev1_taeguek_support_ppo_cfg(),
+  )
+
+
+# Isolated refinement tasks: V1 configurations and running jobs stay unchanged.
+from .taeguek_support_v2_env_cfg import k1_rev1_taeguek_support_v2_env_cfg, k1_rev1_taeguek_support_v2_ppo_cfg
+from source.tasks.mimic.taeguek_support_v2_runner import TaegeukSupportV2Runner
+for _v2_chapter in (4, 5):
+  register_mjlab_task(
+    task_id=f'Cyclo-Mimic-K1-Rev1-Taeguek{_v2_chapter:02d}-SupportV2',
+    env_cfg=k1_rev1_taeguek_support_v2_env_cfg(_v2_chapter),
+    play_env_cfg=k1_rev1_taeguek_support_v2_env_cfg(_v2_chapter, play=True),
+    rl_cfg=k1_rev1_taeguek_support_v2_ppo_cfg(),
+    runner_cls=TaegeukSupportV2Runner,
+  )

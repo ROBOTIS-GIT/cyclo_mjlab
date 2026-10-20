@@ -23,7 +23,9 @@ from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
 from .base_env_cfg import k1_rev1_mimic_env_cfg
 
 TRAJECTORY_FILE = (
-  SRC_PATH / "assets" / "motions" / "K1_rev1" / "koryo" / "k1_koryo_converted.npz"
+  # Generated from the corrected 50 Hz UMR CSV without additional smoothing.
+  SRC_PATH / "assets" / "motions" / "K1_rev1" / "koryo_support_v2"
+  / "k1_koryo_support_v2_50hz_converted.npz"
 )
 
 

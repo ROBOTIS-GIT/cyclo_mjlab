@@ -1,0 +1,18 @@
+{
+  "selected_motion": "viewer 8814 center / previous correction V1",
+  "time": "2026-10-19T20:15:50.805197",
+  "files": [
+    {
+      "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/taeguek07_arm_correction/k1_taeguek07_arm_corrected_50hz_converted.npz",
+      "installed": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_arm_corrected_v1_50hz_converted.npz",
+      "sha256": "877390d22ab136a8fc99726e240c09e73efdd2d2b9ff4d4524a6c1c90c0346df"
+    },
+    {
+      "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/taeguek07_arm_correction/k1_taeguek07_arm_corrected_50hz_converted.csv",
+      "installed": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_arm_corrected_v1_50hz_converted.csv",
+      "sha256": "271cde59f39746c378199fc4a7df1971a10a5919dc2123932274feb81fa46f9a"
+    }
+  ],
+  "backup": "/home/hc/robotis/cyclo_mjlab/setup/taeguek07_motion_v1_connection_20261019/before",
+  "training_started": false
+}

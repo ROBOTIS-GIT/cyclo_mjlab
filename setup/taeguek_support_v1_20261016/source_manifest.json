@@ -1,0 +1,13 @@
+{
+  "source/tasks/mimic/mdp/taeguek_support.py": "6c568dbf8aa3732222c015dd39a2db5e60b4b68c48e32608a1e543f19ea13ee1",
+  "source/tasks/mimic/mdp/support_contacts.py": "dea9fee59eeab03b2067c57c2a7e557e1528672f4c85fe8cf9914d87a940f652",
+  "source/tasks/mimic/mdp/contact_transitions.py": "7589335b9214cd9c6e166917622ecf2f77aef85a53f56f653e8ac31a71e4ca34",
+  "source/tasks/mimic/mdp/performance_contacts.py": "c69ffbc124b4804be2b654ddefcf9ac3693245a043d84bf12da01a3293a05439",
+  "source/tasks/mimic/config/k1_rev1/taeguek_support_env_cfg.py": "ae373d4e67277b9a17cf121801f07f33c3fdfe0049fe39292558a03afc58815a",
+  "source/tasks/mimic/config/k1_rev1/taeguek_env_cfg.py": "7df1d1cf862e9e43bd30f1fadc70946ce63f05db40b87d87816f193139c6d90f",
+  "source/tasks/mimic/config/k1_rev1/__init__.py": "e9c1f2c6e559301fd7018dacf6993f6449271291ca29bf0f3b213f0fe920c2db",
+  "scripts/reinforcement_learning/train_taeguek_02_to_05_support.sh": "c7bcf7593145f196323656279fc12d017e39edf3082ebbc101476672df4743c1",
+  "scripts/reinforcement_learning/check_taeguek_support.py": "69ba08d1c4da5e5ac99ac466771c01b11ba87455f11a2d2cee0d989a9631622d",
+  "docs/taeguek_support_v1.md": "26d1439f3d8a79c9e5ad3e5af88f7ac6f6d15ac6ab4178310fd031e3c7fe99a9",
+  "tests/test_taeguek_support.py": "31f779243b974ca0dc3064fabd4aff4169a894a52cc18b3dbfd854b1b16b76d0"
+}

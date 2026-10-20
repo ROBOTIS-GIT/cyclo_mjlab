@@ -204,7 +204,9 @@
       "training_duration_s": 31.62,
       "source_fk_error_m": 9.023138026044247e-08,
       "source_fk_error_rad": 2.3397622978709326e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_01/k1_taeguek01_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "c3a5c192d6ec4827641f4fb3f8fcfbbf639fcd861d8d6ff87984bd0e2750de18"
     },
     {
       "chapter": 2,
@@ -216,7 +218,9 @@
       "training_duration_s": 32.92,
       "source_fk_error_m": 8.682974325126805e-08,
       "source_fk_error_rad": 2.46582401748125e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "bdc0521da3322908b37a65631048dfd85001e53c9ebfd908912dce1c3a1196ae"
     },
     {
       "chapter": 3,
@@ -228,7 +232,9 @@
       "training_duration_s": 37.4,
       "source_fk_error_m": 9.74305311385758e-08,
       "source_fk_error_rad": 2.3752214300772048e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_03/k1_taeguek03_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "5bdd7011ef6505dac0e4b98df6f9fe23cc41f64cae35fc0bc88513dbf2f2ec3b"
     },
     {
       "chapter": 4,
@@ -240,7 +246,9 @@
       "training_duration_s": 37.4,
       "source_fk_error_m": 1.5252835177719453e-07,
       "source_fk_error_rad": 2.3110878726938973e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_04/k1_taeguek04_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "c85e20993a523ed9ff497755ba1a6820e6d90e7c07fb29b970266db4eea56153"
     },
     {
       "chapter": 5,
@@ -252,7 +260,9 @@
       "training_duration_s": 40.32,
       "source_fk_error_m": 1.372952798568051e-07,
       "source_fk_error_rad": 2.2453740682214933e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_05/k1_taeguek05_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "507262026606e57b0dc4f455611b0775c8b5101ff4d304b029f9944054eb112d"
     },
     {
       "chapter": 6,
@@ -264,7 +274,9 @@
       "training_duration_s": 42.46,
       "source_fk_error_m": 1.267214627749425e-07,
       "source_fk_error_rad": 2.3004061954271617e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_06/k1_taeguek06_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "7710b1de5bb5e65a40c89d1f1501e5cc21b3624d03d12a0f62414c927b6f0ff0"
     },
     {
       "chapter": 7,
@@ -276,7 +288,9 @@
       "training_duration_s": 46.38,
       "source_fk_error_m": 1.4002522137282025e-07,
       "source_fk_error_rad": 2.3277638857775604e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_07/k1_taeguek07_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "153836e7f7d68d60e77935a3d0b13bed741fe1db654879bb0763e82854ab369e"
     },
     {
       "chapter": 8,
@@ -288,8 +302,11 @@
       "training_duration_s": 50.36,
       "source_fk_error_m": 1.4447477486184737e-07,
       "source_fk_error_rad": 2.2921027192690932e-07,
-      "training_npz": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_50hz.npz"
+      "training_npz": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_laptop_50hz.npz",
+      "training_csv": "source/assets/motions/K1_rev1/taeguek_08/k1_taeguek08_collision_only_laptop_50hz.csv",
+      "training_npz_sha256": "106025ada3231c384c63f7dd40503b944026c704970ea814d4930a291e53792e"
     }
   ],
-  "timing_note": "Source 60 Hz preserved; separate 50 Hz training files use the original timestamps, no smoothing or speed limiting. Final interval truncation is less than one 20 ms sample."
+  "timing_note": "Source 60 Hz preserved; separate 50 Hz training files use the original timestamps, no smoothing or speed limiting. Final interval truncation is less than one 20 ms sample.",
+  "merge_note": "Laptop numeric 50 Hz CSV/NPZ pairs renamed on 2026-10-20 to distinguish desktop headered CSV references. NPZ bytes and checkpoint motion identities are unchanged."
 }

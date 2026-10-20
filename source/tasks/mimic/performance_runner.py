@@ -10,6 +10,7 @@ from .koryo_schedule import migrate_state
 class KoryoPerformanceRunner(MjlabOnPolicyRunner):
   motion_name = "koryo"
   checkpoint_version = 1
+  checkpoint_objective = 'foot_contact_quality'
   disturbance_curriculum = False
 
   def _restore_difficulty(self, infos):
@@ -36,7 +37,7 @@ class KoryoPerformanceRunner(MjlabOnPolicyRunner):
     infos = checkpoint.get('infos') or {}
     validate_checkpoint_motion(infos, self.motion_name)
     resume = self.resumes_performance_state(infos.get(self.motion_name + '_performance'))
-    if resume and self.checkpoint_version == 2:
+    if resume and self.checkpoint_version >= 2:
       steps = infos.get('contact_training_steps')
       if type(steps) is not int or steps < 0:
         raise ValueError('Invalid ContactV2 training step counter.')
@@ -46,7 +47,7 @@ class KoryoPerformanceRunner(MjlabOnPolicyRunner):
     if resume:
       self.current_learning_iteration += 1
       self.alg.learning_rate = self.alg.optimizer.param_groups[0]['lr']
-      if self.checkpoint_version == 2:
+      if self.checkpoint_version >= 2:
         self.env.unwrapped.common_step_counter = int(infos['contact_training_steps'])
     else:
       self.current_learning_iteration = 0
@@ -76,19 +77,19 @@ class KoryoPerformanceRunner(MjlabOnPolicyRunner):
     infos = dict(infos or {})
     cmd = self.env.unwrapped.command_manager.get_term('reference_trajectory')
     infos['motion_identity'] = motion_identity(self.motion_name,cmd.cfg.trajectory_file)
-    infos[self.motion_name + '_performance'] = {'version':self.checkpoint_version,'objective':'foot_contact_quality','fixed_noise_scale':0.25,'push_scale':0.0}
+    infos[self.motion_name + '_performance'] = {'version':self.checkpoint_version,'objective':self.checkpoint_objective,'fixed_noise_scale':0.25,'push_scale':0.0}
     if self.disturbance_curriculum:
       infos[self.motion_name + '_curriculum'] = cmd.curriculum_state_dict()
       infos[self.motion_name + '_performance'] = {
-        'version': self.checkpoint_version, 'objective': 'foot_contact_quality',
+        'version': self.checkpoint_version, 'objective': self.checkpoint_objective,
         'disturbance_curriculum': True,
       }
-    if self.checkpoint_version == 2:
+    if self.checkpoint_version >= 2:
       infos['contact_training_steps'] = self.env.unwrapped.common_step_counter
     if getattr(self, 'fixed_disturbance_stage', None) is not None:
       infos[self.motion_name + '_curriculum'] = cmd.curriculum_state_dict()
       infos[self.motion_name + '_performance'] = {
-        'version': self.checkpoint_version, 'objective': 'foot_contact_quality',
+        'version': self.checkpoint_version, 'objective': self.checkpoint_objective,
         'fixed_disturbance_stage': self.fixed_disturbance_stage,
         'fixed_noise_scale': 1.0, 'push_scale': 1.0,
       }
@@ -132,3 +133,17 @@ class KoryoContactMaxRunner(KoryoContactV2Runner):
 class GeumgangContactMaxRunner(KoryoContactMaxRunner):
   """Reuse ContactV2-Max while keeping Geumgang checkpoint identity separate."""
   motion_name = "geumgang"
+
+
+class KoryoSupportMaxRunner(KoryoContactMaxRunner):
+  """Only this task's checkpoints may resume; old actors cannot warm-start it."""
+  checkpoint_version = 3
+  checkpoint_objective = 'support_contact_quality_v3'
+
+  def resumes_performance_state(self, state):
+    if (not state or state.get('version') != self.checkpoint_version
+        or state.get('objective') != self.checkpoint_objective
+        or state.get('fixed_disturbance_stage') != self.fixed_disturbance_stage):
+      raise ValueError('SupportV3-Max starts from scratch; only its own checkpoints can resume. '
+                       'Omit --checkpoint for the first run.')
+    return True

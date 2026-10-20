@@ -66,13 +66,26 @@ class TaegeukCollisionOnlyTests(unittest.TestCase):
             runner.load('wrong.pt')
           load.assert_not_called()
 
-  def test_legacy_taeguek_references_are_preserved(self):
+  def test_desktop_and_laptop_references_remain_separate(self):
     for chapter in [1,2]:
       legacy = MOTIONS[f'taeguek{chapter:02d}']
-      self.assertEqual(legacy.trajectory.name, f'k1_taeguek{chapter:02d}_converted.npz')
+      self.assertEqual(legacy.trajectory.name, f'k1_taeguek{chapter:02d}_collision_only_50hz_converted.npz')
+      self.assertTrue(legacy.trajectory.with_name(f'k1_taeguek{chapter:02d}_converted.npz').is_file())
+      self.assertEqual(load_env_cfg(legacy.task).commands['reference_trajectory'].trajectory_file,
+                       str(legacy.trajectory))
       with self.assertRaises(ValueError):
         validate_checkpoint_motion({'motion_identity':motion_identity(legacy.name)},
           TAEGUEK_COLLISION_ONLY_NAMES[chapter-1])
+
+  def test_laptop_npz_keeps_matching_numeric_csv(self):
+    for chapter, name in enumerate(TAEGUEK_COLLISION_ONLY_NAMES, 1):
+      with self.subTest(chapter=chapter):
+        path = MOTIONS[name].trajectory
+        self.assertEqual(path.name, f'k1_taeguek{chapter:02d}_collision_only_laptop_50hz.npz')
+        csv = np.loadtxt(path.with_suffix('.csv'), delimiter=',')
+        with np.load(path) as motion:
+          self.assertEqual(csv.shape, (len(motion['joint_pos']), 30))
+          np.testing.assert_allclose(csv[:, :3], motion['body_pos_w'][:, 0], atol=1e-6)
 
   def test_selector_rejects_invalid_chapter_and_too_few_environments(self):
     for chapter in [0,9]:

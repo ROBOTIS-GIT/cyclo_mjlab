@@ -27,12 +27,13 @@ def main():
   parser.add_argument('--checkpoint', required=True, type=Path)
   parser.add_argument('--output-dir', required=True, type=Path)
   parser.add_argument('--seed', default=42, type=int)
-  parser.add_argument('--condition', choices=('clean','play'), default='clean')
+  parser.add_argument('--condition', choices=('clean','play','train'), default='clean',
+                      help='train retains full observation/reset noise, randomization and pushes')
   parser.add_argument('--physics-dt', type=float, choices=(0.005,0.0025), default=0.005)
   args = parser.parse_args()
   identity = motion_identity(args.motion)
   task = MOTIONS[args.motion].task
-  cfg = load_env_cfg(task, play=True)
+  cfg = load_env_cfg(task, play=args.condition != 'train')
   cfg.sim.mujoco.timestep = args.physics_dt
   cfg.decimation = round(0.02/args.physics_dt)
   add_foot_sensors(cfg)
@@ -41,6 +42,7 @@ def main():
   cfg.episode_length_s = identity['frames']/identity['fps'] + 0.1
   cmdcfg = cfg.commands['reference_trajectory']
   cmdcfg.debug_vis = False
+  cmdcfg.start_from_zero = True
   if args.condition == 'clean':
     cfg.events = {}
     cmdcfg.reset_pose_noise = {}

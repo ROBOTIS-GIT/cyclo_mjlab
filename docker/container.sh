@@ -8,6 +8,7 @@ COMPOSE_FILE="${DOCKER_DIR}/compose.yaml"
 
 export HOST_UID="${HOST_UID:-$(id -u)}"
 export HOST_GID="${HOST_GID:-$(id -g)}"
+export CYCLO_MJLAB_PROJECT="${CYCLO_MJLAB_PROJECT:-cyclo_mjlab}"
 export CYCLO_MJLAB_IMAGE="${CYCLO_MJLAB_IMAGE:-cyclo-mjlab:latest}"
 export CYCLO_MJLAB_CONTAINER="${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab}"
 
@@ -53,6 +54,23 @@ check_host() {
   detect_compose
 }
 
+# A container name alone is not a workspace identity. Refuse cross-checkout
+# enter/start/stop operations before Compose can reuse or recreate that container.
+check_container_workspace() {
+  if ! docker container inspect "${CYCLO_MJLAB_CONTAINER}" >/dev/null 2>&1; then
+    return
+  fi
+  local mounted_path container_project
+  mounted_path="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/workspace/cyclo_mjlab"}}{{.Source}}{{end}}{{end}}' "${CYCLO_MJLAB_CONTAINER}")"
+  container_project="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "${CYCLO_MJLAB_CONTAINER}")"
+  if [[ "${mounted_path}" != "${PROJECT_PATH}" || "${container_project}" != "${CYCLO_MJLAB_PROJECT}" ]]; then
+    echo "[ERROR] Container '${CYCLO_MJLAB_CONTAINER}' belongs to another workspace/project." >&2
+    echo "[ERROR] Actual: ${mounted_path} (${container_project}); expected: ${PROJECT_PATH} (${CYCLO_MJLAB_PROJECT})." >&2
+    echo "[ERROR] Use distinct CYCLO_MJLAB_PROJECT, CYCLO_MJLAB_CONTAINER and CYCLO_MJLAB_IMAGE values." >&2
+    exit 1
+  fi
+}
+
 check_gpu() {
   if ! command -v nvidia-smi >/dev/null 2>&1; then
     echo "[ERROR] nvidia-smi was not found. Install the NVIDIA driver." >&2
@@ -87,7 +105,7 @@ prepare_host_directories() {
 compose() {
   (
     cd "${DOCKER_DIR}"
-    "${COMPOSE[@]}" -f "${COMPOSE_FILE}" "$@"
+    "${COMPOSE[@]}" -p "${CYCLO_MJLAB_PROJECT}" -f "${COMPOSE_FILE}" "$@"
   )
 }
 
@@ -181,6 +199,7 @@ main() {
   esac
 
   check_host
+  check_container_workspace
 
   case "${command}" in
     build)

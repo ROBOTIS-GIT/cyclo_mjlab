@@ -17,20 +17,13 @@
 """K1 Rev.1 Taeguek 01 Mimic environment configuration."""
 
 from mjlab.envs import ManagerBasedRlEnvCfg
-from source import SRC_PATH
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
+from source.tasks.mimic.motion_curriculum import TAEGUEK_TRAJECTORIES
 
-from .base_env_cfg import k1_rev1_mimic_env_cfg
+from .taeguek_env_cfg import k1_rev1_taeguek_env_cfg
 
-TRAJECTORY_FILE = (
-  SRC_PATH / "assets" / "motions" / "K1_rev1" / "taeguek_01" / "k1_taeguek01_converted.npz"
-)
+TRAJECTORY_FILE = TAEGUEK_TRAJECTORIES[1]
 
 
 def k1_rev1_taeguek01_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create the K1 Rev.1 Taeguek 01 Mimic configuration."""
-  cfg = k1_rev1_mimic_env_cfg(play=play)
-  reference_trajectory = cfg.commands["reference_trajectory"]
-  assert isinstance(reference_trajectory, ReferenceTrajectoryCommandCfg)
-  reference_trajectory.trajectory_file = str(TRAJECTORY_FILE)
-  return cfg
+  return k1_rev1_taeguek_env_cfg(1, play=play)

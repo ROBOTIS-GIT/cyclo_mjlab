@@ -1,0 +1,50 @@
+[
+  {
+    "chapter": 4,
+    "finite_steps": 64,
+    "coverage": [
+      {
+        "start": 14.63,
+        "end": 14.7,
+        "foot": 0,
+        "eligible": 1.0
+      },
+      {
+        "start": 4.735,
+        "end": 4.92,
+        "foot": 1,
+        "eligible": 1.0
+      }
+    ],
+    "support_frames": [
+      1365,
+      1313
+    ],
+    "kick_frames": [
+      76,
+      143
+    ],
+    "cache_and_partial_reset": true
+  },
+  {
+    "chapter": 5,
+    "finite_steps": 64,
+    "coverage": [
+      {
+        "start": 4.81,
+        "end": 4.87,
+        "foot": 1,
+        "eligible": 1.0
+      }
+    ],
+    "support_frames": [
+      1492,
+      1423
+    ],
+    "kick_frames": [
+      79,
+      139
+    ],
+    "cache_and_partial_reset": true
+  }
+]

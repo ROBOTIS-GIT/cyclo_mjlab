@@ -33,15 +33,27 @@ class MotionCurriculum:
     return self.name + "_best_full"
 
 
+TAEGUEK_TRAJECTORIES = {
+  chapter: SRC_PATH / "assets" / "motions" / "K1_rev1" / f"taeguek_{chapter:02d}"
+  / f"k1_taeguek{chapter:02d}_collision_only_50hz_converted.npz"
+  for chapter in range(1, 9)
+}
+# User-selected arm de-jitter/collision correction V1; unchanged 50 Hz timing.
+TAEGUEK_TRAJECTORIES[7] = (
+  SRC_PATH / "assets/motions/K1_rev1/taeguek_07"
+  / "k1_taeguek07_arm_corrected_v1_50hz_converted.npz"
+)
+
+
 MOTIONS = {
   "geumgang": MotionCurriculum("geumgang", "Cyclo-Mimic-K1-Rev1-Geumgang",
     SRC_PATH / "assets/motions/K1_rev1/geumgang/tkd_geumgang_converted.npz"),
   "koryo": MotionCurriculum("koryo", "Cyclo-Mimic-K1-Rev1-Koryo",
     SRC_PATH / "assets/motions/K1_rev1/koryo/k1_koryo_converted.npz"),
   "taeguek01": MotionCurriculum("taeguek01", "Cyclo-Mimic-K1-Rev1-Taeguek01",
-    SRC_PATH / "assets/motions/K1_rev1/taeguek_01/k1_taeguek01_converted.npz"),
+    TAEGUEK_TRAJECTORIES[1]),
   "taeguek02": MotionCurriculum("taeguek02", "Cyclo-Mimic-K1-Rev1-Taeguek02",
-    SRC_PATH / "assets/motions/K1_rev1/taeguek_02/k1_taeguek02_converted.npz"),
+    TAEGUEK_TRAJECTORIES[2]),
 }
 
 # Versioned identities preserve the original Taegeuk 1/2 tasks and checkpoints.
@@ -49,7 +61,7 @@ TAEGUEK_COLLISION_ONLY_NAMES = tuple(f'taeguek{i:02d}_collision_only' for i in r
 for _chapter, _name in enumerate(TAEGUEK_COLLISION_ONLY_NAMES, start=1):
   MOTIONS[_name] = MotionCurriculum(
     _name, f'Cyclo-Mimic-K1-Rev1-Taeguek{_chapter:02d}-CollisionOnly',
-    SRC_PATH / f'assets/motions/K1_rev1/taeguek_{_chapter:02d}/k1_taeguek{_chapter:02d}_collision_only_50hz.npz',
+    SRC_PATH / f'assets/motions/K1_rev1/taeguek_{_chapter:02d}/k1_taeguek{_chapter:02d}_collision_only_laptop_50hz.npz',
   )
 
 

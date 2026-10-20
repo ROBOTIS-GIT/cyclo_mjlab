@@ -75,6 +75,19 @@ environment are not required.
 After entering the container, the training and playback commands below can be
 run directly from `/workspace/cyclo_mjlab`.
 
+### Docker workspace identity
+
+This checkout defaults to Compose project/container `cyclo_mjlab` and image
+`cyclo-mjlab:latest`. The checkout root is mounted at `/workspace/cyclo_mjlab`.
+`container.sh` checks both the mounted host path and Compose project before
+operating on an existing container, so another checkout cannot be entered or
+recreated accidentally. For additional checkouts, set distinct
+`CYCLO_MJLAB_PROJECT`, `CYCLO_MJLAB_CONTAINER`, and `CYCLO_MJLAB_IMAGE` values.
+Because networking uses host mode, simultaneous viewers must use different ports.
+
+For the server02 training code, pinned Docker environment, and checkpoint
+restoration requirements, see [the migration notes](docs/server02_code_migration.md).
+
 ### Docker commands
 
 | Command | Description |
@@ -449,10 +462,10 @@ without the added contact rewards. Neither replaces the ContactV2-Max command ab
 
 #### New Taegeuk 1–8 collision-only references
 
-The new desktop references are registered separately from the original Taegeuk
-1/2 tasks. Each `taeguek_01` through `taeguek_08` asset folder contains the
+The laptop collision-only references are registered separately from the current
+desktop Taegeuk tasks. Each `taeguek_01` through `taeguek_08` asset folder contains the
 original headered CSV, converted numeric CSV and 60 Hz NPZ. Training uses the
-separate `k1_taeguekXX_collision_only_50hz.npz`, resampled from the timestamped
+separate `k1_taeguekXX_collision_only_laptop_50hz.npz`, resampled from the timestamped
 CSV to match the 50 Hz control rate. Timing is preserved to within one control
 sample; no extra smoothing or speed limiting is applied. Import hashes and
 conversion details are in `source/assets/motions/K1_rev1/taeguek_collision_only_import.json`.
@@ -515,8 +528,10 @@ Each chapter also has ordinary tracking (`...-CollisionOnly`) and ordinary
 curriculum (`...-CollisionOnly-Curriculum`) tasks. The ordinary curriculum
 uses the shared curriculum driver with `--motion taeguek01_collision_only`
 through `taeguek08_collision_only`; it does not add the ContactV2 rewards.
-The original `Cyclo-Mimic-K1-Rev1-Taeguek01`/`Taeguek02` tasks retain their
-original references for existing checkpoints.
+The base `Cyclo-Mimic-K1-Rev1-Taeguek01`/`Taeguek02` tasks use the current
+desktop references. The separate `-CollisionOnly` tasks retain the laptop NPZ
+bytes and checkpoint identities. Their numeric CSV/NPZ pairs use the
+`_collision_only_laptop_50hz` suffix to distinguish the desktop headered CSVs.
 
 #### ContactV2 with automatic disturbance curriculum
 
@@ -750,6 +765,14 @@ python scripts/tools/motion/umr_csv_to_npz.py \
   -f source/assets/motions/K1_rev1/umr_getup/k1_getup_12s_30hz.csv \
   --output_fps 50
 ```
+
+### Koryo support quality from scratch at full disturbances
+
+`Cyclo-Mimic-K1-Rev1-Koryo-SupportV3-Max` keeps the existing maximum noise,
+randomization and push settings from the first reset. It starts a new policy and
+adds persistent support-loss, unexpected liftoff and reference-aware sole-motion
+costs. Old checkpoints are rejected for training. See
+[the task configuration and evaluation guide](docs/koryo_support_v3_max.md).
 
 ## License
 
