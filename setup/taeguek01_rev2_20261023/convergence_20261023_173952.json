@@ -1,0 +1,69 @@
+{
+  "checked_at_kst": "2026-10-23T17:39:52.616861+09:00",
+  "run": "logs/rsl_rl/k1_rev2_taeguek01/2026-10-23_06-25-42_rev2_taeguek01_scratch",
+  "last_iteration": 6949,
+  "windows": {
+    "earlier": [
+      4500,
+      5000
+    ],
+    "previous": [
+      5950,
+      6450
+    ],
+    "recent": [
+      6450,
+      6950
+    ]
+  },
+  "metrics": {
+    "Train/mean_reward": {
+      "earlier": 114.78167538452148,
+      "previous": 120.91805592346192,
+      "recent": 122.02176104736328,
+      "recent_vs_previous_percent": 0.9127711452787235
+    },
+    "Train/mean_episode_length": {
+      "earlier": 1535.4011564941407,
+      "previous": 1568.7974191894532,
+      "recent": 1565.582040283203,
+      "recent_vs_previous_percent": -0.20495819708267193
+    },
+    "Metrics/reference_trajectory/error_body_pos": {
+      "earlier": 0.06370242543518544,
+      "previous": 0.05765139388293028,
+      "recent": 0.05720948924124241,
+      "recent_vs_previous_percent": -0.7665116347147172
+    },
+    "Metrics/reference_trajectory/error_body_rot": {
+      "earlier": 0.23776606899499894,
+      "previous": 0.21564680883288384,
+      "recent": 0.21109739595651628,
+      "recent_vs_previous_percent": -2.109659262286212
+    },
+    "Metrics/reference_trajectory/error_anchor_pos": {
+      "earlier": 0.4190639780163765,
+      "previous": 0.39520616430044175,
+      "recent": 0.38046076875925067,
+      "recent_vs_previous_percent": -3.731064156676822
+    },
+    "Loss/value": {
+      "earlier": 0.04413283380120993,
+      "previous": 0.039538783859461545,
+      "recent": 0.03929370667040348,
+      "recent_vs_previous_percent": -0.6198399777018415
+    },
+    "Policy/mean_std": {
+      "earlier": 0.2921732687354088,
+      "previous": 0.28363966470956803,
+      "recent": 0.2818890634775162,
+      "recent_vs_previous_percent": -0.6171919691995043
+    },
+    "Episode_Termination/mujoco_nan": {
+      "earlier": 0.0,
+      "previous": 0.0,
+      "recent": 0.0,
+      "recent_vs_previous_percent": null
+    }
+  }
+}

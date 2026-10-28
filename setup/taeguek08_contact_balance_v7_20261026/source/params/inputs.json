@@ -1,0 +1,13 @@
+{
+  "source_thread": "01a0f10b-949e-7e71-ad79-090ab6ea1136",
+  "source_directory": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/outputs/taeguek08_contact_refinement_v2",
+  "files_sha256": {
+    "k1_taeguek08_contact_v2_50hz.npz": "ccdda97a38b2e9fc5ed6926cc93cf71f86425117255841e33075d837ba7d64ac",
+    "k1_taeguek08_contact_v2_50hz.csv": "1570e3ee32990a1b3e3dcce5ecaa7efd355464a6e4d5d7d89ba909e9b19455dc",
+    "contact_phase_50hz.npz": "160117cd219c487753c6d0a65ac3528ccefdc49e13a99253568b041565cd70cc"
+  },
+  "status": "contact-corrected candidate; dynamic feasibility unresolved",
+  "fps": 50,
+  "frames": 2519,
+  "duration_s": 50.36
+}

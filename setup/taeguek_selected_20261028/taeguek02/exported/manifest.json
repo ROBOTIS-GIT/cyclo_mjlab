@@ -1,0 +1,79 @@
+{
+  "created_at": "2026-10-18T10:28:46.129431+00:00",
+  "source_host": "ubuntu@52.91.61.88",
+  "source_run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-16_09-34-41_taeguek02_support_v1_scratch_20261016_support_v1",
+  "checkpoint": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-16_09-34-41_taeguek02_support_v1_scratch_20261016_support_v1/model_29999.pt",
+  "checkpoint_iteration": 29999,
+  "checkpoint_sha256": "57236055515f40d16d3a710e65b4177afda61541a8b8a920a4478ed85e5520ee",
+  "selection": "explicit fixed checkpoint selected for final support audit",
+  "pt_format": "TorchScript inference model, not a training-resume checkpoint",
+  "source_motion_npz": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_50hz_converted.npz",
+  "source_motion_npz_sha256": "fb2f5957adf25b146f3ddb508be7df9b5ea2c489e99a82c6834159ecef628570",
+  "motion_csv": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev1/taeguek_02/k1_taeguek02_collision_only_50hz_converted.csv",
+  "motion_frames": 1647,
+  "motion_fps": 50.0,
+  "input": {
+    "name": "obs",
+    "shape": [
+      1,
+      124
+    ]
+  },
+  "output": {
+    "name": "actions",
+    "shape": [
+      1,
+      23
+    ]
+  },
+  "validation": {
+    "strict_actor_load": true,
+    "onnx_checker": "passed",
+    "test_inputs": 17,
+    "actor_vs_onnx_max_absolute_error": 1.049041748046875e-05,
+    "actor_vs_jit_max_absolute_error": 0.0,
+    "csv_vs_npz_max_absolute_error": {
+      "joint_position": 9.58525392391607e-08,
+      "root_position": 4.814343257386611e-08,
+      "root_quaternion": 3.011749272197051e-08
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "onnx": "1.23.2"
+  },
+  "files": {
+    "checkpoint/model_29999.pt": {
+      "bytes": 6346751,
+      "sha256": "57236055515f40d16d3a710e65b4177afda61541a8b8a920a4478ed85e5520ee"
+    },
+    "exported/policy.onnx": {
+      "bytes": 936720,
+      "sha256": "439ea8b4f51f599df34eaa4e3d3b97b0d8e45d6bf9625ae158f623636165e66b"
+    },
+    "exported/policy.onnx.data": {
+      "bytes": 924672,
+      "sha256": "1a4651b06b9b6ffd805348e9e98a2ba481ffcbe7950359bf82738a4f590eeb77"
+    },
+    "exported/policy.pt": {
+      "bytes": 937942,
+      "sha256": "dc283f5cc0582af5fe1758bcaa311b7204d50107b85745ba719308c395a0553c"
+    },
+    "params/agent.yaml": {
+      "bytes": 1078,
+      "sha256": "a131a7ea9b23fc1042dfc2af2e23dc49f586ace2458619b7042ca54e7df3a532"
+    },
+    "params/env.yaml": {
+      "bytes": 30300,
+      "sha256": "d3e1b8a2da03909ba0072f9d1827f7316980a5defc552952283222caba7e8b88"
+    },
+    "params/k1_taeguek02_collision_only_50hz_converted.csv": {
+      "bytes": 615548,
+      "sha256": "da06f6367bc2d33dbc6204e126e7f309a8e5036c7e91bc6a4b5ccdff5062a546"
+    },
+    "params/sim2real.yaml": {
+      "bytes": 5156,
+      "sha256": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14"
+    }
+  }
+}

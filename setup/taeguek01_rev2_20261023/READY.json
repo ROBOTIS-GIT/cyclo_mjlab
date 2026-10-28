@@ -1,0 +1,11 @@
+{
+  "branch": "feature-umr-taeguendo_1_test",
+  "task": "Cyclo-Mimic-K1-Rev2-Taeguek01",
+  "source_assets_copied_exactly": 31,
+  "production_started": false,
+  "user_will_launch": true,
+  "default_num_envs": 4096,
+  "default_iterations": 30000,
+  "gpu_container_restarted_to_restore_cuda": true,
+  "validation_file": "validation.json"
+}

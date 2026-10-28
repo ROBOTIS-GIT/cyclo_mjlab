@@ -1,0 +1,12 @@
+{
+  "status": "frozen validated LandingV3 final inputs",
+  "files_sha256": {
+    "motion/k1_taeguek07_arm_corrected_v1_50hz_converted.csv": "271cde59f39746c378199fc4a7df1971a10a5919dc2123932274feb81fa46f9a",
+    "motion/k1_taeguek07_arm_corrected_v1_50hz_converted.npz": "877390d22ab136a8fc99726e240c09e73efdd2d2b9ff4d4524a6c1c90c0346df",
+    "source/model_9999.pt": "c140a2b2843bd09a52d945fc3d9d600ba6ac7c56bdbdaac22f423627f356fdd8",
+    "source/params/agent.yaml": "c286a605cd9317b0239ed83de2c91ee19ee4fe7c6ae52df04cd0260155474894",
+    "source/params/env.yaml": "696b8b7c62e0714e9235341ca140b2c1f4c49acb905932971c99766a2e8c4d4e",
+    "source/params/sim2real.yaml": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14",
+    "entry_t7.npz": "4b9dd627c6b26188200538426ac0286864e6912d72f8029588a924e58bdf7d7e"
+  }
+}

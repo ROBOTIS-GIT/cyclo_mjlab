@@ -1,0 +1,97 @@
+{
+  "device": "cpu",
+  "num_envs": 8,
+  "policy_steps": 128,
+  "completed_updates": [
+    3,
+    4
+  ],
+  "optimizer_steps": [
+    60.0,
+    80.0
+  ],
+  "revision": "9c18623127325e952d24c46a1f239524fcfeb407e88f2bc76aabec9808d4fb7a",
+  "maximum_continuous_age_s": 2.999997854232788,
+  "metrics_mean": {
+    "arm_v4_joint": 0.029657982086064294,
+    "arm_v4_elbow": 0.0801476442720741,
+    "arm_v4_hand": 0.05948220775462687,
+    "arm_v4_orientation": 0.08247702370863408,
+    "arm_v4_hold_velocity": 0.023591234512423398,
+    "arm_v4_hold_acceleration": 0.029944237663585227,
+    "arm_v4_joint_error_rad": 0.0978299148264341,
+    "arm_v4_hand_error_m": 0.025081250481889583,
+    "arm_v4_hold_gate": 0.18249771623231936,
+    "arm_v4_ramp": 0.9990234375,
+    "t5_soft_peak_cost": 0.000492709456011653,
+    "t5_soft_rate_cost": 0.032555599813349545,
+    "t5_soft_approach_cost": 0.000698768300935626,
+    "t5_soft_settle_missing": 0.0,
+    "t5_soft_settle_liftoffs": 0.0,
+    "t5_soft_settle_height_cost": 0.0,
+    "t5_soft_body_support_deficit": 0.012633756674363728,
+    "t5_soft_peak_total_force_n": 373.42844915390015,
+    "t5_soft_peak_foot_force_n": 267.69989478588104,
+    "t5_soft_cost": 0.0039830216377255145,
+    "t5_soft_ramp": 0.9990234375
+  },
+  "metrics_max": {
+    "arm_v4_joint": 0.1269398182630539,
+    "arm_v4_elbow": 0.35847169160842896,
+    "arm_v4_hand": 0.21836435794830322,
+    "arm_v4_orientation": 0.32397860288619995,
+    "arm_v4_hold_velocity": 1.2283694744110107,
+    "arm_v4_hold_acceleration": 1.2673187255859375,
+    "arm_v4_joint_error_rad": 0.23229709267616272,
+    "arm_v4_hand_error_m": 0.055679671466350555,
+    "arm_v4_hold_gate": 0.9711861610412598,
+    "arm_v4_ramp": 1.0,
+    "t5_soft_peak_cost": 0.21967744827270508,
+    "t5_soft_rate_cost": 3.200587272644043,
+    "t5_soft_approach_cost": 0.29345929622650146,
+    "t5_soft_settle_missing": 0.0,
+    "t5_soft_settle_liftoffs": 0.0,
+    "t5_soft_settle_height_cost": 0.0,
+    "t5_soft_body_support_deficit": 1.0,
+    "t5_soft_peak_total_force_n": 1144.2579345703125,
+    "t5_soft_peak_foot_force_n": 1013.604248046875,
+    "t5_soft_cost": 0.22238057851791382,
+    "t5_soft_ramp": 1.0
+  },
+  "source_actor_critic_exact": true,
+  "smoke_excluded": true,
+  "sim2real_matches_source": true,
+  "coverage": {
+    "impact35": {
+      "start_s": 35.04,
+      "end_s": 35.1,
+      "foot": 1,
+      "label": "approach",
+      "fraction": 1.0
+    },
+    "impact18": {
+      "start_s": 17.96,
+      "end_s": 18.04,
+      "foot": 1,
+      "label": "approach",
+      "fraction": 1.0
+    },
+    "rebound35": {
+      "start_s": 35.3,
+      "end_s": 35.5,
+      "foot": 1,
+      "label": "settle",
+      "fraction": 1.0
+    },
+    "support30": {
+      "start_s": 30.82,
+      "end_s": 30.88,
+      "foot": 1,
+      "label": "support",
+      "fraction": 1.0
+    }
+  },
+  "production_started": false,
+  "logdir": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/taeguek05_soft_contact_v1_finetune_smoke_20261021_040243",
+  "cuda_peak_memory_mb": null
+}

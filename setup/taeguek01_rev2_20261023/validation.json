@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "num_envs": 4096,
+  "ppo_updates": 2,
+  "optimizer_step": 40.0,
+  "finite_rollout_steps": 64,
+  "mass_kg": 37.3424451,
+  "actor_observation_size": 124,
+  "actions": 23,
+  "policy_hz": 50,
+  "physics_hz": 200,
+  "checkpoint": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_rev2_taeguek01_smoke/20261023_061151/model_1.pt",
+  "checkpoint_sha256": "bef4a1df97dd8ea7d5e2911f485a983673ccc099b55f96993b0924c150c72985",
+  "exported_jit_onnx": true,
+  "cuda_peak_allocated_MiB": 748.13623046875,
+  "production_started": false
+}

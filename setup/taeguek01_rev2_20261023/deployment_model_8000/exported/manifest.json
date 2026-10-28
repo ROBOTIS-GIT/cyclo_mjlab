@@ -1,0 +1,83 @@
+{
+  "created_at": "2026-10-23T09:06:12.658722+00:00",
+  "source_host": "local hc",
+  "source_run": "logs/rsl_rl/k1_rev2_taeguek01/2026-10-23_06-25-42_rev2_taeguek01_scratch",
+  "checkpoint": "logs/rsl_rl/k1_rev2_taeguek01/2026-10-23_06-25-42_rev2_taeguek01_scratch/model_8000.pt",
+  "checkpoint_iteration": 8000,
+  "completed_updates": 8001,
+  "environment_steps": 192024,
+  "checkpoint_sha256": "02df730c7798900610d0e369a9f5ae7aa19d2d50cb80e07e57b0bc2250f68184",
+  "selection": "Latest fully saved checkpoint at user-requested stop",
+  "tracking_guard": null,
+  "task": "Cyclo-Mimic-K1-Rev2-Taeguek01",
+  "pt_format": "TorchScript inference model, not a training-resume checkpoint",
+  "source_motion_npz": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev2/taeguek_01/k1_rev2_taeguek01_50hz.npz",
+  "source_motion_npz_sha256": "8449b6405a6e010eaa443a7c84138c2d7438502b8e14149cee2ca939df8e4751",
+  "motion_csv": "/workspace/cyclo_mjlab/source/assets/motions/K1_rev2/taeguek_01/k1_rev2_taeguek01_50hz.csv",
+  "motion_frames": 1582,
+  "motion_fps": 50.0,
+  "input": {
+    "name": "obs",
+    "shape": [
+      1,
+      124
+    ]
+  },
+  "output": {
+    "name": "actions",
+    "shape": [
+      1,
+      23
+    ]
+  },
+  "validation": {
+    "strict_actor_load": true,
+    "onnx_checker": "passed",
+    "test_inputs": 17,
+    "actor_vs_onnx_max_absolute_error": 3.814697265625e-06,
+    "actor_vs_jit_max_absolute_error": 0.0,
+    "csv_vs_npz_max_absolute_error": {
+      "joint_position": 9.583508298049992e-08,
+      "root_position": 2.9591705308362748e-08,
+      "root_quaternion": 3.0099151615559094e-08
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "onnx": "1.23.2"
+  },
+  "files": {
+    "checkpoint/model_8000.pt": {
+      "bytes": 6346677,
+      "sha256": "02df730c7798900610d0e369a9f5ae7aa19d2d50cb80e07e57b0bc2250f68184"
+    },
+    "exported/policy.onnx": {
+      "bytes": 936693,
+      "sha256": "fb52dc6ff75ab78d7382c03d1b5cfd19edbb0edbea946d5b296930bd4df2de5b"
+    },
+    "exported/policy.onnx.data": {
+      "bytes": 924672,
+      "sha256": "e347bd5fe401946b2adfac7e3efedcad199b2939afa12bdfa2ad8cf847a8788f"
+    },
+    "exported/policy.pt": {
+      "bytes": 937942,
+      "sha256": "bf457a180090f7d3ce2231208a2af36a9dafb3912005f85b74b16f091abd57ef"
+    },
+    "params/agent.yaml": {
+      "bytes": 1061,
+      "sha256": "7dedaa9ab87bfee1401e767233b9b488794da9325beaecd58dd4870abd3b9080"
+    },
+    "params/env.yaml": {
+      "bytes": 29436,
+      "sha256": "12c6ede8037b79d1836383a68912a6eb698c45727e8bd48a2bdb0c0b645ceb8c"
+    },
+    "params/k1_rev2_taeguek01_50hz.csv": {
+      "bytes": 591042,
+      "sha256": "20275049f78abfa46e5c51f87d9df932833351280f73515f77ed3d034bccefa5"
+    },
+    "params/sim2real.yaml": {
+      "bytes": 5156,
+      "sha256": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14"
+    }
+  }
+}

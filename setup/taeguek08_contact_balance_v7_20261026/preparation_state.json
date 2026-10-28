@@ -1,0 +1,17 @@
+{
+  "status": "ready_for_user_manual_launch",
+  "prepared_at_utc": "2026-10-26T05:09:08.683594+00:00",
+  "main_started": false,
+  "previous_run_stopped": true,
+  "source_iteration": 13500,
+  "source_completed_updates": 13501,
+  "source_sha256": "22d4b584d1817916b768be4bf98e11a5e30da96212359b3fbf27a75e485257f2",
+  "num_envs": 4096,
+  "new_updates": 20000,
+  "revision": "ee36a837dce2aa235db7205b0719b6bd1bb006bd7c53b6d2d3978127f72e17b2",
+  "behavior_tests_passed": 28,
+  "gpu_validation": "passed",
+  "fresh_and_resumed_smoke": "passed",
+  "performance_quality": "not_yet_trained",
+  "motion_inputs": "same CSV and NPZ as stopped V6"
+}

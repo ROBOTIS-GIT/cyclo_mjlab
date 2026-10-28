@@ -1,0 +1,30 @@
+[
+  {
+    "label": "middle",
+    "mode": "reset",
+    "steps": 7479,
+    "finite": true,
+    "min_root_z_m": 0.698857687
+  },
+  {
+    "label": "middle",
+    "mode": "transition",
+    "steps": 7479,
+    "finite": true,
+    "min_root_z_m": 0.6984813335
+  },
+  {
+    "label": "final",
+    "mode": "reset",
+    "steps": 7479,
+    "finite": true,
+    "min_root_z_m": 0.7010170324
+  },
+  {
+    "label": "final",
+    "mode": "transition",
+    "steps": 7479,
+    "finite": true,
+    "min_root_z_m": 0.7000049979
+  }
+]

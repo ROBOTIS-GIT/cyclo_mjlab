@@ -1,0 +1,29 @@
+{
+  "verified_at": "2026-10-21T04:11:33.962808+00:00",
+  "host": "root@95.133.254.117",
+  "host_repo": "/opt/cyclo/cyclo_mjlab",
+  "container": "cyclo_mjlab",
+  "container_repo": "/workspace/cyclo_mjlab",
+  "container_user": "cyclo",
+  "method": "rsync isolated setup folder; no git commit/push/pull needed",
+  "server_commit": "779762f",
+  "local_commit": "2a533f6",
+  "revision": "9c18623127325e952d24c46a1f239524fcfeb407e88f2bc76aabec9808d4fb7a",
+  "gpu_validation": {
+    "num_envs": 4096,
+    "completed_updates": [
+      3,
+      4
+    ],
+    "optimizer_steps": [
+      60.0,
+      80.0
+    ],
+    "sim2real_matches_source": true,
+    "source_actor_critic_exact": true,
+    "smoke_excluded": true
+  },
+  "tests_passed": 17,
+  "production_started": false,
+  "command": "python -u setup/taeguek05_soft_contact_v1_20261021/launch.py 0 --num-envs 4096 --iter 10000"
+}

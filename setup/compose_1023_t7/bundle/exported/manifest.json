@@ -1,0 +1,148 @@
+{
+  "created_at": "2026-10-23T01:30:58.855862+00:00",
+  "source_host": "robotis@192.168.60.177",
+  "source_run": "setup/compose_1023_t7/2026-10-22_04-23-40_taeguek07_landing_v4_finetune",
+  "checkpoint": "setup/compose_1023_t7/2026-10-22_04-23-40_taeguek07_landing_v4_finetune/model_9999.pt",
+  "checkpoint_iteration": 9999,
+  "completed_updates": 10000,
+  "environment_steps": 240000,
+  "checkpoint_sha256": "3a4a7d540868463d658325e20a7deb4d3dff83ec28b76cc748dda854f0259c0f",
+  "selection": "Candidate for full-motion comparison, not yet selected",
+  "tracking_guard": {
+    "baseline": {
+      "arm_rmse": 0.13720322284847497,
+      "arm_max": 0.25344570852816106,
+      "joint_error": 0.984972040951252,
+      "length": 1848.4432999999997
+    },
+    "last_iteration": 9999,
+    "values": {
+      "arm_rmse": 0.08114185411483049,
+      "arm_max": 0.15974985763430596,
+      "joint_error": 0.5879059121012687,
+      "length": 2354.5213000000003
+    },
+    "limits": {
+      "arm_rmse": 0.16,
+      "arm_max": 0.3368071356602014,
+      "joint_error": 1.0,
+      "length": 1400.0
+    },
+    "reasons": [],
+    "bad_checks": 0,
+    "halt": false
+  },
+  "reward_revision": {
+    "taeguek07_landing_v4": "e3e6c971d00204888337f3819ed867ca9c34f8b8d50625ebedd893b7eb1575b2"
+  },
+  "pt_format": "TorchScript inference model, not a training-resume checkpoint",
+  "source_motion_npz": "/workspace/cyclo_mjlab/setup/taeguek07_landing_v4_20261022/motion/k1_taeguek07_arm_corrected_v1_50hz_converted.npz",
+  "source_motion_npz_sha256": "877390d22ab136a8fc99726e240c09e73efdd2d2b9ff4d4524a6c1c90c0346df",
+  "motion_csv": "/workspace/cyclo_mjlab/setup/taeguek07_landing_v4_20261022/motion/k1_taeguek07_arm_corrected_v1_50hz_converted.csv",
+  "motion_frames": 2320,
+  "motion_fps": 50.0,
+  "input": {
+    "name": "obs",
+    "shape": [
+      1,
+      124
+    ]
+  },
+  "output": {
+    "name": "actions",
+    "shape": [
+      1,
+      23
+    ]
+  },
+  "validation": {
+    "strict_actor_load": true,
+    "onnx_checker": "passed",
+    "test_inputs": 17,
+    "actor_vs_onnx_max_absolute_error": 4.76837158203125e-06,
+    "actor_vs_jit_max_absolute_error": 0.0,
+    "csv_vs_npz_max_absolute_error": {
+      "joint_position": 5.960504156909963e-08,
+      "root_position": 4.999923808313156e-10,
+      "root_quaternion": 3.003576665161489e-08
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "onnx": "1.23.2"
+  },
+  "files": {
+    "checkpoint/model_9999.pt": {
+      "bytes": 6355091,
+      "sha256": "3a4a7d540868463d658325e20a7deb4d3dff83ec28b76cc748dda854f0259c0f"
+    },
+    "exported/policy.onnx": {
+      "bytes": 936700,
+      "sha256": "113f5c89a53ec1df3b8e57b615a6b7c47493b3e2fafb5aeaef7f7d71cdfd9284"
+    },
+    "exported/policy.onnx.data": {
+      "bytes": 924672,
+      "sha256": "b5dc0ef88024604724863c1f20cf51735f6ae4259d2f486f8f0b7184925b2f25"
+    },
+    "exported/policy.pt": {
+      "bytes": 937942,
+      "sha256": "8b5d2d45d247fe5169c14202428a6679d6d49c7c5e1b25b9ea828bb3527baf7b"
+    },
+    "params/agent.yaml": {
+      "bytes": 1059,
+      "sha256": "e0fc6be28a4bfc2eb9571da9b8a9fdf6a537076277a19b71501a0c90fe9bef11"
+    },
+    "params/env.yaml": {
+      "bytes": 31542,
+      "sha256": "6d4563f4e8e2a5bcd88f0df769f92c5c897edba9897c4ed2f24a1449e1310d48"
+    },
+    "params/inputs.json": {
+      "bytes": 828,
+      "sha256": "54d75159db6ebcc13997e4d50d5d72d930f0797ff5ce248a2ef65b24586926a1"
+    },
+    "params/k1_taeguek07_arm_corrected_v1_50hz_converted.csv": {
+      "bytes": 868509,
+      "sha256": "271cde59f39746c378199fc4a7df1971a10a5919dc2123932274feb81fa46f9a"
+    },
+    "params/reward_manifest.json": {
+      "bytes": 1186,
+      "sha256": "204b5b6e6a367f1bd881bbf356b59d02c7e863f79eb27cde53cc8fd19f94c3a1"
+    },
+    "params/sim2real.yaml": {
+      "bytes": 5156,
+      "sha256": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14"
+    },
+    "params/training_arm_base.py": {
+      "bytes": 8444,
+      "sha256": "c51d925d10fddfeb406ff1f5eb8b707fbfb4348d2203fa00a8a5560fc99c053d"
+    },
+    "params/training_base_v2.py": {
+      "bytes": 12673,
+      "sha256": "1ccc7c12cbff518e34d9a65c9c499c961657902f525d84ac9d504f89c5d38328"
+    },
+    "params/training_config.py": {
+      "bytes": 9194,
+      "sha256": "c8b3bf819a5709b8e362400ed509b7de7eaf5aaec9d54633faed452ff623dfbb"
+    },
+    "params/training_foot_micro.py": {
+      "bytes": 5958,
+      "sha256": "11a29578150aeda4be035ce4f8c1c9d554cba8174952f0c25d808c7d6f8d196a"
+    },
+    "params/training_landing.py": {
+      "bytes": 6262,
+      "sha256": "e0a8ec30076a9bd6336ecf82582b3dbc601b6426a8e1e0c66a52649a8ba2724a"
+    },
+    "params/training_landing_v3.py": {
+      "bytes": 4833,
+      "sha256": "1320880bca53205c1f985014839fa25768efe241100364033e37df9e9b40c018"
+    },
+    "params/training_launch.py": {
+      "bytes": 4412,
+      "sha256": "322d607c866e1078df9739880845a1105651743236043583db975682d8d524cf"
+    },
+    "params/training_targeted_base.py": {
+      "bytes": 14992,
+      "sha256": "c223bb1d69fe4ce0724f4a9b98c1a7834212fe21eee10dbb3bebe0d64b8d9f6d"
+    }
+  }
+}

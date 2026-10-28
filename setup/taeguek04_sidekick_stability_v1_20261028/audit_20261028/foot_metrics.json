@@ -1,0 +1,50 @@
+{
+  "source_reset": {
+    "roll_range_deg": 2.0199620991601868,
+    "pitch_range_deg": 12.42291072888759,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 0.5117847421127765,
+    "pitch_error_rms_deg": 3.609984591796943
+  },
+  "source_transition": {
+    "roll_range_deg": 4.48501055906144,
+    "pitch_range_deg": 14.996486516955208,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 1.458047835172475,
+    "pitch_error_rms_deg": 4.673584358370285
+  },
+  "middle_reset": {
+    "roll_range_deg": 1.5024987433204322,
+    "pitch_range_deg": 9.174778244548843,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 0.4795394730120805,
+    "pitch_error_rms_deg": 3.2890804281267343
+  },
+  "middle_transition": {
+    "roll_range_deg": 1.3926604963240834,
+    "pitch_range_deg": 8.31130698343353,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 0.48798591966538774,
+    "pitch_error_rms_deg": 2.8138458673001425
+  },
+  "final_reset": {
+    "roll_range_deg": 4.022740342600332,
+    "pitch_range_deg": 16.555264262399394,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 0.9612534718517357,
+    "pitch_error_rms_deg": 6.200863542908662
+  },
+  "final_transition": {
+    "roll_range_deg": 2.8780573994866403,
+    "pitch_range_deg": 12.794134612032734,
+    "ref_roll_range_deg": 0.2188883914830385,
+    "ref_pitch_range_deg": 0.16222372121983772,
+    "roll_error_rms_deg": 0.6477390409169044,
+    "pitch_error_rms_deg": 4.170212054447739
+  }
+}

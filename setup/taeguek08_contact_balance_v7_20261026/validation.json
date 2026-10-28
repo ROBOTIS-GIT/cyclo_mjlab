@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "revision": "ee36a837dce2aa235db7205b0719b6bd1bb006bd7c53b6d2d3978127f72e17b2",
+  "main_started": false,
+  "main_budget": 20000,
+  "source_sha256": "22d4b584d1817916b768be4bf98e11a5e30da96212359b3fbf27a75e485257f2",
+  "initial_smoke": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-26_05-06-38_taeguek08_contact_balance_v7_smoke",
+  "resumed_smoke": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-26_05-08-09_taeguek08_contact_balance_v7_smoke",
+  "first_completed": 8,
+  "resumed_completed": 16,
+  "first_counter": 192,
+  "resumed_counter": 384,
+  "optimizer_steps_first": [
+    160.0
+  ],
+  "optimizer_steps_resumed": [
+    320.0
+  ],
+  "resume_mismatch_rejections": [
+    "num_envs",
+    "smoke/main",
+    "step counter"
+  ],
+  "interpretation": "Plumbing/finite-update/resume verification only, not motion-quality validation",
+  "num_envs": 4096,
+  "current_container_gpu": "Existing cyclo_mjlab container GPU verified healthy; Desktop RTX 5090"
+}

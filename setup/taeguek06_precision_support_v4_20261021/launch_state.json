@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-10-21T14:06:10.610320+00:00",
+  "run": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-21_14-05-09_taeguek06_precision_support_v4_finetune_20261021_140501",
+  "first_checkpoint": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-21_14-05-09_taeguek06_precision_support_v4_finetune_20261021_140501/model_0.pt",
+  "first_checkpoint_sha256": "dcbb675fb77901dcc0f2b2eb55d1f02b15ae9f065e11f768a3598ef2668f2467",
+  "revision": "9e0ab8d2d7248db64c52ca4805bf0987e970798b8b04ac109d3f60e2c5be47dd",
+  "source_sha256": "6ceeb2490e93fc70b84d8e42b38b587426a24ba225551784d1dfb5b0c2b6eb8b",
+  "num_envs": 4096,
+  "target_updates": 10000,
+  "last_observed_iteration": 55,
+  "first_saved_completed_updates": 1,
+  "first_saved_environment_counter": 24,
+  "production_started": true,
+  "host_pid": 3903974,
+  "host_run": "/home/hc/robotis/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-21_14-05-09_taeguek06_precision_support_v4_finetune_20261021_140501"
+}

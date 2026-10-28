@@ -39,7 +39,7 @@ def list_environments(keyword: str | None = None):
   table.title = "Available Environments in mjlab"
   table.align["Task ID"] = "l"
 
-  k1_task_prefixes = ("Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-")
+  k1_task_prefixes = ("Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-", "Cyclo-Mimic-K1-Rev2-")
   all_tasks = [
     task_id for task_id in list_tasks() if task_id.startswith(k1_task_prefixes)
   ]

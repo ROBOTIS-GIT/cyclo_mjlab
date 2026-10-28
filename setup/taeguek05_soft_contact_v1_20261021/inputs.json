@@ -1,0 +1,8 @@
+{
+  "source/model_9999.pt": "2b73bd44508ee6f7734d93057fafa7d77d5ca8b7182213f719f314ada5988c75",
+  "source/params/agent.yaml": "b908aac2cdcdcb84c8dd0781d7515a60f78cde390d9add79891a7173ad0f8d5f",
+  "source/params/sim2real.yaml": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14",
+  "source/params/env.yaml": "1c4e306d470d943ae4561b5b2dda195115cdd70e9428559dc257d822252e3a83",
+  "motion/k1_taeguek05_left_arm_refined_50hz_converted.npz": "462d935bf35bc7d2fb55b9665f82461ab3779e726d71c2a4a744ee6ddd76b8ee",
+  "motion/k1_taeguek05_left_arm_refined_50hz_converted.csv": "24174e502ebe96b624f8e1d7182e1d72c50aa7066ed30bcaf331ef6a1c32e5e2"
+}

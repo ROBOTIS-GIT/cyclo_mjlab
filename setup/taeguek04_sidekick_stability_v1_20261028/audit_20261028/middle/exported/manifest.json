@@ -1,0 +1,100 @@
+{
+  "created_at": "2026-10-28T06:06:13.488534+00:00",
+  "source_host": "local hc",
+  "source_run": "logs/rsl_rl/k1_mimic/2026-10-28_03-01-10_taeguek04_sidekick_stability_v1_finetune_20261028_030101",
+  "checkpoint": "logs/rsl_rl/k1_mimic/2026-10-28_03-01-10_taeguek04_sidekick_stability_v1_finetune_20261028_030101/model_5000.pt",
+  "checkpoint_iteration": 5000,
+  "completed_updates": 5001,
+  "environment_steps": 120024,
+  "checkpoint_sha256": "afdecce90b39adbfb94e97540690fc3956acd3760c72d75c4a0e31d2e482dc56",
+  "selection": "Heartbeat candidate; evaluate in separate simulation before selecting",
+  "tracking_guard": {
+    "last_iteration": 5000,
+    "values": {
+      "arm": 0.08604641541838647,
+      "hand": 0.020524816010147332,
+      "joint": 0.5635058921575546,
+      "length": 1891.2146
+    },
+    "reasons": [],
+    "bad_checks": 0,
+    "halt": false,
+    "baseline": {
+      "arm": 0.11527902118861676,
+      "hand": 0.028870343081653118,
+      "joint": 0.7540839099884034,
+      "length": 1746.9653999999996
+    }
+  },
+  "reward_revision": "d03621de04c170828ea12f52b0c0a277850245db7ba3c6ab0eff139d43c15e8a",
+  "pt_format": "TorchScript inference model, not a training-resume checkpoint",
+  "source_motion_npz": "/workspace/cyclo_mjlab/setup/taeguek04_sidekick_stability_v1_20261028/motion/k1_taeguek04_collision_only_50hz_converted.npz",
+  "source_motion_npz_sha256": "bac8729ac92b6fd1c1479f1403fcb1cc183c0cc297670e1f1ea68858a190f1fb",
+  "motion_csv": "/workspace/cyclo_mjlab/setup/taeguek04_sidekick_stability_v1_20261028/motion/k1_taeguek04_collision_only_50hz_converted.csv",
+  "motion_frames": 1871,
+  "motion_fps": 50.0,
+  "input": {
+    "name": "obs",
+    "shape": [
+      1,
+      124
+    ]
+  },
+  "output": {
+    "name": "actions",
+    "shape": [
+      1,
+      23
+    ]
+  },
+  "validation": {
+    "strict_actor_load": true,
+    "onnx_checker": "passed",
+    "test_inputs": 17,
+    "actor_vs_onnx_max_absolute_error": 1.1444091796875e-05,
+    "actor_vs_jit_max_absolute_error": 0.0,
+    "csv_vs_npz_max_absolute_error": {
+      "joint_position": 9.586743177081303e-08,
+      "root_position": 9.586193838728718e-08,
+      "root_quaternion": 3.021676631131953e-08
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "onnx": "1.23.2"
+  },
+  "files": {
+    "checkpoint/model_5000.pt": {
+      "bytes": 6347317,
+      "sha256": "afdecce90b39adbfb94e97540690fc3956acd3760c72d75c4a0e31d2e482dc56"
+    },
+    "exported/policy.onnx": {
+      "bytes": 936727,
+      "sha256": "c08cf8defa1dbdd136d7d8a7e2bc3d77d2f3da54dc61793c92d8e70f6a980ef7"
+    },
+    "exported/policy.onnx.data": {
+      "bytes": 924672,
+      "sha256": "7e1b15aa7a0e566657c810d08167c4a658f09e2831e10287fb41ef8e46c91ae9"
+    },
+    "exported/policy.pt": {
+      "bytes": 937942,
+      "sha256": "e08e51742a99199506b475723d37c0da987ca00a3f0eb9cf5c8971caa7e15d3a"
+    },
+    "params/agent.yaml": {
+      "bytes": 1086,
+      "sha256": "f8384fbd62a741a002f19c7e782ba6cbd0020119df802e44bdbb97997962deca"
+    },
+    "params/env.yaml": {
+      "bytes": 30958,
+      "sha256": "32714edd7d6e6c7b8f212a079382e5c3cb9cd4adaee912162114cca78d53b0c6"
+    },
+    "params/k1_taeguek04_collision_only_50hz_converted.csv": {
+      "bytes": 699488,
+      "sha256": "fe65bdcaaf06472a3ed0e0297625d592f01d13c03cbc8bd0d7af7ac0582b5659"
+    },
+    "params/sim2real.yaml": {
+      "bytes": 5156,
+      "sha256": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14"
+    }
+  }
+}

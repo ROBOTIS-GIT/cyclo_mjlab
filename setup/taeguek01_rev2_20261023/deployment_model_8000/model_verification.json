@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "checks": 783,
+  "mismatches": [],
+  "mass_kg": 37.3424451,
+  "training_mujoco": "3.5.0",
+  "verification_mujoco": "3.5.0"
+}

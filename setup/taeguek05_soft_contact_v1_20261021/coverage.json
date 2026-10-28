@@ -1,0 +1,30 @@
+{
+  "impact35": {
+    "start_s": 35.04,
+    "end_s": 35.1,
+    "foot": 1,
+    "label": "approach",
+    "fraction": 1.0
+  },
+  "impact18": {
+    "start_s": 17.96,
+    "end_s": 18.04,
+    "foot": 1,
+    "label": "approach",
+    "fraction": 1.0
+  },
+  "rebound35": {
+    "start_s": 35.3,
+    "end_s": 35.5,
+    "foot": 1,
+    "label": "settle",
+    "fraction": 1.0
+  },
+  "support30": {
+    "start_s": 30.82,
+    "end_s": 30.88,
+    "foot": 1,
+    "label": "support",
+    "fraction": 1.0
+  }
+}

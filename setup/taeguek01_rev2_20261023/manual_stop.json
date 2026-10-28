@@ -1,0 +1,10 @@
+{
+  "stopped_at_kst": "2026-10-23T18:08:10.240109+09:00",
+  "reason": "User requested stop and deployment",
+  "signal": "SIGINT",
+  "process_exit_verified": true,
+  "auto_restart_authorized": false,
+  "deployed_checkpoint": "model_8000.pt",
+  "checkpoint_sha256": "02df730c7798900610d0e369a9f5ae7aa19d2d50cb80e07e57b0bc2250f68184",
+  "destination": "/home/hc/robotis_mujoco/policy/Mimic/taeguek_01_rev2"
+}

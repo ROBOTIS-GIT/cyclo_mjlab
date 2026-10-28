@@ -1,0 +1,22 @@
+{
+  "revision": "108f3ff08e01ae14b3430445b8153908ab6068dd7ff58083e62234b89a021b1d",
+  "num_envs": 4096,
+  "smoke": false,
+  "total_updates": 10000,
+  "source_sha256": "9611dbeb80c8ede41967e27593deedf11d0ffed5d31456565c6bc453b878898d",
+  "source_iteration": 9999,
+  "initial_state": "warmstart",
+  "fresh_optimizer": true,
+  "inputs": {
+    "status": "frozen validated SoftContactV2 final inputs",
+    "files_sha256": {
+      "motion/k1_taeguek07_arm_corrected_v1_50hz_converted.csv": "271cde59f39746c378199fc4a7df1971a10a5919dc2123932274feb81fa46f9a",
+      "motion/k1_taeguek07_arm_corrected_v1_50hz_converted.npz": "877390d22ab136a8fc99726e240c09e73efdd2d2b9ff4d4524a6c1c90c0346df",
+      "source/model_9999.pt": "9611dbeb80c8ede41967e27593deedf11d0ffed5d31456565c6bc453b878898d",
+      "source/params/agent.yaml": "52549073d931f20cba17d787610b53cab1351b7b577f0af51622e82f400999b9",
+      "source/params/sim2real.yaml": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14",
+      "source/params/env.yaml": "80f05fb478fa5918c56e9c30399a186dded8833870510ae8a0446c0a4ffc1ce5",
+      "entry_t7.npz": "4b9dd627c6b26188200538426ac0286864e6912d72f8029588a924e58bdf7d7e"
+    }
+  }
+}

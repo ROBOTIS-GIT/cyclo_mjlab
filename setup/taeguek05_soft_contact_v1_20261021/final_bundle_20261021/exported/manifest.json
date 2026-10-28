@@ -1,0 +1,100 @@
+{
+  "created_at": "2026-10-21T07:32:42.598932+00:00",
+  "source_host": "root@95.133.254.117",
+  "source_run": "setup/taeguek05_soft_contact_v1_20261021/completed_run",
+  "checkpoint": "setup/taeguek05_soft_contact_v1_20261021/completed_run/model_9999.pt",
+  "checkpoint_iteration": 9999,
+  "completed_updates": 10000,
+  "environment_steps": 240000,
+  "checkpoint_sha256": "8bac70486c500b3d2add4a2d7c1c90bc15e6622d6dda8800777e401bc0245d4f",
+  "selection": "Final 10000-update SoftContactV1 fine-tuning checkpoint; execution validation, not a quality comparison",
+  "tracking_guard": {
+    "baseline": {
+      "arm": 0.12298041462898254,
+      "hand": 0.033778674043715,
+      "joint": 0.9501959121227265,
+      "length": 1757.6370000000002
+    },
+    "last_iteration": 9999,
+    "values": {
+      "arm": 0.0893608371913433,
+      "hand": 0.024330788105726243,
+      "joint": 0.7037186312675476,
+      "length": 2016.682199999999
+    },
+    "reasons": [],
+    "bad_checks": 0,
+    "halt": false
+  },
+  "reward_revision": "9c18623127325e952d24c46a1f239524fcfeb407e88f2bc76aabec9808d4fb7a",
+  "pt_format": "TorchScript inference model, not a training-resume checkpoint",
+  "source_motion_npz": "/workspace/cyclo_mjlab/setup/taeguek05_soft_contact_v1_20261021/motion/k1_taeguek05_left_arm_refined_50hz_converted.npz",
+  "source_motion_npz_sha256": "462d935bf35bc7d2fb55b9665f82461ab3779e726d71c2a4a744ee6ddd76b8ee",
+  "motion_csv": "/workspace/cyclo_mjlab/setup/taeguek05_soft_contact_v1_20261021/motion/k1_taeguek05_left_arm_refined_50hz_converted.csv",
+  "motion_frames": 2017,
+  "motion_fps": 50.0,
+  "input": {
+    "name": "obs",
+    "shape": [
+      1,
+      124
+    ]
+  },
+  "output": {
+    "name": "actions",
+    "shape": [
+      1,
+      23
+    ]
+  },
+  "validation": {
+    "strict_actor_load": true,
+    "onnx_checker": "passed",
+    "test_inputs": 17,
+    "actor_vs_onnx_max_absolute_error": 7.62939453125e-06,
+    "actor_vs_jit_max_absolute_error": 0.0,
+    "csv_vs_npz_max_absolute_error": {
+      "joint_position": 5.98508300697631e-08,
+      "root_position": 4.998473857042995e-10,
+      "root_quaternion": 3.004287718599841e-08
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "onnx": "1.23.2"
+  },
+  "files": {
+    "checkpoint/model_9999.pt": {
+      "bytes": 6347317,
+      "sha256": "8bac70486c500b3d2add4a2d7c1c90bc15e6622d6dda8800777e401bc0245d4f"
+    },
+    "exported/policy.onnx": {
+      "bytes": 936664,
+      "sha256": "55971a4e69b9f308c658481dcc30ec584ce341f9cdff34a906df871ca6c195b7"
+    },
+    "exported/policy.onnx.data": {
+      "bytes": 924672,
+      "sha256": "a418eadd077b382fa9ecc4ab00e455eb5a76aa9f4a8149312fd5c8c2c406e4da"
+    },
+    "exported/policy.pt": {
+      "bytes": 937942,
+      "sha256": "754ca0ad40f6d6ee6b1b50d5b01eddfae9955fa7dafdaba3438dc59855a8fcdc"
+    },
+    "params/agent.yaml": {
+      "bytes": 1079,
+      "sha256": "6223a341f08dd1e173c43f7a67a90cf36deaf0ead3624975dcc0d05b6308a436"
+    },
+    "params/env.yaml": {
+      "bytes": 30642,
+      "sha256": "def2643689db9baeba6d92fce1f892d9c0eeb60baf7e5ce186f67b7b0a5dad8a"
+    },
+    "params/k1_taeguek05_left_arm_refined_50hz_converted.csv": {
+      "bytes": 754562,
+      "sha256": "24174e502ebe96b624f8e1d7182e1d72c50aa7066ed30bcaf331ef6a1c32e5e2"
+    },
+    "params/sim2real.yaml": {
+      "bytes": 5156,
+      "sha256": "199e318b5d88a89e17299de66995992f6c8bcab59840efd8715a90b317fe4b14"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-10-22T02:18:03.886230+00:00",
+  "revision": "e3e6c971d00204888337f3819ed867ca9c34f8b8d50625ebedd893b7eb1575b2",
+  "target": "robotis@192.168.60.177",
+  "unit_tests": 32,
+  "target_dry_run": "passed",
+  "gpu_first_smoke": {
+    "host": "robotis-insu@192.168.60.194",
+    "num_envs": 4096,
+    "updates": 8,
+    "checkpoint": "/workspace/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-22_02-15-43_taeguek07_landing_v4_smoke/model_7.pt",
+    "exit_code": 0,
+    "new_total_peak_metric_positive": true
+  },
+  "gpu_resume": "Started, result unconfirmed after SSH No route to host; do not claim passed",
+  "full_ramp_validation": "not run",
+  "production_started": false,
+  "other_gpu_job": "supermimic-k1-recovered-v3-resume PID3763195 still running; ownership confirmation pending, not stopped"
+}

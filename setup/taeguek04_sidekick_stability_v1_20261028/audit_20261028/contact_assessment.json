@@ -1,0 +1,2014 @@
+{
+  "bodyweight_N": 350.27625132090003,
+  "kick_windows": [
+    [
+      10.74,
+      11.299999999999999,
+      0
+    ],
+    [
+      12.52,
+      13.44,
+      1
+    ],
+    [
+      13.98,
+      15.0,
+      0
+    ],
+    [
+      17.32,
+      18.0,
+      0
+    ],
+    [
+      20.52,
+      21.1,
+      1
+    ],
+    [
+      23.46,
+      24.06,
+      0
+    ]
+  ],
+  "results": {
+    "grfv2_reset": {
+      "joint_rmse_rad": 0.09771502794983658,
+      "arm_rmse_rad": 0.08311604435839487,
+      "pelvis_xy_rmse_m": 0.16473537857933168,
+      "kick_peak_error_mean_m": 0.01962018270078721,
+      "fall_min_z_m": 0.6980742911,
+      "peak_N": 1457,
+      "peak_t": 6.28,
+      "peak_BW": 4.16,
+      "excess3BW_Ns": 9.6,
+      "quiet_excess_mm_s": 0.52,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.695,
+          "height_mm": 13.83,
+          "ref_mm": 0.72,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.4,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.69,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.57,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.33,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.1,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 950,
+          "peak_t": 11.455,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1320,
+          "peak_t": 13.8,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1428,
+          "peak_t": 14.705,
+          "max_hop_mm": 13.83
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 513,
+          "peak_t": 18.38,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 848,
+          "peak_t": 21.325,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 665,
+          "peak_t": 24.315,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "grfv2_transition": {
+      "joint_rmse_rad": 0.10877734324566334,
+      "arm_rmse_rad": 0.1130835601986684,
+      "pelvis_xy_rmse_m": 0.14319258716032984,
+      "kick_peak_error_mean_m": 0.020571703700787165,
+      "fall_min_z_m": 0.6982123124,
+      "peak_N": 1442,
+      "peak_t": 14.7,
+      "peak_BW": 4.12,
+      "excess3BW_Ns": 9.55,
+      "quiet_excess_mm_s": 0.44,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.64,
+          "end": 14.695,
+          "height_mm": 10.96,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.63,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.62,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.55,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.32,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.08,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 905,
+          "peak_t": 11.445,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1395,
+          "peak_t": 13.795,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1442,
+          "peak_t": 14.7,
+          "max_hop_mm": 10.96
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 511,
+          "peak_t": 18.395,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 686,
+          "peak_t": 21.34,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 624,
+          "peak_t": 24.315,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "side_middle_reset": {
+      "joint_rmse_rad": 0.0969340142527218,
+      "arm_rmse_rad": 0.08160306697630447,
+      "pelvis_xy_rmse_m": 0.1579329204871815,
+      "kick_peak_error_mean_m": 0.023746684223185304,
+      "fall_min_z_m": 0.698857687,
+      "peak_N": 1316,
+      "peak_t": 14.685,
+      "peak_BW": 3.76,
+      "excess3BW_Ns": 3.86,
+      "quiet_excess_mm_s": 0.69,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.65,
+          "end": 14.675,
+          "height_mm": 4.93,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.69,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.69,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.78,
+          "ref_cm": 0.57
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.45,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.49,
+          "ref_cm": 0.37
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 924,
+          "peak_t": 11.455,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1134,
+          "peak_t": 13.785,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1316,
+          "peak_t": 14.685,
+          "max_hop_mm": 4.93
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 543,
+          "peak_t": 18.345,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 530,
+          "peak_t": 21.375,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 673,
+          "peak_t": 24.355,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "side_middle_transition": {
+      "joint_rmse_rad": 0.10822231951011341,
+      "arm_rmse_rad": 0.11182307044319226,
+      "pelvis_xy_rmse_m": 0.15257265217008953,
+      "kick_peak_error_mean_m": 0.026074052889852022,
+      "fall_min_z_m": 0.6984813335,
+      "peak_N": 1526,
+      "peak_t": 6.275,
+      "peak_BW": 4.36,
+      "excess3BW_Ns": 5.57,
+      "quiet_excess_mm_s": 0.58,
+      "events": [],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.76,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.86,
+          "ref_cm": 0.57
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.44,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.47,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.43,
+          "ref_cm": 0.46
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 888,
+          "peak_t": 11.455,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1159,
+          "peak_t": 13.785,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1203,
+          "peak_t": 14.68,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 590,
+          "peak_t": 18.34,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 735,
+          "peak_t": 21.34,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 687,
+          "peak_t": 24.365,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "side_final_reset": {
+      "joint_rmse_rad": 0.09613171571907514,
+      "arm_rmse_rad": 0.08132857012600214,
+      "pelvis_xy_rmse_m": 0.1974901179993232,
+      "kick_peak_error_mean_m": 0.02955750195853461,
+      "fall_min_z_m": 0.7010170324,
+      "peak_N": 1486,
+      "peak_t": 6.285,
+      "peak_BW": 4.24,
+      "excess3BW_Ns": 11.52,
+      "quiet_excess_mm_s": 0.59,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.68,
+          "height_mm": 8.57,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.25,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.4,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.41,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.31,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.53,
+          "ref_cm": 0.57
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 744,
+          "peak_t": 11.47,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1168,
+          "peak_t": 13.65,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1381,
+          "peak_t": 14.685,
+          "max_hop_mm": 8.57
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 808,
+          "peak_t": 17.805,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 611,
+          "peak_t": 21.37,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 679,
+          "peak_t": 24.295,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "side_final_transition": {
+      "joint_rmse_rad": 0.1071108330432878,
+      "arm_rmse_rad": 0.11131385143372542,
+      "pelvis_xy_rmse_m": 0.12420229510014401,
+      "kick_peak_error_mean_m": 0.026844186056518726,
+      "fall_min_z_m": 0.7000049979,
+      "peak_N": 1526,
+      "peak_t": 6.285,
+      "peak_BW": 4.36,
+      "excess3BW_Ns": 9.44,
+      "quiet_excess_mm_s": 0.55,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.675,
+          "height_mm": 6.92,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.64,
+          "ref_cm": 0.57
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.53,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.42,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.43,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.32,
+          "ref_cm": 0.31
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 784,
+          "peak_t": 11.465,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1042,
+          "peak_t": 13.615,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1382,
+          "peak_t": 14.685,
+          "max_hop_mm": 6.92
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 667,
+          "peak_t": 17.8,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 625,
+          "peak_t": 21.37,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 624,
+          "peak_t": 24.295,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "v1_reset": {
+      "joint_rmse_rad": 0.1459288041212013,
+      "arm_rmse_rad": 0.15805742283668028,
+      "pelvis_xy_rmse_m": 0.2877520050571326,
+      "kick_peak_error_mean_m": 0.08345525655651864,
+      "fall_min_z_m": 0.6980035656,
+      "peak_N": 1619,
+      "peak_t": 6.315,
+      "peak_BW": 4.62,
+      "excess3BW_Ns": 12.11,
+      "quiet_excess_mm_s": 1.81,
+      "events": [
+        {
+          "side": "r",
+          "start": 4.735,
+          "end": 4.92,
+          "height_mm": 26.55,
+          "ref_mm": 1.02,
+          "kick": false
+        },
+        {
+          "side": "l",
+          "start": 14.63,
+          "end": 14.7,
+          "height_mm": 16.16,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "r",
+          "start": 0.1,
+          "end": 5.11,
+          "max_cm": 13.18,
+          "ref_cm": 2.61
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 3.47,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.54,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.55,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 29.95,
+          "end": 30.47,
+          "max_cm": 1.92,
+          "ref_cm": 1.89
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 968,
+          "peak_t": 11.46,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 881,
+          "peak_t": 13.605,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1346,
+          "peak_t": 14.7,
+          "max_hop_mm": 16.16
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 734,
+          "peak_t": 17.81,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 1195,
+          "peak_t": 21.26,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 783,
+          "peak_t": 24.29,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "v1_transition": {
+      "joint_rmse_rad": 0.15342872725502557,
+      "arm_rmse_rad": 0.17364964405496247,
+      "pelvis_xy_rmse_m": 0.2134315716914296,
+      "kick_peak_error_mean_m": 0.08054373072318528,
+      "fall_min_z_m": 0.6978407265,
+      "peak_N": 1505,
+      "peak_t": 6.31,
+      "peak_BW": 4.3,
+      "excess3BW_Ns": 10.48,
+      "quiet_excess_mm_s": 0.73,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.63,
+          "end": 14.695,
+          "height_mm": 15.6,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.91,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.86,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.55,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "l",
+          "start": 29.95,
+          "end": 30.47,
+          "max_cm": 1.9,
+          "ref_cm": 1.89
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.1,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1009,
+          "peak_t": 11.49,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 892,
+          "peak_t": 13.59,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1289,
+          "peak_t": 14.7,
+          "max_hop_mm": 15.6
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 743,
+          "peak_t": 17.81,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 1270,
+          "peak_t": 21.265,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 691,
+          "peak_t": 24.27,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "v2_reset": {
+      "joint_rmse_rad": 0.14348976728705673,
+      "arm_rmse_rad": 0.15800672849859743,
+      "pelvis_xy_rmse_m": 0.16800718597931985,
+      "kick_peak_error_mean_m": 0.03036099536745392,
+      "fall_min_z_m": 0.7032009109,
+      "peak_N": 2040,
+      "peak_t": 30.875,
+      "peak_BW": 5.82,
+      "excess3BW_Ns": 15.06,
+      "quiet_excess_mm_s": 5.27,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.185,
+          "end": 14.26,
+          "height_mm": 20.09,
+          "ref_mm": 0.79,
+          "kick": true
+        },
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.685,
+          "height_mm": 7.22,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "r",
+          "start": 0.1,
+          "end": 5.11,
+          "max_cm": 8.57,
+          "ref_cm": 2.61
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 2.92,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 6.47,
+          "end": 6.95,
+          "max_cm": 1.95,
+          "ref_cm": 0.63
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.5,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.21,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 970,
+          "peak_t": 11.485,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1214,
+          "peak_t": 13.79,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1479,
+          "peak_t": 15.1,
+          "max_hop_mm": 20.09
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 545,
+          "peak_t": 18.375,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 951,
+          "peak_t": 21.305,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 745,
+          "peak_t": 24.265,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "v2_transition": {
+      "joint_rmse_rad": 0.1505277292297585,
+      "arm_rmse_rad": 0.17445127765732382,
+      "pelvis_xy_rmse_m": 0.3102756851055715,
+      "kick_peak_error_mean_m": 0.022332012936136514,
+      "fall_min_z_m": 0.7032414224,
+      "peak_N": 1938,
+      "peak_t": 30.875,
+      "peak_BW": 5.53,
+      "excess3BW_Ns": 15.55,
+      "quiet_excess_mm_s": 1.81,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.21,
+          "end": 14.265,
+          "height_mm": 14.26,
+          "ref_mm": 0.79,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "r",
+          "start": 6.47,
+          "end": 6.95,
+          "max_cm": 2.27,
+          "ref_cm": 0.63
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.1,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.49,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.17,
+          "ref_cm": 0.16
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.37,
+          "ref_cm": 0.37
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 993,
+          "peak_t": 11.49,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1770,
+          "peak_t": 13.545,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1202,
+          "peak_t": 14.7,
+          "max_hop_mm": 14.26
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 515,
+          "peak_t": 18.375,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 962,
+          "peak_t": 21.3,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 771,
+          "peak_t": 24.345,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "deployed_reset": {
+      "joint_rmse_rad": 0.10270493221200847,
+      "arm_rmse_rad": 0.08896228686326263,
+      "pelvis_xy_rmse_m": 0.12434267360742564,
+      "kick_peak_error_mean_m": 0.020519162200787238,
+      "fall_min_z_m": 0.7002776829,
+      "peak_N": 1526,
+      "peak_t": 8.615,
+      "peak_BW": 4.36,
+      "excess3BW_Ns": 11.26,
+      "quiet_excess_mm_s": 0.9,
+      "events": [
+        {
+          "side": "r",
+          "start": 12.67,
+          "end": 12.69,
+          "height_mm": 5.56,
+          "ref_mm": 1.34,
+          "kick": true
+        },
+        {
+          "side": "l",
+          "start": 14.63,
+          "end": 14.69,
+          "height_mm": 13.72,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.96,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.6,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.47,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 18.51,
+          "end": 19.17,
+          "max_cm": 0.76,
+          "ref_cm": 0.69
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.13,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1128,
+          "peak_t": 11.475,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 861,
+          "peak_t": 13.605,
+          "max_hop_mm": 5.56
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1375,
+          "peak_t": 14.7,
+          "max_hop_mm": 13.72
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 1006,
+          "peak_t": 17.805,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 786,
+          "peak_t": 21.295,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 638,
+          "peak_t": 24.33,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "deployed_transition": {
+      "joint_rmse_rad": 0.1130615819417378,
+      "arm_rmse_rad": 0.116406070600157,
+      "pelvis_xy_rmse_m": 0.07110866978204713,
+      "kick_peak_error_mean_m": 0.02201673286745387,
+      "fall_min_z_m": 0.6998211707,
+      "peak_N": 1560,
+      "peak_t": 8.615,
+      "peak_BW": 4.45,
+      "excess3BW_Ns": 11.22,
+      "quiet_excess_mm_s": 0.83,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.69,
+          "height_mm": 14.54,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.59,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.51,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 18.51,
+          "end": 19.17,
+          "max_cm": 0.72,
+          "ref_cm": 0.69
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.49,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.12,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 845,
+          "peak_t": 11.475,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 821,
+          "peak_t": 13.61,
+          "max_hop_mm": 3.97
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1428,
+          "peak_t": 14.7,
+          "max_hop_mm": 14.54
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 949,
+          "peak_t": 17.805,
+          "max_hop_mm": 3.16
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 769,
+          "peak_t": 21.295,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 647,
+          "peak_t": 24.335,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "middle_reset": {
+      "joint_rmse_rad": 0.0993460608449205,
+      "arm_rmse_rad": 0.08553446605501634,
+      "pelvis_xy_rmse_m": 0.12441562014269214,
+      "kick_peak_error_mean_m": 0.03290571879186791,
+      "fall_min_z_m": 0.6968532393,
+      "peak_N": 1387,
+      "peak_t": 30.86,
+      "peak_BW": 3.96,
+      "excess3BW_Ns": 5.28,
+      "quiet_excess_mm_s": 0.59,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.645,
+          "end": 14.675,
+          "height_mm": 6.52,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.19,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.55,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.56,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.63,
+          "ref_cm": 0.57
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.31,
+          "ref_cm": 0.31
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1045,
+          "peak_t": 11.45,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1291,
+          "peak_t": 13.79,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1070,
+          "peak_t": 14.68,
+          "max_hop_mm": 6.52
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 511,
+          "peak_t": 18.39,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 887,
+          "peak_t": 21.325,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 576,
+          "peak_t": 24.395,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "middle_transition": {
+      "joint_rmse_rad": 0.11093090406469787,
+      "arm_rmse_rad": 0.11522817680810744,
+      "pelvis_xy_rmse_m": 0.11263732994562795,
+      "kick_peak_error_mean_m": 0.030187239056518617,
+      "fall_min_z_m": 0.6967910106,
+      "peak_N": 1397,
+      "peak_t": 30.865,
+      "peak_BW": 3.99,
+      "excess3BW_Ns": 7.84,
+      "quiet_excess_mm_s": 0.48,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.635,
+          "end": 14.685,
+          "height_mm": 11.91,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.58,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.48,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.18,
+          "ref_cm": 0.16
+        },
+        {
+          "side": "l",
+          "start": 15.38,
+          "end": 15.79,
+          "max_cm": 0.57,
+          "ref_cm": 0.57
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.45,
+          "ref_cm": 0.46
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1089,
+          "peak_t": 11.435,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1132,
+          "peak_t": 13.79,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1323,
+          "peak_t": 14.695,
+          "max_hop_mm": 11.91
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 545,
+          "peak_t": 18.395,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 795,
+          "peak_t": 21.325,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 604,
+          "peak_t": 24.33,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "source_reset": {
+      "joint_rmse_rad": 0.10265945519362325,
+      "arm_rmse_rad": 0.08691485591895141,
+      "pelvis_xy_rmse_m": 0.12590301539352797,
+      "kick_peak_error_mean_m": 0.017371291223185297,
+      "fall_min_z_m": 0.6945628251,
+      "peak_N": 1952,
+      "peak_t": 30.87,
+      "peak_BW": 5.57,
+      "excess3BW_Ns": 14.47,
+      "quiet_excess_mm_s": 0.47,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.63,
+          "end": 14.685,
+          "height_mm": 13.23,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.75,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.69,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.37,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.15,
+          "ref_cm": 0.16
+        },
+        {
+          "side": "l",
+          "start": 31.93,
+          "end": 32.91,
+          "max_cm": 0.28,
+          "ref_cm": 0.38
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 796,
+          "peak_t": 11.475,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1446,
+          "peak_t": 13.8,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1339,
+          "peak_t": 14.69,
+          "max_hop_mm": 13.23
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 495,
+          "peak_t": 17.32,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 771,
+          "peak_t": 21.305,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 597,
+          "peak_t": 24.35,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "source_transition": {
+      "joint_rmse_rad": 0.11273586355035452,
+      "arm_rmse_rad": 0.11490732040110911,
+      "pelvis_xy_rmse_m": 0.11452559919013855,
+      "kick_peak_error_mean_m": 0.016630171723185334,
+      "fall_min_z_m": 0.6934190623,
+      "peak_N": 1882,
+      "peak_t": 30.87,
+      "peak_BW": 5.37,
+      "excess3BW_Ns": 12.7,
+      "quiet_excess_mm_s": 0.4,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.63,
+          "end": 14.69,
+          "height_mm": 14.42,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.74,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.38,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.09,
+          "ref_cm": 0.16
+        },
+        {
+          "side": "l",
+          "start": 31.93,
+          "end": 32.91,
+          "max_cm": 0.28,
+          "ref_cm": 0.38
+        },
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.34,
+          "ref_cm": 0.46
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1013,
+          "peak_t": 11.47,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1256,
+          "peak_t": 13.8,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1368,
+          "peak_t": 14.695,
+          "max_hop_mm": 14.42
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 499,
+          "peak_t": 18.365,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 687,
+          "peak_t": 21.31,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 654,
+          "peak_t": 24.4,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "final_reset": {
+      "joint_rmse_rad": 0.09828075974226325,
+      "arm_rmse_rad": 0.08394739030718901,
+      "pelvis_xy_rmse_m": 0.200952696950431,
+      "kick_peak_error_mean_m": 0.02814710538985195,
+      "fall_min_z_m": 0.693151135,
+      "peak_N": 1716,
+      "peak_t": 6.295,
+      "peak_BW": 4.9,
+      "excess3BW_Ns": 16.02,
+      "quiet_excess_mm_s": 0.8,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.625,
+          "end": 14.705,
+          "height_mm": 23.4,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 1.76,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.69,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.53,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.19,
+          "ref_cm": 0.16
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.39,
+          "ref_cm": 0.37
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1030,
+          "peak_t": 11.43,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1231,
+          "peak_t": 13.69,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1710,
+          "peak_t": 14.71,
+          "max_hop_mm": 23.4
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 524,
+          "peak_t": 18.395,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 698,
+          "peak_t": 21.31,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 825,
+          "peak_t": 24.38,
+          "max_hop_mm": 0
+        }
+      ]
+    },
+    "final_transition": {
+      "joint_rmse_rad": 0.10907424030361622,
+      "arm_rmse_rad": 0.11391971266132277,
+      "pelvis_xy_rmse_m": 0.14480282495911764,
+      "kick_peak_error_mean_m": 0.030616207125201262,
+      "fall_min_z_m": 0.6927619407,
+      "peak_N": 1609,
+      "peak_t": 14.71,
+      "peak_BW": 4.59,
+      "excess3BW_Ns": 9.7,
+      "quiet_excess_mm_s": 0.66,
+      "events": [
+        {
+          "side": "l",
+          "start": 14.625,
+          "end": 14.7,
+          "height_mm": 20.69,
+          "ref_mm": 0.69,
+          "kick": true
+        }
+      ],
+      "worst_drift": [
+        {
+          "side": "l",
+          "start": 0.9,
+          "end": 4.59,
+          "max_cm": 0.81,
+          "ref_cm": 0.46
+        },
+        {
+          "side": "l",
+          "start": 6.66,
+          "end": 7.09,
+          "max_cm": 0.7,
+          "ref_cm": 0.41
+        },
+        {
+          "side": "r",
+          "start": 34.75,
+          "end": 37.31,
+          "max_cm": 0.51,
+          "ref_cm": 0.31
+        },
+        {
+          "side": "r",
+          "start": 31.59,
+          "end": 32.95,
+          "max_cm": 0.39,
+          "ref_cm": 0.37
+        },
+        {
+          "side": "r",
+          "start": 24.55,
+          "end": 24.97,
+          "max_cm": 0.17,
+          "ref_cm": 0.16
+        }
+      ],
+      "kick": [
+        {
+          "start": 10.74,
+          "end": 11.299999999999999,
+          "support": "l",
+          "peak_N": 1002,
+          "peak_t": 11.455,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 12.52,
+          "end": 13.44,
+          "support": "r",
+          "peak_N": 1153,
+          "peak_t": 13.64,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 13.98,
+          "end": 15.0,
+          "support": "l",
+          "peak_N": 1609,
+          "peak_t": 14.71,
+          "max_hop_mm": 20.69
+        },
+        {
+          "start": 17.32,
+          "end": 18.0,
+          "support": "l",
+          "peak_N": 524,
+          "peak_t": 17.825,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 20.52,
+          "end": 21.1,
+          "support": "r",
+          "peak_N": 685,
+          "peak_t": 21.325,
+          "max_hop_mm": 0
+        },
+        {
+          "start": 23.46,
+          "end": 24.06,
+          "support": "l",
+          "peak_N": 694,
+          "peak_t": 24.375,
+          "max_hop_mm": 0
+        }
+      ]
+    }
+  }
+}

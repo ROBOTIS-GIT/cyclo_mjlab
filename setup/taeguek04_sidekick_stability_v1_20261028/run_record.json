@@ -1,0 +1,16 @@
+{
+  "created_at": "2026-10-28T12:00:56.271420+09:00",
+  "repo_commit": "2a533f67d53f883daa7bb3096b2e76d5967463cb",
+  "container": "cyclo_mjlab",
+  "image_id": "sha256:292c31df948c388f61a35b9aea4edb777ebe3649a974180aaaa3b5a11e8f43e9",
+  "source_checkpoint_sha256": "dec8c2614dfaceffc7f118d306f86352f9904f29c882ac8b391e1fd350570a5f",
+  "motion_sha256": "bac8729ac92b6fd1c1479f1403fcb1cc183c0cc297670e1f1ea68858a190f1fb",
+  "command": "python -u setup/taeguek04_sidekick_stability_v1_20261028/launch.py 0 --num-envs 4096 --iter 10000",
+  "training_log": "/home/hc/robotis/cyclo_mjlab/setup/taeguek04_sidekick_stability_v1_20261028/training.log",
+  "stop": "SIGINT to matching train.py process",
+  "status": "running",
+  "host_pid": 972252,
+  "observed_at": "2026-10-28T12:01:34.161253+09:00",
+  "run_path": "logs/rsl_rl/k1_mimic/2026-10-28_03-01-10_taeguek04_sidekick_stability_v1_finetune_20261028_030101",
+  "first_checkpoint": "model_0.pt"
+}
