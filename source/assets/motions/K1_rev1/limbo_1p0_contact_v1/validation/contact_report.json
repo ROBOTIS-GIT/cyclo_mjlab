@@ -1,0 +1,113 @@
+{
+  "duration_s": 7.5,
+  "frames": 376,
+  "fps": 50.0,
+  "forward_travel_m": 2.5982535279241263,
+  "contact_intervals": [
+    {
+      "foot": 0,
+      "start": 0,
+      "end": 58,
+      "max_position_drift_m": 8.437869201368616e-08,
+      "max_angle_drift_deg": 1.5211672274939079e-05
+    },
+    {
+      "foot": 0,
+      "start": 88,
+      "end": 112,
+      "max_position_drift_m": 4.2654431718025136e-07,
+      "max_angle_drift_deg": 0.00013774752718596087
+    },
+    {
+      "foot": 0,
+      "start": 129,
+      "end": 153,
+      "max_position_drift_m": 7.75652780243974e-08,
+      "max_angle_drift_deg": 3.474281869677058e-06
+    },
+    {
+      "foot": 0,
+      "start": 184,
+      "end": 217,
+      "max_position_drift_m": 1.4135542995729901e-07,
+      "max_angle_drift_deg": 1.5921650309043613e-05
+    },
+    {
+      "foot": 0,
+      "start": 258,
+      "end": 306,
+      "max_position_drift_m": 1.1724750999125797e-07,
+      "max_angle_drift_deg": 1.0477313593511083e-05
+    },
+    {
+      "foot": 0,
+      "start": 342,
+      "end": 376,
+      "max_position_drift_m": 1.0385680902229183e-08,
+      "max_angle_drift_deg": 7.882982545044884e-07
+    },
+    {
+      "foot": 1,
+      "start": 0,
+      "end": 19,
+      "max_position_drift_m": 4.4802598040746325e-09,
+      "max_angle_drift_deg": 5.35383531176447e-07
+    },
+    {
+      "foot": 1,
+      "start": 49,
+      "end": 89,
+      "max_position_drift_m": 1.555621864912994e-07,
+      "max_angle_drift_deg": 3.1323145696283236e-05
+    },
+    {
+      "foot": 1,
+      "start": 109,
+      "end": 133,
+      "max_position_drift_m": 3.3650638510371426e-07,
+      "max_angle_drift_deg": 2.0201796235490026e-05
+    },
+    {
+      "foot": 1,
+      "start": 150,
+      "end": 187,
+      "max_position_drift_m": 9.114836181872757e-08,
+      "max_angle_drift_deg": 8.786616611925079e-06
+    },
+    {
+      "foot": 1,
+      "start": 214,
+      "end": 266,
+      "max_position_drift_m": 1.4018334445446415e-07,
+      "max_angle_drift_deg": 1.8474977037103766e-05
+    },
+    {
+      "foot": 1,
+      "start": 306,
+      "end": 376,
+      "max_position_drift_m": 3.944545022722603e-08,
+      "max_angle_drift_deg": 1.7635447820368734e-06
+    }
+  ],
+  "max_stance_position_drift_m": 4.2654431718025136e-07,
+  "max_stance_angle_drift_deg": 0.00013774752718596087,
+  "max_planned_contact_height_abs_m": 2.082692659561864e-05,
+  "minimum_sole_height_m": 2.000582621390374e-05,
+  "frames_without_planned_support": 0,
+  "max_foot_target_error_m": 6.286616603540049e-06,
+  "max_self_penetration_m": 0.0,
+  "worst_self_contact": null,
+  "joint_limit_violations_rad": {},
+  "force_and_torque_feasible_frames": 376,
+  "force_infeasible_frames": [],
+  "minimum_ZMP_support_margin_m": 0.0006266719675079857,
+  "maximum_torque_fraction": 0.9200001260938189,
+  "friction_assumption": 0.6,
+  "friction_cone": "inner square, mu/sqrt(2) per horizontal axis",
+  "max_joint_velocity_rad_s": 5.503726047435819,
+  "bar_underside_m": 1.0,
+  "bar_y_m": -1.4000000000000001,
+  "bar_position_assumed": true,
+  "scope": "Necessary contact-force and actuator-bound feasibility plus reference kinematics; no closed-loop policy or hardware validation",
+  "contact_reference_pass": true
+}

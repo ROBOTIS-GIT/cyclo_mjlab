@@ -1,0 +1,48 @@
+{
+  "pass": true,
+  "checks": {
+    "source_unchanged": true,
+    "finite_376_by_30": true,
+    "csv_round_trip": true,
+    "50hz_7p5sec": true,
+    "110cm_bar": true,
+    "contact_timing_preserved": true,
+    "stationary_endpoints": true,
+    "contact_reference": true,
+    "reserve_dynamics_all_frames": true,
+    "bar_clearance_at_frames_and_midpoints": true,
+    "no_self_penetration": true,
+    "floor_interpolation_error_under_0p2mm": true,
+    "joint_limits": true,
+    "base_high_frequency_motion": true
+  },
+  "csv_sha256": "ab6d7e94a95cdceadf41ab0ea16a6205500ef3c84dcb30557f42da537e615467",
+  "jitter": {
+    "source_120cm": {
+      "translation_15hz_highpass_rms_mm": [
+        0.004537087323215768,
+        0.010656550018006647,
+        0.0029001072353036636
+      ],
+      "rotation_15hz_highpass_rms_deg": [
+        4.876568579332143e-05,
+        4.361288830587959e-05,
+        0.00019811085426664984
+      ]
+    },
+    "edited_110cm": {
+      "translation_15hz_highpass_rms_mm": [
+        0.004106341630501024,
+        0.00965511768451516,
+        0.0025347173617622826
+      ],
+      "rotation_15hz_highpass_rms_deg": [
+        3.811287766027647e-05,
+        3.8627167541522405e-05,
+        0.00019811085426696965
+      ]
+    },
+    "pass": true
+  },
+  "scope": "Local reference validation; no trained-policy rollout or hardware execution."
+}

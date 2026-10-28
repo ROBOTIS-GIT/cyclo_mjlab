@@ -334,3 +334,6 @@ for _v2_chapter in (4, 5):
     rl_cfg=k1_rev1_taeguek_support_v2_ppo_cfg(),
     runner_cls=TaegeukSupportV2Runner,
   )
+
+# Limbo remains isolated from the existing UMR/Taekwondo tasks.
+from . import limbo_tasks as _limbo_tasks  # noqa: F401

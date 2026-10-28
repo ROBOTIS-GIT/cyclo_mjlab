@@ -1,0 +1,22 @@
+{
+  "frames": 376,
+  "fps": 50.0,
+  "last_frame_time_s": 7.5,
+  "root_travel_y_m": 2.6511600873457875,
+  "model_sha256": "44825ebaf7693fdbb27b8225a8da7be1219c446040e6c49ee6e27ed9d11ab53f",
+  "source_sha256": "6c8da2d577ca45048f97167bc2acc31c05bd27a2649435627260a49c3cf4c853",
+  "output_sha256": "8f39146e5a049511a24ec38c95f9c11e341ec4d31a04ad3ca92e5de84d7255f6",
+  "joint_limit_margin_rad": 5.000000496291346e-05,
+  "fk_position_error_m": 2.3647538138525233e-07,
+  "fk_rotation_error_rad": 2.418797220250891e-07,
+  "qpos_roundtrip_max_error": 1.1852410874979569e-07,
+  "smoothing": false,
+  "retiming": false,
+  "planned_liftoffs_left_right": [
+    5,
+    5
+  ],
+  "source": "contact V4 middle-wobble repair",
+  "bar_underside_m": 1.3,
+  "bar_y_m": -1.4
+}

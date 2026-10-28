@@ -1,0 +1,21 @@
+{
+  "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/work/limbo_1p1_contact_v1/real_limbo_1.1_contact_k1_50hz.npz",
+  "source_sha256": "62159f1d530a65b9d519e38eec642c18b224499cfca5fb69d3d074a3895d17b4",
+  "method": "Full trajectory inverse-dynamics optimization from smooth 110cm V1 with preserved contact timing, planted feet, signed bar and knee distance constraints, joint limits, friction and torque limits, adjacent-frame smoothness penalties",
+  "fps": 50,
+  "frames": 376,
+  "duration_s": 7.5,
+  "bar_underside_m": 1.0,
+  "bar_y_m": -1.4,
+  "initial_peak_lowering_m": 0.075,
+  "initial_additional_backbend_deg": 5,
+  "backbend_reference_lower_bound_offset_rad": 0.22,
+  "roll_reference_offset_rad": 0.08,
+  "step_adjustment_bounds_xy_m": [
+    0.05,
+    0.06
+  ],
+  "selected_solver_file": "direct_5.npz",
+  "knee_clearance_target_m": 0.008,
+  "bar_clearance_target_m": 0.025
+}

@@ -1,0 +1,16 @@
+{
+  "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/work/limbo_1p2_contact_v2/real_limbo_1.2_contact_k1_50hz.npz",
+  "source_sha256": "771b9460f8d98239558a348c402e4255c4bff263946521cc468dae2fd7844cf2",
+  "method": "Joint full-trajectory optimization from smooth 120cm V2; fixed contact timing, planted-foot SE3 constraints, numerical signed bar-distance constraints, friction/torque constrained inverse dynamics, adjacent second/third differences, smooth arm clearance and final dynamics rebalance",
+  "fps": 50,
+  "frames": 376,
+  "duration_s": 7.5,
+  "bar_underside_m": 1.1,
+  "bar_y_m": -1.4,
+  "initial_peak_lowering_m": 0.075,
+  "initial_additional_backbend_deg": 5,
+  "selected_solver_file": "direct_3.npz",
+  "forward_step_scaffold_scale": 0.8,
+  "bar_clearance_target_m": 0.025,
+  "arm_clearance_repair": "arm_clearance_repair.json"
+}

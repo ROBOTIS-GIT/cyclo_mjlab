@@ -1,0 +1,19 @@
+{
+  "frames": 1499,
+  "fps": 50.0,
+  "duration_s": 29.98,
+  "last_frame_time_s": 29.96,
+  "model_sha256": "44825ebaf7693fdbb27b8225a8da7be1219c446040e6c49ee6e27ed9d11ab53f",
+  "source_sha256": "aedc431d3c5e9c2c082744fb7e3bd98eb802af233a97c4d6c93895cb4c0f58d3",
+  "output_sha256": "403af68fabf8a47ae4c2e54f045d3f1bf9fc255100e7c92448afcb4eb07e4177",
+  "joint_limit_margin_rad": 0.001951358342427878,
+  "fk_position_error_m": 8.721872997842671e-08,
+  "fk_rotation_error_rad": 2.585509480759787e-07,
+  "contact_order": [
+    "left",
+    "right"
+  ],
+  "intended_steps": 4,
+  "stage": "nominal_tracking_without_bar",
+  "notes": "Reference validation is not a trained-policy success result."
+}

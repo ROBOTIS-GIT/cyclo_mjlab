@@ -1,0 +1,25 @@
+{
+  "method": "Adjacent manifold second differences and second/third-difference regularization; smoothed swing targets with oriented sole height bounds; foot-to-foot clearance constraints; smooth shoulder clearance repair; contact-constrained inverse dynamics",
+  "source": "limbo_1p2_contact_v1/direct_2.npz",
+  "fps": 50,
+  "frames": 376,
+  "duration_s": 7.5,
+  "max_weighted_seed_foot_residual": 2.5179256846197266e-06,
+  "selected_solver_file": "direct_8.npz",
+  "forward_step_scaffold_scale": 0.8,
+  "arm_clearance_repair": {
+    "maximum_adjustment_deg": [
+      3.2945073220022327,
+      2.864788975654116
+    ],
+    "target_hand_hip_clearance_m": 0.012
+  },
+  "swing_clearance_repair": {
+    "max_target_lift_mm": [
+      10.163950274228172,
+      2.9179439250693466
+    ],
+    "method": "Constrained smooth swing height using oriented full sole sphere envelope and 0.3\u20131.8mm swing clearance"
+  },
+  "scope": "Reference poses and necessary force/torque feasibility only. This does not certify policy tracking, disturbance recovery or hardware performance."
+}

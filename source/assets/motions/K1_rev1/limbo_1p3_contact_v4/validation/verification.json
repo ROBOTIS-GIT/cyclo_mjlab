@@ -1,0 +1,69 @@
+{
+  "status": "reference verified, not closed-loop or hardware validated",
+  "frames": 376,
+  "fps": 50,
+  "duration_s": 7.5,
+  "contact_conditions_verified": true,
+  "contact_timing_unchanged": true,
+  "force_torque_feasible_frames": 376,
+  "friction": 0.55,
+  "torque_limit_fraction": 0.95,
+  "stance_drift_m": 9.693096211319177e-06,
+  "conservative_bar_clearance_m": 0.09688033514339582,
+  "bar_position_assumed": true,
+  "midpoint_interpolation_floor_penetration_m": 0.0007616400672731975,
+  "wobble_metrics": {
+    "before": {
+      "middle_min_pelvis_height_m": 0.6127560274195694,
+      "middle_roll_range_deg": [
+        -12.104443137997045,
+        7.444122587644253
+      ],
+      "middle_peak_roll_speed_deg_s": 103.5022585202347,
+      "middle_peak_roll_acceleration_deg_s2": 1174.3130196218476,
+      "middle_peak_pitch_acceleration_deg_s2": 967.0316657189071,
+      "middle_peak_vertical_speed_m_s": 0.4711602000994436,
+      "middle_vertical_excursion_m": 0.11451292562633864,
+      "endpoint_max_velocity": 6.522560269672795e-14
+    },
+    "after": {
+      "middle_min_pelvis_height_m": 0.6677409569935211,
+      "middle_roll_range_deg": [
+        1.4864208810162747,
+        6.603313019672964
+      ],
+      "middle_peak_roll_speed_deg_s": 19.928883725579148,
+      "middle_peak_roll_acceleration_deg_s2": 161.90312749980782,
+      "middle_peak_pitch_acceleration_deg_s2": 147.71331642830398,
+      "middle_peak_vertical_speed_m_s": 0.26808014979943506,
+      "middle_vertical_excursion_m": 0.052982289166263685,
+      "endpoint_max_velocity": 9.54128404973345e-13
+    },
+    "scope": "Motion smoothness over 2.7-3.7s; pose reference only, no closed-loop rollout."
+  },
+  "video": {
+    "frames": 188,
+    "fps": 25.0,
+    "left": "v3 before",
+    "right": "v4 middle step repair"
+  },
+  "sha256": {
+    "real_limbo_1.3_contact_k1_50hz.csv": "52f04e1a126c8f5bcb897c64951a41b106b74957c21ef92c42af439f4aaaacda",
+    "real_limbo_1.3_contact_k1_50hz.npz": "877a098a7213bc80bdfd0043fb3ee107a70c15ffa336eb0204abc6e94ab87c0b",
+    "contact_v3_vs_v4.mp4": "475da1c7bca01c752e788282d2b162a60801625af4d87e9d7b3d892a822b9ed5",
+    "middle_closeup_half_speed.mp4": "bf8770d0ea4931745ff93b512f0bd971ba500fca990a33a218cbe1911658a94b"
+  },
+  "limitations": [
+    "Necessary inverse dynamics only; controller tracking and real robot not tested.",
+    "Linear interpolation between 50Hz samples can cause small floor intrusion; use contact-aware playback and validate tracking."
+  ],
+  "closeup_video": {
+    "file": "middle_closeup_half_speed.mp4",
+    "source_time_start_s": 2.4,
+    "source_time_end_s": 4.0,
+    "playback_speed": 0.5,
+    "frames": 81,
+    "fps": 25,
+    "supports_translucent_for_visibility": true
+  }
+}

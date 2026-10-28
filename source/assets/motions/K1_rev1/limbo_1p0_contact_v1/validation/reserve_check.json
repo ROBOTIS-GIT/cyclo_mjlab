@@ -1,0 +1,9 @@
+{
+  "frames": 376,
+  "feasible_frames": 376,
+  "friction_coefficient": 0.55,
+  "torque_limit_fraction": 0.95,
+  "maximum_minimum_required_torque_fraction": 0.9200001260938189,
+  "minimum_ZMP_support_margin_m": 0.0006266719675079857,
+  "scope": "Necessary inverse dynamics feasibility, not controller or hardware validation"
+}

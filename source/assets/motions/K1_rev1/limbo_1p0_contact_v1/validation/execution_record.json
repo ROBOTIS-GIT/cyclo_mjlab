@@ -1,0 +1,27 @@
+{
+  "completed_at": "2026-10-26T17:00:54.323811+09:00",
+  "request": "Create 100cm limbo reference based on validated 110cm V1",
+  "source": "/home/hc/Documents/ChatGPT/UMR & HIFAR Project/work/limbo_1p1_contact_v1/real_limbo_1.1_contact_k1_50hz.npz",
+  "output_csv": "/home/hc/Desktop/limbo/limbo_100cm_contact_v1_50hz.csv",
+  "csv_sha256": "a88b950db6ae1a945fd0f25d6654e49557b1839b2f5d6403f0c4bfc3823539ab",
+  "preserved_original_desktop_100cm_sha256": "ec1f3d3f9f2237b34e46b537c54420d703c211780cc280490a4d35ebb7f860e1",
+  "verification": "verification.json",
+  "checks_passed": true,
+  "viewer": "http://127.0.0.1:8849/",
+  "frames": 376,
+  "fps": 50,
+  "duration_s": 7.5,
+  "minimum_bar_clearance_m": 0.02492221469357583,
+  "interpolated_floor_penetration_m": 7.098944581504073e-05,
+  "reserve_dynamics": {
+    "frames": 376,
+    "feasible_frames": 376,
+    "friction_coefficient": 0.55,
+    "torque_limit_fraction": 0.95,
+    "maximum_minimum_required_torque_fraction": 0.9200001260938189,
+    "minimum_ZMP_support_margin_m": 0.0006266719675079857,
+    "scope": "Necessary inverse dynamics feasibility, not controller or hardware validation"
+  },
+  "training_started": false,
+  "hardware_run": false
+}

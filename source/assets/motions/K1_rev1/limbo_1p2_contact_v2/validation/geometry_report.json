@@ -1,0 +1,23 @@
+{
+  "status": "contact_120cm_v2_reference_geometry_check",
+  "frames": 376,
+  "fps": 50.0,
+  "last_frame_time_s": 7.5,
+  "finite": true,
+  "original_peak_backbend_deg": 39.822655282097195,
+  "edited_peak_backbend_deg": 38.2516634697136,
+  "horizontal_travel_m": 2.6457992243300095,
+  "maximum_foot_target_position_error_m": 1.0459961740422655e-05,
+  "maximum_planned_stance_drift_m": 7.955190334708758e-06,
+  "minimum_sole_envelope_height_m": -6.240524657028217e-05,
+  "maximum_floor_penetration_m": 6.240524657028217e-05,
+  "maximum_self_penetration_m": 0.0,
+  "maximum_bar_penetration_m": 0.0,
+  "conservative_bar_clearance_lower_bound_m": 0.054243175949373335,
+  "bar_underside_m": 1.2,
+  "bar_y_m": -1.4000000000000001,
+  "bar_position_assumed": true,
+  "joint_limit_violations_rad": {},
+  "max_joint_speed_rad_s": 4.701216832236968,
+  "scope": "Reference kinematics at frames and interpolated midpoints; enabled collisions and conservative visual/collision AABBs. Contact labels inferred from source, no inverse-dynamics or closed-loop/hardware validation."
+}
