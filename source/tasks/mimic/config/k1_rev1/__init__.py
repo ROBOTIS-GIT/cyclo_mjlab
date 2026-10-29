@@ -335,5 +335,5 @@ for _v2_chapter in (4, 5):
     runner_cls=TaegeukSupportV2Runner,
   )
 
-# Limbo remains isolated from the existing UMR/Taekwondo tasks.
+# Limbo uses the standard K1 Mimic environment and PPO.
 from . import limbo_tasks as _limbo_tasks  # noqa: F401
