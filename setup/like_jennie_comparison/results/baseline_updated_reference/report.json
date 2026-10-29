@@ -1,0 +1,35 @@
+{
+  "policy": "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/baseline_original/exported/policy.onnx",
+  "config": "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/baseline_original/params/sim2real.yaml",
+  "motion_csv": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.csv",
+  "motion_npz": "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.npz",
+  "model": "/home/hc/robotis/cyclo_mjlab/third_party/ai_sapiens/ai_sapiens_description/mujoco/k1/scene.xml",
+  "sha256": {
+    "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/baseline_original/exported/policy.onnx": "a1817e33b31008418cb4c655f8e0b980671db5c62c71a69fd723f6ecf1aef8d9",
+    "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/baseline_original/params/sim2real.yaml": "27b4846b9ca768c46562db7f9dc59802a09f4e1a8d8a66e7844c44b303939aad",
+    "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.csv": "bec17a265a9c76bc5c337df1cf41e257c564e79353c9aa60aa34241e25423145",
+    "/home/hc/robotis/cyclo_mjlab/source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.npz": "9d10ecd0c1d77c58be4d1ae3aa43a0079bc5aa5e4ecc627d569d92548adb3f6c",
+    "/home/hc/robotis/cyclo_mjlab/third_party/ai_sapiens/ai_sapiens_description/mujoco/k1/scene.xml": "b323c5b9d80a8d416da34c4aff083f61a96d34c66365c6a9c6d34b733f9450a3",
+    "/home/hc/robotis/cyclo_mjlab/third_party/ai_sapiens/ai_sapiens_description/mujoco/k1/k1.xml": "21c267e6ac7c39f1a9cc2aef8eefd9eec8adf0940ea6389ce3b6f998fe198dac",
+    "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/baseline_original/exported/policy.onnx.data": "72ff4a600f4ac7869e6103b0cc4571fd51bc3f5c3882c4c9728536bc6809e012"
+  },
+  "mode": "first reference pose; zero velocity; 0.3 s target blend; nominal deterministic MuJoCo; no disturbances",
+  "fps": 50,
+  "physics_dt": 0.002,
+  "frames": 2620,
+  "requested_frames": 2620,
+  "failure": null,
+  "joint_rmse_rad": 0.11026857343813361,
+  "arm_joint_rmse_rad": 0.12000218078878436,
+  "pelvis_xy_rmse_m": 0.1251494779775671,
+  "foot_position_rmse_m": 0.13069964861888425,
+  "minimum_pelvis_height_m": 0.587629298234397,
+  "peak_pelvis_tilt_deg": 51.20440168675858,
+  "maximum_nonfoot_ground_normal_N": 0.0,
+  "peak_foot_normal_N": [
+    592.0462281009915,
+    672.5125150839942
+  ],
+  "loaded_contact_point_speed_over_0_15_fraction": 0.09755631920580374,
+  "caveat": "Contact speed counts instantaneous loaded collision points; not direct measured physical slip. No fall or stability claim from one trial."
+}

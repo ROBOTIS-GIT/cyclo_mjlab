@@ -26,6 +26,9 @@ from source.tasks.mimic.curriculum_runner import StandUpCurriculumRunner, KoryoC
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
 from .dance2_env_cfg import k1_rev1_dance2_env_cfg
+from .like_jennie_env_cfg import k1_rev1_like_jennie_env_cfg, k1_rev1_like_jennie_ppo_cfg
+from .like_jennie_tracking_env_cfg import like_jennie_tracking_env_cfg, like_jennie_tracking_ppo_cfg, like_jennie_tracking_v2_env_cfg, like_jennie_tracking_v2_ppo_cfg
+from source.tasks.mimic.like_jennie_refine_runner import LikeJennieRefineRunner
 from .koryo_env_cfg import k1_rev1_koryo_env_cfg
 from .koryo_curriculum_env_cfg import k1_rev1_koryo_curriculum_env_cfg
 from .koryo_performance_env_cfg import k1_rev1_koryo_performance_env_cfg, k1_rev1_koryo_performance_ppo_cfg
@@ -71,6 +74,29 @@ register_mjlab_task(
   runner_cls=ReadyHandoffRunner,
 )
 
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-LikeJennie-TrackingRefineV2",
+  env_cfg=like_jennie_tracking_v2_env_cfg(),
+  play_env_cfg=like_jennie_tracking_v2_env_cfg(play=True),
+  rl_cfg=like_jennie_tracking_v2_ppo_cfg(),
+  runner_cls=LikeJennieRefineRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-LikeJennie-TrackingRefineV1",
+  env_cfg=like_jennie_tracking_env_cfg(),
+  play_env_cfg=like_jennie_tracking_env_cfg(play=True),
+  rl_cfg=like_jennie_tracking_ppo_cfg(),
+  runner_cls=LikeJennieRefineRunner,
+)
+
+register_mjlab_task(
+  task_id="Cyclo-Mimic-K1-Rev1-LikeJennie-Taeguek04Rewards",
+  env_cfg=k1_rev1_like_jennie_env_cfg(),
+  play_env_cfg=k1_rev1_like_jennie_env_cfg(play=True),
+  rl_cfg=k1_rev1_like_jennie_ppo_cfg(),
+)
 
 register_mjlab_task(
   task_id="Cyclo-Mimic-K1-Rev1-Dance1",

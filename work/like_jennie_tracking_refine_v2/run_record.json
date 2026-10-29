@@ -1,0 +1,25 @@
+{
+  "start_kst": "2026-10-29T16:01:21.249061+09:00",
+  "task": "Cyclo-Mimic-K1-Rev1-LikeJennie-TrackingRefineV2",
+  "host_pid": 2286823,
+  "container": "cyclo_mjlab",
+  "training_directory": "logs/rsl_rl/k1_mimic/2026-10-29_07-01-11_like_jennie_tracking_refine_v2",
+  "log": "work/like_jennie_tracking_refine_v2/training.log",
+  "checkpoint": "logs/rsl_rl/k1_mimic/2026-10-29_05-48-36_like_jennie_taeguek04_rewards_scratch/model_1500.pt",
+  "checkpoint_sha256": "214f0254831b1b49b9058b73e230eb4f7ef00a5ee4645e95db3acd8f42be281b",
+  "optimizer": "fresh",
+  "num_envs": 4096,
+  "max_iterations": 200,
+  "save_interval": 100,
+  "learning_rate": 3e-05,
+  "source_sha256": {
+    "source/tasks/mimic/config/k1_rev1/like_jennie_tracking_env_cfg.py": "1bc882a6c35d9e6f468354c66c13b106dcf8e89cdc1b3205fbc51cfcfab88624",
+    "source/tasks/mimic/mdp/like_jennie_tracking_rewards.py": "21378ed77e7069c03e5e469cf778c5268082750561aa3f3562660a6f30e58dcf",
+    "source/tasks/mimic/like_jennie_refine_runner.py": "d5d18512f531f825e07e0227911e169cc98197e0e9ef10da25300e5f8f74a7c7",
+    "source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.npz": "9d10ecd0c1d77c58be4d1ae3aa43a0079bc5aa5e4ecc627d569d92548adb3f6c"
+  },
+  "stop": "Verify task command in container, then send SIGINT to the specific container PID; do not stop container.",
+  "status": "completed_200_updates",
+  "final_checkpoint": "logs/rsl_rl/k1_mimic/2026-10-29_07-01-11_like_jennie_tracking_refine_v2/model_199.pt",
+  "comparison": "setup/like_jennie_comparison/results/tracking_refine_v2_199/comparison.json"
+}

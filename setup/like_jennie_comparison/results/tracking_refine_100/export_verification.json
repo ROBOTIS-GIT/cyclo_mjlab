@@ -1,0 +1,7 @@
+{
+  "checkpoint_iteration": 100,
+  "checkpoint_sha256": "df1e07e5347e5dd94445ce3e75c4001ea8a4e22b97a7bd4ab6fad3a919ac3b58",
+  "onnx_sha256": "aecc0f150180e947a48b264078739347b61a665094b10104344bd0052175308c",
+  "test_observations": 100,
+  "max_absolute_error": 1.1444091796875e-05
+}

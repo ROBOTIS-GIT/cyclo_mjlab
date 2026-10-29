@@ -1,0 +1,27 @@
+{
+  "started_kst": "2026-10-29T15:56:20.428148+09:00",
+  "task": "Cyclo-Mimic-K1-Rev1-LikeJennie-TrackingRefineV1",
+  "process_pid_host": 2280362,
+  "container": "cyclo_mjlab",
+  "source_checkpoint": "/home/hc/robotis/cyclo_mjlab/logs/rsl_rl/k1_mimic/2026-10-29_05-48-36_like_jennie_taeguek04_rewards_scratch/model_1500.pt",
+  "source_checkpoint_sha256": "214f0254831b1b49b9058b73e230eb4f7ef00a5ee4645e95db3acd8f42be281b",
+  "source_iteration": 1500,
+  "optimizer": "fresh",
+  "num_envs": 4096,
+  "max_additional_iterations": 500,
+  "save_interval": 100,
+  "training_directory": "logs/rsl_rl/k1_mimic/2026-10-29_06-55-58_like_jennie_tracking_refine_v1",
+  "status_evidence": "docker top, process PID 2280362 and TensorBoard events",
+  "progress_monitor": "TensorBoard events in training_directory",
+  "stop_command": "kill -INT 2280362 (verify command line and PID before sending)",
+  "source_sha256": {
+    "source/tasks/mimic/config/k1_rev1/like_jennie_tracking_env_cfg.py": "d0b98a61db52a7d42b3c83c3f6a63106a04d6c5fb17ba4d814638ebfcda0d87e",
+    "source/tasks/mimic/mdp/like_jennie_tracking_rewards.py": "21378ed77e7069c03e5e469cf778c5268082750561aa3f3562660a6f30e58dcf",
+    "source/tasks/mimic/like_jennie_refine_runner.py": "d5d18512f531f825e07e0227911e169cc98197e0e9ef10da25300e5f8f74a7c7",
+    "source/assets/motions/K1_rev1/like_jennie_early_plus10/like_jennie_50hz.npz": "9d10ecd0c1d77c58be4d1ae3aa43a0079bc5aa5e4ecc627d569d92548adb3f6c"
+  },
+  "note": "No continuing training stdout log; TensorBoard events and process status are authoritative.",
+  "status": "stopped_after_checkpoint_200",
+  "stop_reason": "world pelvis and foot errors worse than start at checkpoints 100 and 200",
+  "host_signal_failed": "host SIGINT permission denied; verified container SIGINT succeeded"
+}

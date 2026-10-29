@@ -1,0 +1,127 @@
+{
+  "baseline": "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/results/baseline_updated_reference",
+  "candidate": "/home/hc/robotis/cyclo_mjlab/setup/like_jennie_comparison/results/candidate_1500",
+  "windows": {
+    "full": {
+      "seconds": [
+        0,
+        52.38
+      ],
+      "baseline": {
+        "joint_rmse_rad": 0.1102641439886301,
+        "arm_rmse_rad": 0.11997553210837862,
+        "foot_rmse_m": 0.13066778332798737,
+        "min_pelvis_height_m": 0.587629298234397,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          592.0462281009915,
+          672.5125150839942
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.09756004429340563
+      },
+      "candidate": {
+        "joint_rmse_rad": 0.17166653134620924,
+        "arm_rmse_rad": 0.13193653119596066,
+        "foot_rmse_m": 0.2751186745692143,
+        "min_pelvis_height_m": 0.6378505979422406,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          613.6308640524784,
+          1302.5549527593014
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.04391156592462484
+      }
+    },
+    "early": {
+      "seconds": [
+        0,
+        3
+      ],
+      "baseline": {
+        "joint_rmse_rad": 0.11565158900285671,
+        "arm_rmse_rad": 0.1469039486555213,
+        "foot_rmse_m": 0.038061855296988974,
+        "min_pelvis_height_m": 0.7414858952488698,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          321.1801447105177,
+          347.2107356898729
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.004666666666666667
+      },
+      "candidate": {
+        "joint_rmse_rad": 0.08465560754700582,
+        "arm_rmse_rad": 0.08653150102812165,
+        "foot_rmse_m": 0.040440595242847266,
+        "min_pelvis_height_m": 0.7697438794879217,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          336.06426859836427,
+          316.6178086166751
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.0
+      }
+    },
+    "middle": {
+      "seconds": [
+        3,
+        40
+      ],
+      "baseline": {
+        "joint_rmse_rad": 0.11713599836298381,
+        "arm_rmse_rad": 0.12331732996484797,
+        "foot_rmse_m": 0.13811351729499882,
+        "min_pelvis_height_m": 0.587629298234397,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          592.0462281009915,
+          672.5125150839942
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.12562841234661334
+      },
+      "candidate": {
+        "joint_rmse_rad": 0.18935455110036417,
+        "arm_rmse_rad": 0.1442875750164737,
+        "foot_rmse_m": 0.25498680844321175,
+        "min_pelvis_height_m": 0.6378505979422406,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          613.6308640524784,
+          1302.5549527593014
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.05800313530461106
+      }
+    },
+    "late": {
+      "seconds": [
+        40,
+        52.38
+      ],
+      "baseline": {
+        "joint_rmse_rad": 0.08481116344523598,
+        "arm_rmse_rad": 0.10110738506287527,
+        "foot_rmse_m": 0.12198080298299517,
+        "min_pelvis_height_m": 0.6656681164262555,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          424.9600005622428,
+          458.3211383747029
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.03618739903069467
+      },
+      "candidate": {
+        "joint_rmse_rad": 0.1256540073296071,
+        "arm_rmse_rad": 0.09805421286008902,
+        "foot_rmse_m": 0.35430365005702985,
+        "min_pelvis_height_m": 0.6450068834770493,
+        "nonfoot_contact_peak_n": 0.0,
+        "foot_peak_n": [
+          343.50190865679815,
+          261.28046326816445
+        ],
+        "loaded_contact_point_speed_over_0_15_fraction": 0.012439418416801292
+      }
+    }
+  },
+  "caveat": "One nominal deterministic rollout; contact speed is instantaneous, not measured slip; lower pelvis height can be an intended pose."
+}
