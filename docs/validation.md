@@ -49,6 +49,15 @@ CUDA_VISIBLE_DEVICES='' WANDB_MODE=disabled TORCHDYNAMO_DISABLE=1 \
   python tests/supermimic/validate_native.py GenCoord dance1 /tmp/cyclo-supermimic-gen
 CUDA_VISIBLE_DEVICES='' WANDB_MODE=disabled TORCHDYNAMO_DISABLE=1 \
   python tests/supermimic/validate_native.py MaxCoord dance2 /tmp/cyclo-supermimic-max
+
+# Run sequentially on a free GPU. First compilation can take several minutes.
+python tests/supermimic/validate_native.py GenCoord dance1 /tmp/cyclo-supermimic-gen-cuda \
+  --device cuda:0 --learner-execution eager
+python tests/supermimic/validate_native.py MaxCoord dance2 /tmp/cyclo-supermimic-max-compiled \
+  --device cuda:0 --learner-execution compiled
+# Optional small sensor/history check; repeat with either representation.
+python tests/supermimic/validate_native.py GenCoord dance1 /tmp/cyclo-supermimic-history \
+  --device cuda:0 --actor-obs proprio --history-length 2
 ```
 
 The harness enforces `WANDB_MODE=disabled` in its own process, verifies the active
@@ -66,11 +75,18 @@ reloads the local bundle and takes four finite-action native playback steps.
 The nondefault 0.0025 s simulation timestep and decimation 8 must survive reload;
 checking only their 50 Hz product would miss a representation-integration change.
 
-These runs use privileged `rep_state`, history length 1 and eager CPU execution.
-They do not establish full `proprio`/multi-frame history acceptance, CUDA graph
-capture or compiled learner performance. `WANDB_MODE=disabled` needs no local W&B
-service; offline mode is also supported but starts that service. Regression tests
-assert that offline/disabled/dryrun artifact handling never calls the remote API.
+The default is privileged `rep_state`, history length 1 and eager CPU execution.
+The CUDA eager option disables Torch compilation and extends only the test's
+capture warmup. The compiled option keeps the production warmup/capture schedule
+and asserts that both learner CUDA graphs were captured and Torch compiled graphs
+were generated. Small networks, two environments and five updates per learner
+keep these checks bounded; they are not performance benchmarks or full training
+acceptance. `proprio` with history length 2 is a separate eager smoke, not evidence
+for every history/noise/observation configuration.
+
+`WANDB_MODE=disabled` needs no local W&B service; offline mode is also supported
+but starts that service. Regression tests assert that offline/disabled/dryrun
+artifact handling never calls the remote API.
 
 ## Existing BeyondMimic behavior
 
@@ -91,9 +107,34 @@ checkpoint format. See [beyondmimic.md](beyondmimic.md) for normal commands and
 
 The stable-runtime integration passed all 82 repository tests with native CPU
 checks enabled. The pinned shared suite separately passed 232 tests and 13
-subtests in the same stable runtime. Both GenCoord/Dance1 and MaxCoord/Dance2 acceptance runs completed
-five world-model and five actor updates, saved final weights, reloaded and played
-four native steps. Source NPZ bytes and 50 Hz frame sequences remained unchanged.
+subtests in the same stable runtime. Both GenCoord/Dance1 and MaxCoord/Dance2 CPU
+acceptance runs completed five world-model and five actor updates, saved final
+weights, reloaded and played four native steps.
+
+The Docker image built from source revision `305a380` subsequently passed all 82
+repository tests, with the baseline native PPO checks using CUDA. Its installed
+versions and 155 native/shared-source hashes matched the checkout; runtime tests
+had networking disabled, enforced W&B disabled mode, and no host source or Python
+environment mounted. The native SuperMimic matrix passed as follows:
+
+| Mode | GenCoord / Dance1 | MaxCoord / Dance2 |
+| --- | --- | --- |
+| CUDA eager, `rep_state`, history 1 | Passed | Passed |
+| CUDA compiled/captured, `rep_state`, history 1 | Passed; 11 compiled graphs | Passed; 10 compiled graphs |
+| CUDA eager, `proprio`, history 2 | Bounded smoke passed | Bounded smoke passed |
+
+Every cell completed five updates per learner, changed Muon-managed matrices,
+kept world-model parameters frozen during actor updates, saved exact final
+parameters, and reloaded for four finite-action native playback steps. Both
+compiled cases captured the world-model and actor CUDA graphs. Their first actor
+updates took about 221 and 188 seconds including compilation; these are startup
+observations, not throughput claims. The history-mode smoke does not cover
+compiled history-mode training or every observation/randomization setting.
+Fresh container processes also passed the installed `cyclo-supermimic --help`
+entry point and the common `play.py --algorithm supermimic` CLI for both local
+CUDA-trained bundles, with two headless CUDA steps each and no W&B sync.
+
+Source NPZ bytes and 50 Hz frame sequences remained unchanged.
 The common dependency resolver retained all binary package versions from the
 validated baseline lock. Generated logs/checkpoints remain outside Git.
 
@@ -105,9 +146,14 @@ structural compatibility, not historical trained-policy quality. Older Python
 3.13/research-backend SuperMimic and Python 3.11/MJLab 1.2 checks are historical;
 they do not validate this stable-runtime combination.
 
-Docker build/start remains unverified after an earlier storage-limited unpack
-was canceled. No Docker retry or GPU run was used for this integration's CPU
-results. Interactive Native/Viser viewing, authenticated W&B retrieval,
+The baseline Docker checks separately passed native CUDA PPO, fresh-process
+playback/live-policy export parity, public train/export commands and EGL rendering;
+see [runtime-migration.md](runtime-migration.md). An earlier canceled unpack did
+not establish Docker acceptance; the later completed builds and container runs
+do. Logs, final bundles, commands, source/image identities and resource records
+are preserved outside Git. Post-test follow-ups only update documentation.
+
+Interactive Compose/X11 and Native/Viser viewing, authenticated W&B retrieval,
 SuperMimic's conditional ONNX deployment exporter and real-robot behavior remain
 unvalidated. These bounded checks do not demonstrate convergence, throughput or
 hardware readiness. PPO sim2real exports do not automatically apply to SuperMimic.

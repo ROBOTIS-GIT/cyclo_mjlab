@@ -71,8 +71,10 @@ The Docker image includes:
 - Warp 1.14.0
 - All dependencies declared in `pyproject.toml`
 
-The current Docker build/start has not completed validation; host CPU/GPU evidence
-and installation alternatives are in [runtime-migration.md](runtime-migration.md).
+The Docker image passed bounded headless CUDA training, checkpoint playback,
+export parity and EGL rendering checks. Scope and local installation alternatives
+are in [runtime-migration.md](runtime-migration.md); interactive viewing and
+long-running training remain outside that validation.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.
