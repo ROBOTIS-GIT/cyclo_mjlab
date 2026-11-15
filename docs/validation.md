@@ -53,8 +53,10 @@ python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
 
 ## Checked scope
 
-The integration review verified the following, with generated logs/checkpoints
-kept out of Git:
+The table includes current checks and explicitly labeled historical checks from
+before the corrective refactor. CUDA execution and PPO export were not rerun for
+this refactor. Fresh bounded CPU acceptance is detailed below; generated logs and
+checkpoints remain outside Git:
 
 | Check | Result |
 | --- | --- |
@@ -64,8 +66,8 @@ kept out of Git:
 | Legacy Dance1/2 alias/config test | Passed in Python 3.11 / mjlab 1.2 |
 | Original Cyclo NPZ direct input | Dance1 and Dance2 preserve source bytes, frame counts and 50 Hz |
 | Current existing CSV converter output | Accepted as current K1 COM profile |
-| Native SuperMimic execution | GenCoord and MaxCoord short CPU/CUDA world-model + policy updates and finite checkpoint reloads passed |
-| Historical PPO execution/export | Short CPU/CUDA PPO runs, checkpoint loading, YAML generation, ONNX check and finite `(1,23)` TorchScript output passed |
+| Historical SuperMimic execution (pre-corrective) | GenCoord and MaxCoord short CPU/CUDA runs and finite checkpoint reloads passed; these checks did not establish final-trained-weight identity |
+| Historical PPO execution/export (pre-corrective) | Short CPU/CUDA PPO runs, checkpoint loading, YAML generation, ONNX check and finite `(1,23)` TorchScript output passed; export was not rerun for this refactor |
 
 The reviewed input fixes reject float32 overflow, repeated motion-file flags and
 control periods other than 0.02 s; compensating timestep/decimation changes are
@@ -94,6 +96,10 @@ CUDA_VISIBLE_DEVICES='' WANDB_MODE=offline TORCHDYNAMO_DISABLE=1 \
   MaxCoord dance2 /tmp/cyclo-supermimic-max
 ```
 
+These fresh native acceptance runs use privileged `rep_state` observations with
+`history_length=1`. They do not establish full `proprio` or multi-frame history-mode
+acceptance.
+
 Both CPU runs passed with original NPZ bytes unchanged, five supervised multi-step
 world-model updates and five actor updates each, actual parameter changes in both,
 and unchanged/frozen world-model parameters during each actor update. Saved final
@@ -107,4 +113,4 @@ the existing Python 3.11/mjlab 1.2 container with network disabled.
 The regression suite also executes the actual runner loop with tiny test learners:
 16 iterations, horizon 8 and save interval 1000 must save all nine updates rather
 than step-zero weights. It tests final interval overlap, final uploader failure,
-o remote API calls in offline/disabled modes, and incompatible bundle rejection.
+no remote API calls in offline/disabled modes, and incompatible bundle rejection.
