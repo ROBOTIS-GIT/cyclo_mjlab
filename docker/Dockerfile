@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG PYTHON_BASE_IMAGE=python:3.11-slim-bookworm
+ARG PYTHON_BASE_IMAGE=python:3.12-slim-bookworm
 FROM ${PYTHON_BASE_IMAGE}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -63,18 +63,15 @@ RUN existing_group="$(getent group "${HOST_GID}" | cut -d: -f1 || true)" \
          /home/cyclo/.cache/warp
 
 # Install third-party Python dependencies in a layer that only changes when
-# pyproject.toml changes. The source tree is copied and registered as editable below.
+# the runtime lock changes. The source tree is registered as editable below.
 WORKDIR /tmp/cyclo_mjlab_deps
-COPY pyproject.toml .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    PIP_CACHE_DIR=/root/.cache/pip \
-      python -m pip install --upgrade pip setuptools wheel \
-    && PIP_CACHE_DIR=/root/.cache/pip python -m pip install .
+COPY pyproject.toml requirements.lock ./
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && python -m pip install --no-cache-dir --require-hashes -r requirements.lock
 
 WORKDIR ${PROJECT_PATH}
 COPY . .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    PIP_CACHE_DIR=/root/.cache/pip python -m pip install --no-deps -e . \
+RUN python -m pip install --no-cache-dir --no-deps -e . \
     && chown -R cyclo:0 "${PROJECT_PATH}" \
     && chmod -R g=u "${PROJECT_PATH}"
 

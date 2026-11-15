@@ -35,7 +35,6 @@ from typing import TYPE_CHECKING, Literal
 import mujoco
 import numpy as np
 import torch
-
 from mjlab.managers import CommandTerm, CommandTermCfg
 from mjlab.utils.lab_api.math import (
   matrix_from_quat,
@@ -89,6 +88,7 @@ class ReferenceTrajectoryCommand(CommandTerm):
       tracked_body_names=self.cfg.body_names,
       device=self.device,
     )
+    self._pending_forward = False
     self.frame_ids = torch.zeros(
       self.num_envs, dtype=torch.long, device=self.device
     )
@@ -309,7 +309,7 @@ class ReferenceTrajectoryCommand(CommandTerm):
         self.start_bin_count - 1,
       )
       failed_start_bins = current_start_bin[env_ids][episode_failed]
-      self._episode_failures_by_bin[:] = torch.bincount(
+      self._episode_failures_by_bin += torch.bincount(
         failed_start_bins, minlength=self.start_bin_count
       )
 
@@ -352,9 +352,9 @@ class ReferenceTrajectoryCommand(CommandTerm):
       else 1.0
     )
     top1_prob, top1_bin = start_bin_probabilities.max(dim=0)
-    self.metrics["start_sampling_entropy"][:] = entropy_norm
-    self.metrics["start_sampling_top1_prob"][:] = top1_prob
-    self.metrics["start_sampling_top1_bin"][:] = (
+    self.metrics["start_sampling_entropy"][env_ids] = entropy_norm
+    self.metrics["start_sampling_top1_prob"][env_ids] = top1_prob
+    self.metrics["start_sampling_top1_bin"][env_ids] = (
       top1_bin.float() / self.start_bin_count
     )
 
@@ -425,23 +425,45 @@ class ReferenceTrajectoryCommand(CommandTerm):
       torch.cat([root_link_lin_vel, root_ang_vel[env_ids]], dim=-1),
       env_ids=env_ids,
     )
-    self.robot.clear_state(env_ids=env_ids)
+    self.robot.reset(env_ids=env_ids)
+    self._pending_forward = True
 
-  def _update_command(self):
-    self.frame_ids += 1
-    env_ids = torch.where(self.frame_ids >= self.reference.num_frames)[0]
-    self._resample_command(env_ids)
+  def reset(self, env_ids: torch.Tensor | slice | None) -> dict[str, float]:
+    extras = super().reset(env_ids)
+    # The environment forwards reset state before refreshing commands.
+    self._pending_forward = False
+    return extras
 
-    anchor_pos_w_repeat = self.anchor_pos_w[:, None, :].repeat(
+  def _update_command(self, env_ids: torch.Tensor | None = None):
+    # Both reset and per-step dispatch expose the next reference frame. A
+    # partial reset advances only its own targets; the global failure EMA is
+    # consumed once on the per-step dispatch, including automatic resets.
+    stepping = env_ids is None
+    if stepping:
+      self.frame_ids += 1
+      expired = torch.where(self.frame_ids >= self.reference.num_frames)[0]
+      env_ids = slice(None)
+    else:
+      self.frame_ids[env_ids] += 1
+      expired = env_ids[self.frame_ids[env_ids] >= self.reference.num_frames]
+    self._resample_command(expired)
+
+    # Timer expiry and clip wrap write qpos/qvel during compute; refresh the
+    # derived body state before aligning targets to the teleported anchor.
+    if self._pending_forward:
+      self._env.sim.forward()
+      self._pending_forward = False
+
+    anchor_pos_w_repeat = self.anchor_pos_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    anchor_quat_w_repeat = self.anchor_quat_w[:, None, :].repeat(
+    anchor_quat_w_repeat = self.anchor_quat_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    robot_anchor_pos_w_repeat = self.robot_anchor_pos_w[:, None, :].repeat(
+    robot_anchor_pos_w_repeat = self.robot_anchor_pos_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    robot_anchor_quat_w_repeat = self.robot_anchor_quat_w[:, None, :].repeat(
+    robot_anchor_quat_w_repeat = self.robot_anchor_quat_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
 
@@ -451,37 +473,38 @@ class ReferenceTrajectoryCommand(CommandTerm):
       quat_mul(robot_anchor_quat_w_repeat, quat_inv(anchor_quat_w_repeat))
     )
 
-    self.aligned_body_orientation_w = quat_mul(delta_ori_w, self.body_quat_w)
-    self.aligned_body_position_w = delta_pos_w + quat_apply(
-      delta_ori_w, self.body_pos_w - anchor_pos_w_repeat
+    self.aligned_body_orientation_w[env_ids] = quat_mul(delta_ori_w, self.body_quat_w[env_ids])
+    self.aligned_body_position_w[env_ids] = delta_pos_w + quat_apply(
+      delta_ori_w, self.body_pos_w[env_ids] - anchor_pos_w_repeat
     )
 
-    anchor_lin_vel_w_repeat = self.anchor_lin_vel_w[:, None, :].repeat(
+    anchor_lin_vel_w_repeat = self.anchor_lin_vel_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    anchor_ang_vel_w_repeat = self.anchor_ang_vel_w[:, None, :].repeat(
+    anchor_ang_vel_w_repeat = self.anchor_ang_vel_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    robot_anchor_lin_vel_w_repeat = self.robot_anchor_lin_vel_w[:, None, :].repeat(
+    robot_anchor_lin_vel_w_repeat = self.robot_anchor_lin_vel_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    robot_anchor_ang_vel_w_repeat = self.robot_anchor_ang_vel_w[:, None, :].repeat(
+    robot_anchor_ang_vel_w_repeat = self.robot_anchor_ang_vel_w[env_ids, None, :].repeat(
       1, len(self.cfg.body_names), 1
     )
-    self.aligned_body_linear_velocity_w = (
+    self.aligned_body_linear_velocity_w[env_ids] = (
       robot_anchor_lin_vel_w_repeat
-      + quat_apply(delta_ori_w, self.body_lin_vel_w - anchor_lin_vel_w_repeat)
+      + quat_apply(delta_ori_w, self.body_lin_vel_w[env_ids] - anchor_lin_vel_w_repeat)
     )
-    self.aligned_body_angular_velocity_w = (
+    self.aligned_body_angular_velocity_w[env_ids] = (
       robot_anchor_ang_vel_w_repeat
-      + quat_apply(delta_ori_w, self.body_ang_vel_w - anchor_ang_vel_w_repeat)
+      + quat_apply(delta_ori_w, self.body_ang_vel_w[env_ids] - anchor_ang_vel_w_repeat)
     )
 
-    self.failure_score_by_bin = (
-      self.cfg.failure_sampling_ema_alpha * self._episode_failures_by_bin
-      + (1 - self.cfg.failure_sampling_ema_alpha) * self.failure_score_by_bin
-    )
-    self._episode_failures_by_bin.zero_()
+    if stepping:
+      self.failure_score_by_bin = (
+        self.cfg.failure_sampling_ema_alpha * self._episode_failures_by_bin
+        + (1 - self.cfg.failure_sampling_ema_alpha) * self.failure_score_by_bin
+      )
+      self._episode_failures_by_bin.zero_()
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     """Draw a ghost robot or frames using MJLab's debug visualizer."""

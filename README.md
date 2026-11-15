@@ -1,8 +1,8 @@
 # cyclo_mjlab
 
-[![MuJoCo](https://img.shields.io/badge/MuJoCo-3.5.0-silver.svg)](https://mujoco.readthedocs.io/en/3.5.0/)
-[![MJLab](https://img.shields.io/badge/MJLab-1.2.0-silver.svg)](https://github.com/mujocolab/mjlab)
-[![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://docs.python.org/3/whatsnew/3.11.html)
+[![MuJoCo](https://img.shields.io/badge/MuJoCo-3.11.0-silver.svg)](https://mujoco.readthedocs.io/en/3.11.0/)
+[![MJLab](https://img.shields.io/badge/MJLab-1.6.1-silver.svg)](https://github.com/mujocolab/mjlab)
+[![Python](https://img.shields.io/badge/python-3.12-blue.svg)](https://docs.python.org/3/whatsnew/3.12.html)
 [![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/22.04/)
 [![License](https://img.shields.io/badge/license-Apache2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
 
@@ -22,7 +22,7 @@ The repository currently provides:
 - Automatic export of `exported/policy.onnx` and `exported/policy.pt` during play
 
 > [!IMPORTANT]
-> This repository currently uses MJLab 1.2.0, MuJoCo 3.5.0, and Python 3.11.
+> This repository currently uses MJLab 1.6.1, MuJoCo 3.11.0, and Python 3.12.
 
 ### Locomotion
 
@@ -87,11 +87,15 @@ run directly from `/workspace/cyclo_mjlab`.
 
 The Docker image includes:
 
-- Python 3.11
-- MJLab 1.2.0
-- MuJoCo and MuJoCo Warp 3.5.0
-- Warp 1.12.0
-- All dependencies declared in `pyproject.toml`
+- Python 3.12
+- MJLab 1.6.1
+- MuJoCo and MuJoCo Warp 3.11.0
+- Warp 1.14.0
+- Runtime dependencies pinned with hashes in `requirements.lock`
+
+The default image/container names are `cyclo-mjlab:1.6.1-py312` and
+`cyclo_mjlab_161`, so the previous image is preserved. See
+[the runtime migration notes](docs/runtime-migration.md) for compatibility and checks.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.

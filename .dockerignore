@@ -20,3 +20,7 @@ docker/.cache/
 .vscode/
 *.swp
 *~
+
+# Python package build outputs.
+build/
+dist/

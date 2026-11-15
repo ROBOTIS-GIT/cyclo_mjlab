@@ -1,0 +1,69 @@
+{
+  "source": "cyclo_mjlab e659f69af227d244a4edab0bb9228e7aeaadef45 with mjlab 1.2.0",
+  "tasks": {
+    "Cyclo-Velocity-Flat-K1-Rev1-v0": {
+      "actor": 80,
+      "critic": 95,
+      "rewards": {
+        "track_linear_velocity": 1.2,
+        "track_angular_velocity": 1.2,
+        "upright": 1.0,
+        "dof_pos_limits": -5.0,
+        "action_rate_l2": -0.1,
+        "foot_clearance": -2.0,
+        "foot_slip": -0.1,
+        "feet_lateral_separation": -1.0,
+        "soft_landing": -0.0005,
+        "termination_penalty": -200.0,
+        "gait_contact_swing_tracking": 0.5,
+        "base_height": -10.0,
+        "lin_vel_z_l2": -2.0,
+        "ang_vel_xy_l2": -0.1,
+        "flat_orientation_l2": -5.0,
+        "dof_acc_l2": -5e-07,
+        "dof_torques_l2": -3e-06,
+        "joint_deviation_hip": -0.5,
+        "joint_deviation_arms": -0.1,
+        "joint_deviation_shoulder_pitch": -0.25,
+        "joint_deviation_elbow": -0.1,
+        "joint_deviation_arm_lateral": -0.5,
+        "joint_deviation_torso": -1.0,
+        "self_collisions": -1.0
+      }
+    },
+    "Cyclo-Mimic-K1-Rev1-Dance1": {
+      "actor": 124,
+      "critic": 256,
+      "rewards": {
+        "reference_anchor_position": 0.5,
+        "reference_anchor_orientation": 0.5,
+        "reference_body_position": 1.0,
+        "reference_body_orientation": 1.0,
+        "reference_body_linear_velocity": 1.0,
+        "reference_body_angular_velocity": 1.0,
+        "joint_acc": -2.5e-07,
+        "joint_torque": -1e-05,
+        "action_rate_l2": -0.1,
+        "joint_limit": -10.0,
+        "undesired_contacts": -0.1
+      }
+    },
+    "Cyclo-Mimic-K1-Rev1-Dance2": {
+      "actor": 124,
+      "critic": 256,
+      "rewards": {
+        "reference_anchor_position": 0.5,
+        "reference_anchor_orientation": 0.5,
+        "reference_body_position": 1.0,
+        "reference_body_orientation": 1.0,
+        "reference_body_linear_velocity": 1.0,
+        "reference_body_angular_velocity": 1.0,
+        "joint_acc": -2.5e-07,
+        "joint_torque": -1e-05,
+        "action_rate_l2": -0.1,
+        "joint_limit": -10.0,
+        "undesired_contacts": -0.1
+      }
+    }
+  }
+}
