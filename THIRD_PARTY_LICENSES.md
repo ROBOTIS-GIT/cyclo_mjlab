@@ -49,3 +49,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## HybridRobotics/SuperMimic
+
+- Source: https://github.com/HybridRobotics/supermimic
+- Revision: `abc124c1bd5976341034668af3d12c087f2f1f55`
+- Copyright 2026 The SuperMimic Authors; Apache License 2.0.
+- Original license: [third_party/supermimic/LICENSE](third_party/supermimic/LICENSE).
+- Original README acknowledgements and local modification record:
+  [third_party/supermimic/UPSTREAM.md](third_party/supermimic/UPSTREAM.md).
+- Separate research runtime depends on HybridRobotics/mjlab_research revision
+  `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd` (Apache-2.0), without replacing
+  the main project's pinned mjlab dependency.

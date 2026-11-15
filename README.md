@@ -182,3 +182,9 @@ This repository is licensed under the
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 - **ROBOTIS AI Sapiens K1 Rev.1 assets**: Apache License 2.0; see
   [LICENSE.ai_sapiens](source/assets/robots/robotis_k1/LICENSE.ai_sapiens)
+
+## SuperMimic research integration
+
+K1 generalized/maximal-coordinate motion tracking with the original
+SuperMimic differentiable world model uses an isolated Python 3.13 runtime.
+See [setup, motion conversion, training, playback and short smoke tests](docs/supermimic.md).
