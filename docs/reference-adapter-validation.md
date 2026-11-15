@@ -179,10 +179,40 @@ is retained separately. No other process/container was stopped, no hardware or
 long training was run, and nothing was pushed/merged. Interactive W&B playback
 and SuperMimic deployment export remain outside the executed checks.
 
-## Publication state checked before completion
+## Publication state at initial adapter completion (historical)
 
 `git ls-remote --heads origin main feature-supermimic` returned only remote main
 `e659f69af227d244a4edab0bb9228e7aeaadef45`; the feature branch is local only.
 GitHub REST `pulls?state=all&head=ROBOTIS-GIT:feature-supermimic` returned `[]`.
 No PR exists for that head at this check, and no push/merge/PR publication was
-performed. This report records a local implementation awaiting separate review.
+performed. This was the pre-review snapshot at `a86085e`. A later user instruction authorized
+publishing the reviewed feature branch; the completion report verifies the
+subsequent push and exact local/remote HEAD equality.
+
+## Independent pre-publication review
+
+A separate read-only reviewer inspected adapter, dispatch, legacy PPO preservation
+and documentation at `a86085e`, using official HybridRobotics SuperMimic and
+existing Cyclo sources. Three concrete P2 findings were corrected:
+
+1. Finite float64 values such as joint velocity `1e40` overflowed to `inf` during
+   float32 conversion. The adapter now rejects nonfinite **converted** values.
+2. Only the first motion-file flag was adapted while tyro used the last repeated
+   flag. Native train/play now require exactly one option, recognizing hyphen,
+   underscore and `=` spellings; duplicates fail before adaptation. Multiple
+   clips still use a comma list or glob.
+3. `--env.decimation 8` with default 0.005 s timestep stepped 50 Hz references at
+   25 Hz. A native training launcher reuses the official TrainConfig, environment
+   factory, and SuperMimicRunner, validating the effective 0.02 s period after
+   full CLI parsing and before setup_device/environment construction. Compensating
+   timestep/decimation changes are accepted. No learner algorithm was changed.
+
+The reviewer independently ran 7 focused regressions with no GPU, environment
+construction or learning: **7 passed**, and confirmed no remaining actionable
+finding in the requested paths after the fixes. The complete final CPU test suite
+then reported **258 passed**, one existing upstream torch.jit deprecation warning,
+in 6.10 s. Raw result: `logs/reference-adapter-validation/prepublish-tests.log`.
+New routing tests also verify that valid GenCoord/MaxCoord configurations reach
+the original runner with the expected representation and local motion lineage.
+Ruff, compileall and diff checks passed. No additional GPU run or long training
+was performed for this review.

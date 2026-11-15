@@ -35,26 +35,25 @@ def main():
 
     if not remaining or remaining[0] not in TASKS:
         parser.error("Pass a Cyclo task ID: " + ", ".join(TASKS))
-    # Never silently download a G1 reference motion for a K1 task.
-    if (
-        not any(a in remaining for a in ("--help", "-h"))
-        and "--motion-file" not in remaining
-        and not any(a.startswith("--motion-file=") for a in remaining)
-    ):
-        parser.error(
-            "K1 train/play requires --motion-file pointing to a 50 Hz K1 reference"
-        )
+    # Tyro accepts both hyphen and underscore spellings and uses the last
+    # repeated scalar option. Reject duplicates before rewriting any path so
+    # an unvalidated trailing option cannot bypass the adapter.
     if not any(a in remaining for a in ("--help", "-h")):
+        motion_options = [
+            i
+            for i, value in enumerate(remaining)
+            if value.split("=", 1)[0].replace("_", "-") == "--motion-file"
+        ]
+        if len(motion_options) != 1:
+            parser.error(
+                "K1 train/play requires exactly one --motion-file option pointing to a 50 Hz K1 reference; use a comma list or glob for multiple clips"
+            )
         from . import REPO_ROOT
         from .motion import prepare_motion_files
         from .robot import get_k1_rev1_cfg
 
-        motion_index = next(
-            i
-            for i, value in enumerate(remaining)
-            if value == "--motion-file" or value.startswith("--motion-file=")
-        )
-        inline = remaining[motion_index].startswith("--motion-file=")
+        motion_index = motion_options[0]
+        inline = "=" in remaining[motion_index]
         if not inline and motion_index + 1 >= len(remaining):
             parser.error("--motion-file requires a reference path")
         source = (
@@ -73,6 +72,7 @@ def main():
         if inline:
             remaining[motion_index] = "--motion-file=" + prepared
         else:
+            remaining[motion_index] = "--motion-file"
             remaining[motion_index + 1] = prepared
         print(
             f"[INFO] Validated 50 Hz reference {source}; internal SuperMimic loader data: {prepared}"
@@ -80,7 +80,7 @@ def main():
     register_tasks()
     sys.argv = [sys.argv[0], *remaining]
     if args.command == "train":
-        from supermimic.scripts.train import main as upstream_main
+        from .train import main as upstream_main
     else:
         from supermimic.scripts.play import main as upstream_main
     upstream_main()

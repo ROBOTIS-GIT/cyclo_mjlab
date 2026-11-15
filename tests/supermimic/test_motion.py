@@ -54,3 +54,10 @@ def test_explicit_root_contract_and_source_preservation(tmp_path):
         convert_motion(src, dst, ("a", "b"))
     with pytest.raises(ValueError):
         convert_motion(src, src, ("a", "b"))
+
+
+def test_finite_float64_cannot_overflow_loader_float32():
+    data = clip()
+    data["joint_vel"] = np.full((2, 2), 1e40)
+    with pytest.raises(ValueError, match="joint_vel.*finite float32"):
+        validate_motion(data, ("a", "b"))

@@ -28,7 +28,12 @@ def test_direct_body_reference_is_adapted_before_upstream(
     reference = native.REPO_ROOT / "source/assets/motions/K1_rev1/dance1/dance1.npz"
     monkeypatch.setattr(native, "REPO_ROOT", tmp_path)
     monkeypatch.setattr(tasks, "register_tasks", lambda: None)
-    module = types.ModuleType(f"supermimic.scripts.{action}")
+    module_name = (
+        "source.tasks.supermimic.train"
+        if action == "train"
+        else "supermimic.scripts.play"
+    )
+    module = types.ModuleType(module_name)
     called = []
 
     def upstream():
@@ -55,3 +60,29 @@ def test_direct_body_reference_is_adapted_before_upstream(
     )
     native_cli.main()
     assert called == [True]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--motion-file", "first.npz", "--motion-file", "last.npz"],
+        ["--motion-file=first.npz", "--motion-file=last.npz"],
+        ["--motion-file", "first.npz", "--motion_file=last.npz"],
+    ],
+)
+def test_duplicate_motion_options_cannot_bypass_adapter(monkeypatch, options):
+    from source.tasks.supermimic import cli as native_cli
+    from source.tasks.supermimic import motion
+
+    def must_not_adapt(*args, **kwargs):
+        raise AssertionError("duplicate options must fail before adaptation")
+
+    monkeypatch.setattr(motion, "prepare_motion_files", must_not_adapt)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["train.py", "train", "Cyclo-SuperMimic-GenCoord-K1-Rev1", *options],
+    )
+    with pytest.raises(SystemExit) as error:
+        native_cli.main()
+    assert error.value.code == 2

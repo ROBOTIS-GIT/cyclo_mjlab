@@ -111,9 +111,15 @@ def validate_motion(data, joint_names, fps=50.0):
         "joint_vel": len(names),
     }.items():
         value = _array(data, key, (len(q), width))
-        result[key] = (value[:, order] if key.startswith("joint_") else value).astype(
-            np.float32
-        )
+        with np.errstate(over="ignore", invalid="ignore"):
+            converted = (value[:, order] if key.startswith("joint_") else value).astype(
+                np.float32
+            )
+        if not np.isfinite(converted).all():
+            raise ValueError(
+                f"{key} cannot be represented as finite float32 loader data"
+            )
+        result[key] = converted
     if not np.allclose(
         np.linalg.norm(result["root_quat_w"], axis=-1), 1, rtol=0, atol=1e-3
     ):
