@@ -1,4 +1,5 @@
 # Copyright 2026 ROBOTIS CO., LTD.
+# Copyright 2025, The mjlab Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +22,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
+from mjlab.entity import Entity
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -51,3 +54,14 @@ def gait_phase(
   motion_level = planar_speed + torch.abs(command[:, 2])
   is_moving = motion_level > motion_threshold
   return clock * is_moving.unsqueeze(-1)
+
+
+# Preserved from mjlab 1.2.0 (Apache-2.0): flat-ground world-Z observations.
+_DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
+
+
+def foot_height(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  asset: Entity = env.scene[asset_cfg.name]
+  return asset.data.site_pos_w[:, asset_cfg.site_ids, 2]  # (num_envs, num_sites)

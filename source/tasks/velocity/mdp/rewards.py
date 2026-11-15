@@ -1,4 +1,5 @@
 # Copyright 2026 ROBOTIS CO., LTD.
+# Copyright 2025, The mjlab Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +22,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import ContactSensor
@@ -145,3 +145,29 @@ def gait_contact_swing_tracking(
   planar_speed = torch.linalg.vector_norm(command[:, :2], dim=-1)
   motion_level = planar_speed + torch.abs(command[:, 2])
   return contact_agreement * (motion_level > motion_threshold)
+
+
+# Preserved from mjlab 1.2.0 (Apache-2.0): world-Z, horizontal-speed cost.
+def feet_clearance(
+  env: ManagerBasedRlEnv,
+  target_height: float,
+  command_name: str | None = None,
+  command_threshold: float = 0.01,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize deviation from target clearance height, weighted by foot velocity."""
+  asset: Entity = env.scene[asset_cfg.name]
+  foot_z = asset.data.site_pos_w[:, asset_cfg.site_ids, 2]  # [B, N]
+  foot_vel_xy = asset.data.site_lin_vel_w[:, asset_cfg.site_ids, :2]  # [B, N, 2]
+  vel_norm = torch.norm(foot_vel_xy, dim=-1)  # [B, N]
+  delta = torch.abs(foot_z - target_height)  # [B, N]
+  cost = torch.sum(delta * vel_norm, dim=1)  # [B]
+  if command_name is not None:
+    command = env.command_manager.get_command(command_name)
+    if command is not None:
+      linear_norm = torch.norm(command[:, :2], dim=1)
+      angular_norm = torch.abs(command[:, 2])
+      total_command = linear_norm + angular_norm
+      active = (total_command > command_threshold).float()
+      cost = cost * active
+  return cost

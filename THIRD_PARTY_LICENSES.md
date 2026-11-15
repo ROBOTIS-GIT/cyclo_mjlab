@@ -6,7 +6,11 @@ from third-party open-source projects.
 ## mujocolab/mjlab
 
 - Source: https://github.com/mujocolab/mjlab
-- Version: 1.2.0
+- Runtime version: 1.6.1
+- Retained 1.2.0 formulas: `foot_height` in
+  `source/tasks/velocity/mdp/observations.py` and `feet_clearance` in
+  `source/tasks/velocity/mdp/rewards.py`, preserving the existing flat-ground
+  observation and reward contract.
 - License: Apache-2.0
 - Used as: The core simulation and reinforcement-learning framework
 

@@ -22,12 +22,11 @@ import math
 from pathlib import Path
 
 import mujoco
-
-from source import SRC_PATH
 from mjlab.actuator import BuiltinPositionActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
+from source import SRC_PATH
 
 K1_REV1_XML_PATH: Path = (
   SRC_PATH.parent
@@ -131,12 +130,14 @@ K1_REV1_ARMS_ACTUATOR_CFG = BuiltinPositionActuatorCfg(
 )
 
 FULL_COLLISION = CollisionCfg(
+  contype=1,
+  conaffinity=1,
   geom_names_expr=(".*_collision.*",),
   condim={
     K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 3,
     ".*_collision.*": 1,
   },
-  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1},
+  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1, ".*": 0},
   friction={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: (0.6,)},
 )
 
@@ -148,7 +149,7 @@ FULL_COLLISION_WITHOUT_SELF = CollisionCfg(
     K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 3,
     ".*_collision.*": 1,
   },
-  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1},
+  priority={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: 1, ".*": 0},
   friction={K1_REV1_FOOT_COLLISION_GEOM_PATTERN: (0.6,)},
 )
 
@@ -242,9 +243,8 @@ K1_REV1_ACTION_SCALE = _action_scale_from_actuators(K1_REV1_ARTICULATION_CFG)
 
 
 if __name__ == "__main__":
-  import mujoco.viewer as viewer
-
   from mjlab.entity.entity import Entity
+  from mujoco import viewer
 
   robot = Entity(get_k1_rev1_cfg())
   viewer.launch(robot.spec.compile())

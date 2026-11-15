@@ -17,3 +17,6 @@ simulate/build
 # Isolated SuperMimic runtime and generated motion data
 integrations/supermimic/.venv/
 .supermimic-data/
+# Python package build outputs.
+build/
+dist/

@@ -8,8 +8,8 @@ COMPOSE_FILE="${DOCKER_DIR}/compose.yaml"
 
 export HOST_UID="${HOST_UID:-$(id -u)}"
 export HOST_GID="${HOST_GID:-$(id -g)}"
-export CYCLO_MJLAB_IMAGE="${CYCLO_MJLAB_IMAGE:-cyclo-mjlab:latest}"
-export CYCLO_MJLAB_CONTAINER="${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab}"
+export CYCLO_MJLAB_IMAGE="${CYCLO_MJLAB_IMAGE:-cyclo-mjlab:1.6.1-py312}"
+export CYCLO_MJLAB_CONTAINER="${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab_161}"
 
 COMPOSE=()
 
