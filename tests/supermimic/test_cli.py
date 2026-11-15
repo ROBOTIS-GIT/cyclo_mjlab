@@ -31,7 +31,7 @@ def test_direct_body_reference_is_adapted_before_upstream(
     module_name = (
         "source.tasks.supermimic.train"
         if action == "train"
-        else "supermimic.scripts.play"
+        else "source.tasks.supermimic.play"
     )
     module = types.ModuleType(module_name)
     called = []

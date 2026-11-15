@@ -58,8 +58,9 @@ kept out of Git:
 
 | Check | Result |
 | --- | --- |
-| Research unit/upstream suite after review fixes | 258 passed; upstream torch.jit deprecation warning |
-| Environment/package metadata | Locked package versions unchanged; compatibility wheel embeds Apache-2.0 LICENSE; pytest is development-only |
+| Research unit/upstream suite after review fixes | 274 passed; upstream torch.jit deprecation warning |
+| Environment/package metadata | Locked package versions unchanged; checkout-only compatibility package retains Apache-2.0 LICENSE; pytest is development-only |
+| Docker context | Scratch fixture excludes nested virtualenv/cache and adapter data |
 | Legacy Dance1/2 alias/config test | Passed in Python 3.11 / mjlab 1.2 |
 | Original Cyclo NPZ direct input | Dance1 and Dance2 preserve source bytes, frame counts and 50 Hz |
 | Current existing CSV converter output | Accepted as current K1 COM profile |
@@ -74,6 +75,36 @@ the current input contract and [UPSTREAM.md](../third_party/supermimic/UPSTREAM.
 for source modifications.
 
 These checks are execution/compatibility evidence, not convergence or throughput
-benchmarks. Interactive playback of a trained W&B bundle, SuperMimic's conditional
+benchmarks. Interactive Native/Viser viewing, authenticated W&B retrieval, SuperMimic's conditional
 ONNX deployment exporter and real-robot behavior have not been validated here.
 The existing PPO sim2real schema does not apply automatically to SuperMimic.
+
+## Bounded native learner and local-bundle acceptance
+
+This is distinct from the lightweight `smoke` command: it runs the actual official
+world-model and actor-critic learners through the native simulator/replay loop.
+Run with a writable local temporary directory and no GPU:
+
+```bash
+CUDA_VISIBLE_DEVICES='' WANDB_MODE=offline TORCHDYNAMO_DISABLE=1 \
+  uv run --project integrations/supermimic python tests/supermimic/validate_native.py \
+  GenCoord dance1 /tmp/cyclo-supermimic-gen
+CUDA_VISIBLE_DEVICES='' WANDB_MODE=offline TORCHDYNAMO_DISABLE=1 \
+  uv run --project integrations/supermimic python tests/supermimic/validate_native.py \
+  MaxCoord dance2 /tmp/cyclo-supermimic-max
+```
+
+Both CPU runs passed with original NPZ bytes unchanged, five supervised multi-step
+world-model updates and five actor updates each, actual parameter changes in both,
+and unchanged/frozen world-model parameters during each actor update. Saved final
+world-model, actor and critic tensors equaled memory exactly; local reload and
+four finite-action simulator playback steps passed. The nondefault 0.0025 s
+simulation timestep and decimation 8 were preserved. These runs use eager CPU
+execution (`TORCHDYNAMO_DISABLE=1`), not CUDA compilation/performance validation.
+The legacy alias test and a one-iteration CPU PPO run were rerun successfully in
+the existing Python 3.11/mjlab 1.2 container with network disabled.
+
+The regression suite also executes the actual runner loop with tiny test learners:
+16 iterations, horizon 8 and save interval 1000 must save all nine updates rather
+than step-zero weights. It tests final interval overlap, final uploader failure,
+o remote API calls in offline/disabled modes, and incompatible bundle rejection.

@@ -12,11 +12,16 @@ Changes to the vendored distribution:
 | --- | --- |
 | `src/supermimic/utils/analytic_ik.py` | Support K1 single-hinge chains with an orthogonal auxiliary axis; marked at file top and at the changed block |
 | `pyproject.toml` | Replace editable sibling `../mjlab_research` with immutable research Git revision `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd`; marked at file top |
+| `src/supermimic/runners/supermimic_runner.py` | Save the final iteration, include native manifest when present, await final artifact future before cleanup |
+| `src/supermimic/utils/wandb_artifacts.py` | Keep local artifact logging but skip remote enumeration/pruning in offline/disabled mode |
 
 Other vendored Python sources, tests and original README remain unchanged.
 Native `source/tasks/supermimic/train.py` adapts the official launcher, retains
 its author/license notice, and adds the K1 reference/control-rate guard while
-reusing the original configuration, environment factory and learner.
+reusing the original configuration, environment factory and learner. Native
+`checkpoint.py` adds declarative inference metadata through a runner subclass;
+`play.py` reconstructs the matching native environment and uses the original
+world-model/actor builders and viewer classes.
 The K1 robot adapter and historical COM facts derive from existing Cyclo assets
 with their original notices retained; see [component scope](../../THIRD_PARTY_LICENSES.md).
 

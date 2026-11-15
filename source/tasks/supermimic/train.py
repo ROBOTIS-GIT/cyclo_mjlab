@@ -12,9 +12,12 @@ import os
 import mjlab
 import tyro
 from mjlab.tasks.registry import list_tasks
-from supermimic.runners.supermimic_runner import SuperMimicRunner
+from supermimic.runners.run_config import check_representation_matches
 from supermimic.scripts.train import TrainConfig
 from supermimic.scripts.train_utils import create_env, setup_device
+
+from .checkpoint import LocalBundleRunner as SuperMimicRunner
+from .checkpoint import environment_options, make_manifest, validate_manifest
 
 
 def validate_control_rate(env_cfg):
@@ -40,16 +43,20 @@ def main():
         return_unknown_args=True,
         config=mjlab.TYRO_FLAGS,
     )
+    default = TrainConfig.from_task(chosen_task)
+    default.runner.representation = (
+        "maxcoord" if "MaxCoord" in chosen_task else "gencoord"
+    )
     args = tyro.cli(
         TrainConfig,
         args=remaining_args,
-        default=TrainConfig.from_task(chosen_task),
+        default=default,
         config=mjlab.TYRO_FLAGS,
     )
+    check_representation_matches(chosen_task, args.runner.representation)
     validate_control_rate(args.env)
     if not args.motion_file:
         raise ValueError("K1 training requires a validated local --motion-file")
-    device = setup_device(args.device)
     print(f"[INFO] Loading environment: {chosen_task}")
     args.env.commands["motion"].motion_file = (
         [os.path.expanduser(p.strip()) for p in args.motion_file.split(",")]
@@ -58,20 +65,26 @@ def main():
     )
     args.registry_name = None
     print(f"[INFO] Using local motion file: {args.motion_file}")
-    if "MaxCoord" in chosen_task and args.runner.representation == "gencoord":
-        args.runner.representation = "maxcoord"
-        print("[INFO] Auto-detected maxcoord representation from task_id")
     args.env.commands["motion"].sampling_mode = (
         "external"
         if args.runner.sampling_mode == "return"
         else args.runner.sampling_mode
     )
-    env = create_env(args.env, args.num_envs, device)
-    runner = SuperMimicRunner(
-        env=env,
-        cfg=args.runner,
-        task_id=chosen_task,
-        registry_name=args.registry_name,
-        device=device,
+    manifest = make_manifest(
+        chosen_task, args.env, args.runner, environment_options(remaining_args)
     )
-    runner.run()
+    validate_manifest(manifest, chosen_task)
+    device = setup_device(args.device)
+    env = create_env(args.env, args.num_envs, device)
+    try:
+        runner = SuperMimicRunner(
+            manifest=manifest,
+            env=env,
+            cfg=args.runner,
+            task_id=chosen_task,
+            registry_name=args.registry_name,
+            device=device,
+        )
+        runner.run()
+    finally:
+        env.close()

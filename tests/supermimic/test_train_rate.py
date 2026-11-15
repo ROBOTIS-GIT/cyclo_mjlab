@@ -59,7 +59,9 @@ def test_valid_native_launcher_routes_original_runner(monkeypatch, representatio
     if not set(TASKS).issubset(list_tasks()):
         register_tasks()
     task = f"Cyclo-SuperMimic-{representation}-K1-Rev1"
-    sentinel = object()
+    from types import SimpleNamespace
+
+    sentinel = SimpleNamespace(close=lambda: None)
     calls = []
 
     def create_env(cfg, num_envs, device):

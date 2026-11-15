@@ -7,9 +7,10 @@ from supermimic.utils.analytic_ik import AnalyticIK
 
 
 def test_registry_and_robot_contract():
-    from mjlab.tasks.registry import load_env_cfg
+    from mjlab.tasks.registry import list_tasks, load_env_cfg
 
-    register_tasks()
+    if not set(TASKS).issubset(list_tasks()):
+        register_tasks()
     for task in TASKS:
         cfg = load_env_cfg(task)
         assert cfg.commands["motion"].body_names == TRACKED_BODIES

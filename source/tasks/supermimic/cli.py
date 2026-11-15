@@ -82,7 +82,7 @@ def main():
     if args.command == "train":
         from .train import main as upstream_main
     else:
-        from supermimic.scripts.play import main as upstream_main
+        from .play import main as upstream_main
     upstream_main()
 
 

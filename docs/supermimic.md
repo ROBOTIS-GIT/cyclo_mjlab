@@ -22,7 +22,12 @@ implementation and task IDs remain available in their own runtime.
 
 Cyclo main uses Python 3.11 / mjlab 1.2.0. SuperMimic requires Python 3.13 and
 research APIs, including FK-based named-joint motions and sim-context features.
-Do not install the integration into the existing Cyclo environment or container.
+The current dependency sets cannot be combined unchanged: resolution conflicts
+on MuJoCo-Warp 3.5 versus 3.16, and the legacy asset import fails under research
+mjlab because collision configuration now requires explicit masks. Python 3.13
+alone is not the blocker (Cyclo declares Python >=3.11). Unifying these runtimes
+would require a separately validated legacy API/dependency migration. Keep this
+research environment separate for the current integration.
 From the repository root, with uv installed:
 
 ```bash
@@ -37,7 +42,9 @@ and the `cyclo-supermimic` command to native `source/tasks/supermimic` code.
 `pytest` belongs to the `dev` group, which uv installs by default. A runtime-only
 installation can use `uv sync --project integrations/supermimic --no-dev --locked`;
 include the dev group again to run tests. Removing this directory would break
-the documented uv commands and the isolated dependency resolution.
+the documented uv commands and the isolated dependency resolution. The compatibility
+package supports editable checkout installation only; its forwarding wheel is not
+a standalone Cyclo distribution and gives an explicit error outside a checkout.
 SuperMimic source is vendored at commit
 `abc124c1bd5976341034668af3d12c087f2f1f55`.
 `mjlab_research` is pinned to
@@ -121,27 +128,50 @@ The effective control period must stay at 0.02 s (50 Hz). Native training checks
 inconsistent period before constructing the environment. Compensating overrides,
 such as timestep 0.0025 with decimation 8, are accepted; references are not resampled.
 
-Swap `GenCoord` for `MaxCoord` to use body-space dynamics. The original runner
-selects the representation from the task ID, exposes all nested runner/WM/
+Swap `GenCoord` for `MaxCoord` to use body-space dynamics. The native launcher
+defaults the representation from the task ID and rejects conflicting explicit
+representation overrides before device/environment setup. It exposes nested runner/WM/
 policy settings through tyro, and writes `logs/<task>/<timestamp>/` relative
 to the working directory. `--runner.actor-obs proprio` selects deployable
 sensor inputs; default `rep_state` uses privileged state. Offline W&B avoids
 remote logging but preserves local results; omit it for normal authenticated
 W&B tracking. Local `--motion-file` disables the upstream G1 registry default.
 
+Completed training writes a local inference bundle containing `manifest.json`,
+`world_model.pt`, `actor.pt`, and `critic.pt` when the policy has a critic. The last
+iteration saves final trained parameters even when it is not a save-interval
+boundary. Final artifact work completes before cleanup. Offline/disabled W&B
+logging never enumerates or prunes remote artifacts.
+
+Play directly from that directory, without syncing or uploading:
+
 ```bash
 uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
-  --algorithm supermimic \
-  Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
-  --wandb-path ENTITY/PROJECT/RUN --viewer viser
+  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
+  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
+  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> \
+  --viewer viser
 ```
 
-Playback uses the upstream W&B bundle loader (`world_model.pt`, `actor.pt` and
-serialized runner config), so the displayed run must have been trained on the
-matching K1 task/representation. Offline runs need W&B sync before this viewer
-path can retrieve them. Existing Cyclo PPO checkpoints are incompatible.
-This integration does not authorize real-robot deployment or claim the existing
-PPO `sim2real.yaml` contract applies to a SuperMimic actor.
+For bounded local validation, select `--viewer headless --device cpu
+--num-steps-rollout 4`. Native and Viser viewers remain available. Use exactly one
+of `--checkpoint-dir` or `--wandb-path ENTITY/PROJECT/RUN`; W&B access is explicit,
+downloads a bundle, and applies the same validation. Older bundles lacking the
+manifest are rejected instead of guessing training settings.
+
+Manifest schema 1 records the exact K1 task, representation, actor observation
+mode, runner configuration, ordered joints/actions, physical-model fingerprint,
+and declarative training environment overrides plus the effective configuration.
+Playback reconstructs and validates those settings before environment creation,
+including timestep **and decimation**, gains, action scales, observation and
+randomization configuration. It changes only the selected local reference and
+environment count (one). An incompatible checkout or altered contract is rejected.
+The manifest contains JSON data, not executable/pickled Python configuration.
+
+This is an inference bundle, not an optimizer/replay-state training-resume format.
+Existing Cyclo PPO checkpoint files and `sim2real.yaml` are incompatible. Default
+`rep_state` remains privileged; `--runner.actor-obs proprio` explicitly selects
+sensor inputs. Local playback does not establish convergence or hardware readiness.
 
 ## Short verification
 
@@ -163,6 +193,7 @@ current limitations are recorded in [validation.md](validation.md).
 Upstream handles two/three-hinge chains; K1's waist is one hinge. Its axis is
 completed with an orthogonal auxiliary axis, and padded coordinates are discarded
 by the existing permutation. Numerical tests compare all 23 recovered angles
-and rates against MuJoCo FK and check gradients. This is the only algorithm
-source change in the vendored upstream tree. K1 task configuration lives outside
+and rates against MuJoCo FK and check gradients. This is the only representation/learner algorithm change in the vendored tree.
+Small runner/artifact patches also ensure final checkpoint saving and offline
+behavior; all modifications are listed in `third_party/supermimic/UPSTREAM.md`. K1 task configuration lives outside
 that tree and leaves the normal Cyclo registration untouched.

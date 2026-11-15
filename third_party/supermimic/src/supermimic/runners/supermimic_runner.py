@@ -1,3 +1,5 @@
+# Copyright 2026 The SuperMimic Authors. SPDX-License-Identifier: Apache-2.0
+# Modified for Cyclo: save final weights/manifest and await final artifact work.
 from __future__ import annotations
 
 import time
@@ -721,7 +723,7 @@ class SuperMimicRunner(BaseRunner[SuperMimicRunnerCfg]):
         policy_learn_time = 0
         num_collected_steps = 0
 
-      if step % self.cfg.save_interval == 0:
+      if step % self.cfg.save_interval == 0 or step == self.cfg.max_iterations - 1:
         assert wandb.run is not None  # _init_wandb ran before the loop
         # The previous version must be logged before its files are overwritten.
         if upload is not None:
@@ -731,6 +733,9 @@ class SuperMimicRunner(BaseRunner[SuperMimicRunnerCfg]):
         torch.save(self._wm.bundle(), world_model_path)
         torch.save(self.policy_learner.actor.state_dict(), actor_path)
         checkpoint_files = [world_model_path, actor_path]
+        # Native Cyclo bundles carry declarative playback metadata.
+        if (log_dir / "manifest.json").is_file():
+          checkpoint_files.append(str(log_dir / "manifest.json"))
         critic = getattr(self.policy_learner, "critic", None)
         if critic is not None:
           critic_path = str(log_dir / "critic.pt")
@@ -750,5 +755,9 @@ class SuperMimicRunner(BaseRunner[SuperMimicRunnerCfg]):
           )
         upload = uploader.submit(log_model_artifact, checkpoint_files)
 
-    uploader.shutdown()
-    self._cleanup()
+    try:
+      if upload is not None:
+        upload.result()
+    finally:
+      uploader.shutdown()
+      self._cleanup()

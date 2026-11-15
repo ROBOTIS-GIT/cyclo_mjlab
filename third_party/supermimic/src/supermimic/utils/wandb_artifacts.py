@@ -1,3 +1,5 @@
+# Copyright 2026 The SuperMimic Authors. SPDX-License-Identifier: Apache-2.0
+# Modified for Cyclo: offline/disabled runs never enumerate or prune remote artifacts.
 """W&B model-artifact helpers: digest-cached download and versioned logging."""
 
 from __future__ import annotations
@@ -76,6 +78,8 @@ def log_model_artifact(
     for path in files:
       artifact.add_file(path)
     wandb.run.log_artifact(artifact)
+    if wandb.run.settings.mode in ("offline", "disabled", "dryrun"):
+      return
     collection = f"{wandb.run.entity}/{wandb.run.project}/model-{wandb.run.id}"
     versions = sorted(wandb.Api().artifacts("model", collection), key=_version_index)
     for stale in versions[:-keep_last]:

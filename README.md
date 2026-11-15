@@ -87,11 +87,14 @@ WANDB_MODE=offline uv run --project integrations/supermimic python \
   --num-envs 64 --runner.run-name k1-dance1
 uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
-  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz --wandb-path ENTITY/PROJECT/RUN --viewer viser
+  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
+  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> --viewer viser
 ```
 
-Select `MaxCoord` for body-space dynamics. Current playback uses W&B bundles;
-offline runs require later explicit sync for this viewer path. The original
+Select `MaxCoord` for body-space dynamics. Local bundle playback needs no W&B
+sync; `--wandb-path ENTITY/PROJECT/RUN` remains an explicit alternative for
+manifest-bearing bundles. Use `--viewer headless --num-steps-rollout 4` for a
+bounded local check. The original
 `cyclo-supermimic train|play|convert|smoke` commands remain supported.
 Check GPU occupancy and choose an appropriate number of environments before
 training. First CUDA compilation can take minutes; it is separate from the
