@@ -123,7 +123,23 @@ These bounded checks do not establish convergence, hardware deployment safety,
 interactive viewer behavior or optimizer continuation. Sim2real export was checked as a
 file/metadata contract; no robot was operated.
 
-Docker end-to-end build/start remains unverified: image unpacking exceeded the
-validation host's reserved disk budget and was canceled. Host runtime checks do
-not replace a completed Docker build/start check. No further Docker retry or
-cleanup was used to obtain the host validation results.
+Docker build and isolated runtime acceptance subsequently passed for tested source
+revision [`6e09bf7`](https://github.com/ROBOTIS-GIT/cyclo_mjlab/commit/6e09bf7de88a9f87692fd7d39f8c4213017f8a92)
+using image `cyclo-mjlab:accept-baseline-6e09bf7-task3`. The cached build completed,
+and the runtime verified 61 committed source-file hashes. It ran with networking
+disabled and no host source or virtual-environment mounts; only the external test
+tools, harness and evidence directory were mounted.
+
+The image passed:
+
+- All 17 tests, including native CUDA PPO updates, reset dispatch and checkpoint checks.
+- Fresh-process CPU playback/export for Velocity, Dance1 and Dance2, with JIT and
+  ONNX outputs matching the live policy on identical observations, including normalization.
+- The public export-only CLI and one CPU PPO update through the public training CLI
+  (two environments, four rollout steps each).
+- One nonconstant 160-by-120 RGB frame rendered with CUDA simulation and EGL.
+
+An initial missing `py.py` dependency in the external pytest-tool overlay was
+corrected outside the production source; the acceptance rerun passed without a
+production change. These bounded results do not verify interactive Compose/X11
+operation, convergence, robot deployment or full optimizer continuation.
