@@ -376,15 +376,19 @@ name = "cyclo-supermimic"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "pytest" },
     { name = "supermimic" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "pytest", specifier = ">=9" },
-    { name = "supermimic", editable = "../../third_party/supermimic" },
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
+
+[package.metadata]
+requires-dist = [{ name = "supermimic", editable = "../../third_party/supermimic" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9" }]
 
 [[package]]
 name = "decorator"

@@ -31,12 +31,18 @@ uv sync --project integrations/supermimic --python 3.13 --locked
 ```
 
 This creates `integrations/supermimic/.venv`; root `pyproject.toml` is unchanged.
+This directory is a runtime project: its manifest/lock select the separate
+research dependencies, and `src/cyclo_supermimic` forwards compatibility imports
+and the `cyclo-supermimic` command to native `source/tasks/supermimic` code.
+`pytest` belongs to the `dev` group, which uv installs by default. A runtime-only
+installation can use `uv sync --project integrations/supermimic --no-dev --locked`;
+include the dev group again to run tests. Removing this directory would break
+the documented uv commands and the isolated dependency resolution.
 SuperMimic source is vendored at commit
 `abc124c1bd5976341034668af3d12c087f2f1f55`.
 `mjlab_research` is pinned to
 `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd` and resolved in the integration lock.
 See `third_party/supermimic/UPSTREAM.md` for modifications and attribution.
-There is no checkout `.agents/skills` or `AGENTS.md` at the fetched base.
 
 ## Data
 
@@ -92,7 +98,10 @@ uv run --project integrations/supermimic python scripts/tools/motion/to_supermim
 
 It uses the same strict adapter and refuses to overwrite source/output files.
 The original `cyclo-supermimic convert` compatibility command also remains.
-No licensed dataset or pretrained checkpoint is bundled by this integration.
+The repository already contains Dance1/2 reference files; no new dataset or
+pretrained checkpoint is downloaded or added by this integration. Their provenance
+and permissions are separate from the software license; see
+[third-party notices and rights scope](../THIRD_PARTY_LICENSES.md).
 
 ## Train and play
 
@@ -147,7 +156,7 @@ Smoke uses two environments and a temporary standing clip, takes a real sim
 step, fits one dynamics update to that transition, and verifies finite nonzero
 actor gradients through imagined dynamics. It is deliberately bounded and does
 not start the million-iteration upstream training default. Test results and
-machine-specific limitations are recorded in `docs/supermimic-validation.md`.
+current limitations are recorded in [validation.md](validation.md).
 
 ## K1 maximal-coordinate IK change
 

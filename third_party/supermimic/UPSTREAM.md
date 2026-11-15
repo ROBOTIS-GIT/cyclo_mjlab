@@ -1,14 +1,27 @@
-# Provenance
+# SuperMimic provenance and local changes
 
-Vendored from https://github.com/HybridRobotics/supermimic at
-`abc124c1bd5976341034668af3d12c087f2f1f55` (2026-11-15 checkout).
-Copyright 2026 The SuperMimic Authors. Apache-2.0; original LICENSE and
-README acknowledgements are preserved. Upstream acknowledges ControlVAE
-(BSD-3-Clause), robotic_world_model (Apache-2.0), and DreamerV3 (MIT).
+- Official source: https://github.com/HybridRobotics/supermimic
+- Pinned revision: `abc124c1bd5976341034668af3d12c087f2f1f55`
+- Copyright 2026 The SuperMimic Authors; Apache-2.0.
+- Original [LICENSE](LICENSE) and [README acknowledgements](README.md#acknowledgements)
+  are preserved byte-for-byte. That revision has no `NOTICE` file to copy.
 
-Local changes: `utils/analytic_ik.py` supports one-hinge K1 chains by supplying
-an orthogonal auxiliary axis; unused padded coordinates are excluded as before.
-The original world model, representations, replay buffer, differentiable
-rollouts, policy learners, runner, and exporter are retained.
-The sibling-only uv mjlab source in pyproject.toml is changed to the pinned
-research git revision above. Python and algorithm dependencies are unchanged.
+Changes to the vendored distribution:
+
+| File | Local change |
+| --- | --- |
+| `src/supermimic/utils/analytic_ik.py` | Support K1 single-hinge chains with an orthogonal auxiliary axis; marked at file top and at the changed block |
+| `pyproject.toml` | Replace editable sibling `../mjlab_research` with immutable research Git revision `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd`; marked at file top |
+
+Other vendored Python sources, tests and original README remain unchanged.
+Native `source/tasks/supermimic/train.py` adapts the official launcher, retains
+its author/license notice, and adds the K1 reference/control-rate guard while
+reusing the original configuration, environment factory and learner.
+The K1 robot adapter and historical COM facts derive from existing Cyclo assets
+with their original notices retained; see [component scope](../../THIRD_PARTY_LICENSES.md).
+
+The upstream README acknowledges code inspired by ControlVAE (BSD-3-Clause),
+robotic_world_model (Apache-2.0), and DreamerV3 (MIT). Those acknowledgements are
+retained. This is not a claim that every inspired algorithm is copied code, or
+an independent clearance of the upstream authors' line-by-line provenance.
+No files from those repositories were separately imported by this integration.

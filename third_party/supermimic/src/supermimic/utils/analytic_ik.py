@@ -1,3 +1,6 @@
+# Copyright 2026 The SuperMimic Authors.
+# SPDX-License-Identifier: Apache-2.0
+# Modified for Cyclo: support K1 single-hinge chains; see third_party/supermimic/UPSTREAM.md.
 """Analytic inverse kinematics: joint angles and rates from tracked body poses.
 
 Between a tracked parent and child sit two or three hinges. Moving each fixed

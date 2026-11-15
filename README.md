@@ -43,7 +43,8 @@ uv sync --project integrations/supermimic --python 3.13 --locked
 ```
 
 The `integrations/supermimic` directory holds the runtime manifest/lock and
-compatibility entry points. The implementation is native source under
+compatibility entry points; `pytest` is a dev dependency, not a runtime dependency.
+The implementation is native source under
 `source/tasks/supermimic`; existing PPO tasks stay at `source/tasks/mimic`.
 Do not replace the root `pyproject.toml` dependencies with the research runtime.
 
@@ -128,16 +129,18 @@ Run `scripts/tools/motion/csv_to_npz.py --help` and `replay_npz.py --help` in
 the existing runtime. `to_supermimic.py` remains an optional research-format export
 tool; native SuperMimic train/play adapt supported Cyclo NPZ files automatically.
 
-[Direct reference and regression validation](docs/reference-adapter-validation.md) record the actual
-checks, including short CUDA world-model/policy updates for both representations.
+[Validation commands and checked scope](docs/validation.md) cover unit tests,
+legacy compatibility and the short CPU/CUDA smoke results.
 
 ![Locomotion demo](docs/videos/k1_rl_locomotion_mjlab.webp)
 ![Motion-imitation demo](docs/videos/k1_mimic_dance_mjlab.webp)
 
 ## License
 
-This repository is licensed under the
-[Apache License 2.0](LICENSE).
+Software in this repository is distributed under the
+[Apache License 2.0](LICENSE), subject to the component notices below. Asset,
+reference-data and external-weight rights are described separately in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ### Third-party components
 
@@ -147,3 +150,7 @@ This repository is licensed under the
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 - **ROBOTIS AI Sapiens K1 Rev.1 assets**: Apache License 2.0; see
   [LICENSE.ai_sapiens](source/assets/robots/robotis_k1/LICENSE.ai_sapiens)
+
+- **HybridRobotics/SuperMimic**: Apache License 2.0; original license,
+  acknowledgements and modification record in
+  [third_party/supermimic/UPSTREAM.md](third_party/supermimic/UPSTREAM.md)

@@ -1,3 +1,5 @@
+# Modified for Cyclo: pin the mjlab research dependency instead of the original
+# editable sibling path. Original project metadata and Apache-2.0 license retained.
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]
 build-backend = "uv_build"
