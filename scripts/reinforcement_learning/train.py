@@ -32,6 +32,13 @@ from typing import Literal, cast
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Select the task family before importing any version-specific simulator APIs.
+if __name__ == "__main__":
+  from source.learning.dispatch import dispatch
+
+  if dispatch("train"):
+    raise SystemExit(0)
+
 import tyro
 
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
@@ -228,7 +235,9 @@ def main():
   import mjlab.tasks  # noqa: F401
   import source.tasks
 
-  k1_task_prefixes = ("Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-")
+  k1_task_prefixes = (
+    "Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-", "Cyclo-BeyondMimic-K1-Rev1-"
+  )
   all_tasks = [
     task_id for task_id in list_tasks() if task_id.startswith(k1_task_prefixes)
   ]

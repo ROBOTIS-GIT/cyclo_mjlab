@@ -1,4 +1,4 @@
-# SuperMimic on K1 (MuJoCo research runtime)
+# SuperMimic on K1 (native MuJoCo/mjlab tasks)
 
 This integration uses the actual HybridRobotics SuperMimic differentiable world
 model, replay buffer, supervised dynamics learner, imagination rollouts and
@@ -11,6 +11,12 @@ explicit collision masks/default priorities required by mjlab 1.6; the main
 asset configuration is unchanged. Root/anchor is pelvis.
 The original multi-encoder motion/velocity architecture and exporter remain
 available through the upstream runner configuration.
+
+Native task implementation: `source/tasks/supermimic`. The shared
+`source/learning/dispatch.py` selects this family before version-specific imports.
+Both train and play use the standard `scripts/reinforcement_learning` entry points;
+`cyclo-supermimic` remains a compatibility command. Existing BeyondMimic/PPO
+implementation and task IDs remain available in their own runtime.
 
 ## Independent environment
 
@@ -38,7 +44,7 @@ Generate normal Cyclo body-state NPZ with `scripts/tools/motion/csv_to_npz.py`
 in the normal Cyclo environment, then convert in the isolated environment:
 
 ```bash
-uv run --project integrations/supermimic cyclo-supermimic convert \
+uv run --project integrations/supermimic python scripts/tools/motion/to_supermimic.py \
   source/assets/motions/K1_rev1/dance1/dance1.npz \
   .supermimic-data/dance1.npz
 ```
@@ -61,7 +67,8 @@ not claims of a completed trained policy. Use a free GPU and an appropriate
 number of environments for its memory:
 
 ```bash
-WANDB_MODE=offline uv run --project integrations/supermimic cyclo-supermimic train \
+WANDB_MODE=offline uv run --project integrations/supermimic python \
+  scripts/reinforcement_learning/train.py --algorithm supermimic \
   Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file .supermimic-data/dance1.npz \
   --num-envs 64 --runner.run-name k1-dance1
 ```
@@ -75,7 +82,8 @@ remote logging but preserves local results; omit it for normal authenticated
 W&B tracking. Local `--motion-file` disables the upstream G1 registry default.
 
 ```bash
-uv run --project integrations/supermimic cyclo-supermimic play \
+uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
+  --algorithm supermimic \
   Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file .supermimic-data/dance1.npz \
   --wandb-path ENTITY/PROJECT/RUN --viewer viser
 ```

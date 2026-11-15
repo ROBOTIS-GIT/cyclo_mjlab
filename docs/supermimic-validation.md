@@ -185,3 +185,12 @@ or performed. All logs and offline W&B records remain local.
 
 This is a CUDA execution/optimization check with reused Warp cache and first-time
 learner compilation, not a benchmark or a claim of motion-tracking convergence.
+
+## Subsequent native integration
+
+The implementation was subsequently moved into `source/tasks/supermimic` and
+connected to the existing native train/play entry points, with explicit
+BeyondMimic aliases and preserved legacy names. See
+[native integration and both-runtime regression results](native-integration-validation.md).
+The earlier unchanged-PPO-registration and not-rerun observations above describe
+the initial revision; the new report records the later alias and runtime checks.
