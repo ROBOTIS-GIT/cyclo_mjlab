@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from cyclo_supermimic.motion import convert_motion, validate_motion
+from cyclo_supermimic.motion import ROOT_CONTRACT, convert_motion, validate_motion
 
 
 def clip():
@@ -25,6 +25,7 @@ def test_named_joint_order():
     "key,value",
     [
         ("fps", 30),
+        ("fps", "50"),
         ("joint_names", ["a", "a"]),
         ("joint_vel", np.zeros((3, 2))),
         ("root_quat_w", np.zeros((2, 4))),
@@ -38,16 +39,9 @@ def test_reject_invalid_motion(key, value):
         validate_motion(data, ("a", "b"))
 
 
-def test_legacy_root_and_source_preservation(tmp_path):
+def test_explicit_root_contract_and_source_preservation(tmp_path):
     data = clip()
-    for root, body in [
-        ("root_pos_w", "body_pos_w"),
-        ("root_quat_w", "body_quat_w"),
-        ("root_lin_vel_w", "body_lin_vel_w"),
-        ("root_ang_vel_w", "body_ang_vel_w"),
-    ]:
-        data[body] = data.pop(root)[:, None, :]
-    data["body_names"] = ["pelvis"]
+    data.update(ROOT_CONTRACT)
     src = tmp_path / "legacy.npz"
     dst = tmp_path / "research.npz"
     np.savez(src, **data)

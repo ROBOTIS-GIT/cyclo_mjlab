@@ -75,19 +75,18 @@ Dance2 and the original play/ghost/export flags are described in the
 
 ### SuperMimic
 
-From the host checkout, first convert the existing K1 body-state NPZ to the
-research root-state format (source data is preserved):
+From the host checkout, pass the **same 50 Hz K1 NPZ** used by BeyondMimic.
+The internal adapter validates the reference and supplies the research loader's
+root-state layout; no separate conversion step is required:
 
 ```bash
-uv run --project integrations/supermimic python scripts/tools/motion/to_supermimic.py \
-  source/assets/motions/K1_rev1/dance1/dance1.npz .supermimic-data/dance1.npz
 WANDB_MODE=offline uv run --project integrations/supermimic python \
   scripts/reinforcement_learning/train.py --algorithm supermimic \
-  Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file .supermimic-data/dance1.npz \
+  Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --num-envs 64 --runner.run-name k1-dance1
 uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
-  --motion-file .supermimic-data/dance1.npz --wandb-path ENTITY/PROJECT/RUN --viewer viser
+  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz --wandb-path ENTITY/PROJECT/RUN --viewer viser
 ```
 
 Select `MaxCoord` for body-space dynamics. Current playback uses W&B bundles;
@@ -104,7 +103,7 @@ motion data and learned checkpoints retain each algorithm's format.
 
 | Contract | BeyondMimic/PPO | SuperMimic |
 | --- | --- | --- |
-| Data | Existing named body-state NPZ | Separate named-joint/root-state NPZ; 50 Hz |
+| Data | Existing named body-state NPZ | Same Cyclo 50 Hz NPZ; internal verified root-state adapter |
 | Output | `logs/rsl_rl/k1_mimic/<run>/model_*.pt` | `logs/Cyclo-SuperMimic-*/<run>/{world_model,actor,critic}.pt` |
 | Deployment export | Training: `params/sim2real.yaml`; play: `exported/policy.onnx`, `policy.pt` | Original multi-encoder exporter; conditional ONNX with proprio inputs; existing PPO sim2real contract does not apply |
 
@@ -126,9 +125,10 @@ python scripts/reinforcement_learning/play.py Cyclo-Velocity-Flat-K1-Rev1-v0 \
 ## Motion utilities and validation
 
 Run `scripts/tools/motion/csv_to_npz.py --help` and `replay_npz.py --help` in
-the existing runtime. Use `to_supermimic.py` in the research runtime for conversion.
+the existing runtime. `to_supermimic.py` remains an optional research-format export
+tool; native SuperMimic train/play adapt supported Cyclo NPZ files automatically.
 
-[Native selection and regression validation](docs/native-integration-validation.md) record the actual
+[Direct reference and regression validation](docs/reference-adapter-validation.md) record the actual
 checks, including short CUDA world-model/policy updates for both representations.
 
 ![Locomotion demo](docs/videos/k1_rl_locomotion_mjlab.webp)

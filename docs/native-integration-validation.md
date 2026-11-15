@@ -150,3 +150,10 @@ W&B bundle and its conditional ONNX deployment exporter were not exercised.
 SuperMimic uses the original W&B bundle loader and does not produce the existing
 PPO `sim2real.yaml` contract. Existing Docker and research environments remain
 separate. Raw logs and generated artifacts stay git-ignored in the worktree.
+
+## Subsequent direct-reference adapter
+
+Separate user conversion is no longer required. See
+[direct 50 Hz reference reuse and verified COM conventions](reference-adapter-validation.md)
+for the newer input contract, source-preservation evidence and both-runtime checks.
+Earlier converted-file commands above record historical executions only.

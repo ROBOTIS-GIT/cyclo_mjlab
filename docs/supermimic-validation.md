@@ -194,3 +194,10 @@ BeyondMimic aliases and preserved legacy names. See
 [native integration and both-runtime regression results](native-integration-validation.md).
 The earlier unchanged-PPO-registration and not-rerun observations above describe
 the initial revision; the new report records the later alias and runtime checks.
+
+## Subsequent direct-reference adapter
+
+Separate user conversion is no longer required. See
+[direct 50 Hz reference reuse and verified COM conventions](reference-adapter-validation.md)
+for the newer input contract, source-preservation evidence and both-runtime checks.
+Earlier converted-file commands above record historical executions only.

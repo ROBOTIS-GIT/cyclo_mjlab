@@ -139,5 +139,9 @@ YAML and `params/sim2real.yaml`. Play loads a local checkpoint and exports
 export without opening a viewer. Keep using the established Cyclo policy
 interface; this manual does not authorize hardware execution.
 
+The same 50 Hz Cyclo NPZ can now be passed directly to SuperMimic; its internal
+adapter handles the different research-loader layout without changing this
+PPO reference or requiring a separate conversion command.
+
 SuperMimic checkpoints cannot be loaded by this PPO runner. To train the other
 algorithm, use its [separate runtime and task manual](supermimic.md).
