@@ -150,6 +150,7 @@ def test_real_runner_loop_saves_final_parameters(
         _init_wandb=lambda _: None,
         _seed_sim_history=lambda: None,
         _cleanup=lambda: cleanup.append(True),
+        checkpoint_extra_files=lambda _: [],
         step=step,
         replay_buffer=buffer,
         world_model_learner=SimpleNamespace(update=update_wm),
@@ -188,3 +189,29 @@ def test_real_runner_loop_saves_final_parameters(
         assert logged == [0, 9]
     else:
         assert len(logged) == 2  # final iteration also lies on an interval
+
+
+@pytest.mark.parametrize("variant", ["clipping", "subset", "reordered", "entity"])
+def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
+    from mjlab.entity import Entity
+
+    from source.tasks.supermimic.checkpoint import robot_contract
+
+    cfg = k1_env_cfg()
+    action = cfg.actions["joint_pos"]
+    if variant == "clipping":
+        action.clip = {".*": (-1.0, 1.0)}
+    elif variant == "subset":
+        action.actuator_names = ("left_hip_pitch_joint",)
+    elif variant == "entity":
+        action.entity_name = "different_robot"
+    else:
+        resolve = Entity.find_joints_by_actuator_names
+
+        def reverse(entity, patterns):
+            ids, names = resolve(entity, patterns)
+            return ids[::-1], names[::-1]
+
+        monkeypatch.setattr(Entity, "find_joints_by_actuator_names", reverse)
+    with pytest.raises(ValueError, match="clipping|joint order"):
+        robot_contract(cfg)

@@ -1,7 +1,8 @@
 """Opt-in bounded CPU acceptance of the actual learners and local playback.
 
 Run from the checkout: python tests/supermimic/validate_native.py GenCoord dance1 /tmp/output
-Set WANDB_MODE=offline and TORCHDYNAMO_DISABLE=1 for eager CPU validation.
+W&B disabled mode is enforced for this process. Set TORCHDYNAMO_DISABLE=1
+for eager CPU validation. No global logging preferences are changed.
 """
 
 import json
@@ -51,6 +52,19 @@ def main():
     representation, dance, output = sys.argv[1:]
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
+    # This validation entry point must never depend on ambient user logging mode.
+    os.environ["WANDB_MODE"] = "disabled"
+    for variable in (
+        "WANDB_DIR",
+        "WANDB_DATA_DIR",
+        "WANDB_CACHE_DIR",
+        "WANDB_CONFIG_DIR",
+    ):
+        directory = output / variable.lower()
+        directory.mkdir(exist_ok=True)
+        os.environ[variable] = str(directory)
+    assert os.environ["WANDB_MODE"] == "disabled"
+    print(f"[INFO] Validation logging: disabled; evidence directory: {output}")
     os.chdir(output)
     torch.set_num_threads(2)
     torch.manual_seed(7)
@@ -95,6 +109,21 @@ def main():
             parameters(runner._dynamics),
             parameters(runner.policy_learner.actor),
         )
+        wm_muon = [
+            (p, p.detach().clone())
+            for optimizer in runner.world_model_learner.optimizers
+            if isinstance(optimizer, torch.optim.Muon)
+            for group in optimizer.param_groups
+            for p in group["params"]
+        ]
+        actor_muon = [
+            (p, p.detach().clone())
+            for optimizer in runner.policy_learner.actor_optimizers
+            if isinstance(optimizer, torch.optim.Muon)
+            for group in optimizer.param_groups
+            for p in group["params"]
+        ]
+        assert wm_muon and actor_muon
         wm_update, policy_update = (
             runner.world_model_learner.update,
             runner.policy_learner.update,
@@ -117,11 +146,25 @@ def main():
 
         runner.world_model_learner.update = tracked_wm
         runner.policy_learner.update = tracked_policy
+        import wandb
+
+        initialize_wandb = runner._init_wandb
+        logging_modes = []
+
+        def disabled_wandb(log_dir):
+            initialize_wandb(log_dir)
+            assert wandb.run is not None and wandb.run.settings.mode == "disabled"
+            logging_modes.append(wandb.run.settings.mode)
+
+        runner._init_wandb = disabled_wandb
         runner.run()
+        assert logging_modes == ["disabled"]
         assert updates["wm"] > 0 and updates["actor"] > 0
         assert changed(wm_before, runner._dynamics) and changed(
             actor_before, runner.policy_learner.actor
         )
+        assert any(not torch.equal(p, old) for p, old in wm_muon)
+        assert any(not torch.equal(p, old) for p, old in actor_muon)
         bundle = max((output / "logs" / task).iterdir(), key=lambda p: p.name)
         equal_tree(
             torch.load(bundle / "world_model.pt", weights_only=True),
@@ -157,10 +200,13 @@ def main():
     result = {
         "task": task,
         "source": str(source),
+        "logging_mode": "disabled",
+        "evidence_directory": str(output),
         "bundle": str(bundle),
         "updates": updates,
         "final_weights_exact": True,
         "wm_frozen_during_actor": True,
+        "wm_and_actor_muon_matrices_updated": True,
         "play_steps": 4,
         "timestep": 0.0025,
         "decimation": 8,

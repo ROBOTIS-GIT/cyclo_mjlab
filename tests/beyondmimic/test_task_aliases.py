@@ -1,4 +1,4 @@
-"""Run with the existing Python 3.11 / mjlab 1.2 runtime."""
+"""Run with the common Python 3.12 / mjlab 1.6.1 runtime."""
 
 import sys
 import unittest
@@ -43,7 +43,6 @@ class BeyondMimicCompatibility(unittest.TestCase):
                 config_value(asdict(load_rl_cfg(old))),
                 config_value(asdict(load_rl_cfg(explicit))),
             )
-        self.assertNotIn("source.tasks.supermimic.tasks", sys.modules)
 
 
 if __name__ == "__main__":

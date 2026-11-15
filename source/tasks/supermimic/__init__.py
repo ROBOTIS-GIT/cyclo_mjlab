@@ -1,4 +1,4 @@
-"""Native K1 SuperMimic task family (research mjlab runtime)."""
+"""Native K1 SuperMimic task family in the common MJLab 1.6.1 runtime."""
 
 from source import SRC_PATH
 

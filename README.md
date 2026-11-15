@@ -175,18 +175,18 @@ iteration to use.
 
 ### SuperMimic
 
-Follow the [SuperMimic guide](docs/supermimic.md) to set up its locked Python 3.13
-research environment. The current dependency pins and mjlab APIs conflict with
-the Docker runtime above. From the host checkout, use the same supported 50 Hz
-K1 reference NPZ; the internal adapter preserves the original file:
+Both algorithms use the same Python 3.12 / MJLab 1.6.1 environment. Follow the
+[SuperMimic guide](docs/supermimic.md) to initialize its shared source submodule.
+Use the same supported 50 Hz K1 reference NPZ; the internal adapter preserves
+the original file:
 
 ```bash
-WANDB_MODE=offline uv run --project integrations/supermimic python \
+WANDB_MODE=offline python \
   scripts/reinforcement_learning/train.py --algorithm supermimic \
   Cyclo-SuperMimic-GenCoord-K1-Rev1 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz --num-envs 64
 
-uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
+python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> --viewer viser
@@ -223,6 +223,6 @@ reference-data and external-weight rights are described separately in
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 - **ROBOTIS AI Sapiens K1 Rev.1 assets**: Apache License 2.0; see
   [LICENSE.ai_sapiens](source/assets/robots/robotis_k1/LICENSE.ai_sapiens)
-- **HybridRobotics/SuperMimic**: Apache License 2.0; original license,
-  acknowledgements and modification record in
-  [third_party/supermimic/UPSTREAM.md](third_party/supermimic/UPSTREAM.md)
+- **HybridRobotics/SuperMimic**: Apache License 2.0 with BSD-3-Clause math notices;
+  original license, acknowledgements and modification record in
+  [third_party/supermimic/PATCHES.md](third_party/supermimic/PATCHES.md)

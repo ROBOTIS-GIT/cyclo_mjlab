@@ -65,11 +65,14 @@ run directly from `/workspace/cyclo_mjlab`.
 
 The Docker image includes:
 
-- Python 3.11
-- MJLab 1.2.0
-- MuJoCo and MuJoCo Warp 3.5.0
-- Warp 1.12.0
+- Python 3.12
+- MJLab 1.6.1
+- MuJoCo and MuJoCo Warp 3.11.0
+- Warp 1.14.0
 - All dependencies declared in `pyproject.toml`
+
+The current Docker build/start has not completed validation; host CPU/GPU evidence
+and installation alternatives are in [runtime-migration.md](runtime-migration.md).
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.
@@ -130,7 +133,7 @@ iteration to use.
 ## Data and outputs
 
 K1 CSV motion conversion uses `scripts/tools/motion/csv_to_npz.py` in this
-Python 3.11 environment. The NPZ carries named joints, named body states and FPS;
+Python 3.12 environment. The NPZ carries named joints, named body states and FPS;
 task configs select dance1/dance2 by default, with `--motion-file` override.
 
 PPO writes `logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt`, environment/agent
@@ -140,8 +143,8 @@ export without opening a viewer. Keep using the established Cyclo policy
 interface; this manual does not authorize hardware execution.
 
 The same 50 Hz Cyclo NPZ can now be passed directly to SuperMimic; its internal
-adapter handles the different research-loader layout without changing this
+adapter handles the compact-reference layout without changing this
 PPO reference or requiring a separate conversion command.
 
 SuperMimic checkpoints cannot be loaded by this PPO runner. To train the other
-algorithm, use its [separate runtime and task manual](supermimic.md).
+algorithm, use its [task manual in the same runtime](supermimic.md).

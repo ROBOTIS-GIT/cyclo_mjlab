@@ -6,9 +6,8 @@ BPTT/actor-critic policy learners. It does not route to Cyclo's PPO imitation
 runner. Both `Cyclo-SuperMimic-GenCoord-K1-Rev1` and
 `Cyclo-SuperMimic-MaxCoord-K1-Rev1` use Cyclo's 23-joint K1 Rev.1 MJCF,
 actuator gains/action scales, and 14 tracked bodies.
-The research robot adapter copies the licensed Cyclo asset settings and supplies
-explicit collision masks/default priorities required by mjlab 1.6; the main
-asset configuration is unchanged. Root/anchor is pelvis.
+Both algorithms import the same native K1 asset configuration, including collision
+masks, actuator settings and action scales. Root/anchor is pelvis.
 The original multi-encoder motion/velocity architecture and exporter remain
 available through the upstream runner configuration.
 
@@ -16,47 +15,50 @@ Native task implementation: `source/tasks/supermimic`. The shared
 `source/learning/dispatch.py` selects this family before version-specific imports.
 Both train and play use the standard `scripts/reinforcement_learning` entry points;
 `cyclo-supermimic` remains a compatibility command. Existing BeyondMimic/PPO
-implementation and task IDs remain available in their own runtime.
+implementation and task IDs remain available in the same runtime.
 
-## Independent environment
+## Shared Cyclo MJLab environment
 
-Cyclo main uses Python 3.11 / mjlab 1.2.0. SuperMimic requires Python 3.13 and
-research APIs, including FK-based named-joint motions and sim-context features.
-The current dependency sets cannot be combined unchanged: resolution conflicts
-on MuJoCo-Warp 3.5 versus 3.16, and the legacy asset import fails under research
-mjlab because collision configuration now requires explicit masks. Python 3.13
-alone is not the blocker (Cyclo declares Python >=3.11). Unifying these runtimes
-would require a separately validated legacy API/dependency migration. Keep this
-research environment separate for the current integration.
-From the repository root, with uv installed:
+Both algorithms use Python 3.12 and stable MJLab 1.6.1, with the complete binary
+dependency graph pinned in the root `requirements.lock`. Initialize the two
+submodules and follow [runtime installation](runtime-migration.md):
 
 ```bash
-git submodule update --init third_party/ai_sapiens
-uv sync --project integrations/supermimic --python 3.13 --locked
+git submodule update --init --recursive
+uv venv --python 3.12 .venv
+uv pip sync --python .venv/bin/python --require-hashes requirements.lock
+uv pip install --python .venv/bin/python --no-deps -e third_party/supermimic -e .
+source .venv/bin/activate
 ```
 
-This creates `integrations/supermimic/.venv`; root `pyproject.toml` is unchanged.
-This directory is a runtime project: its manifest/lock select the separate
-research dependencies, and `src/cyclo_supermimic` forwards compatibility imports
-and the `cyclo-supermimic` command to native `source/tasks/supermimic` code.
-`pytest` belongs to the `dev` group, which uv installs by default. A runtime-only
-installation can use `uv sync --project integrations/supermimic --no-dev --locked`;
-include the dev group again to run tests. Removing this directory would break
-the documented uv commands and the isolated dependency resolution. The compatibility
-package supports editable checkout installation only; its forwarding wheel is not
-a standalone Cyclo distribution and gives an explicit error outside a checkout.
-SuperMimic source is vendored at commit
-`abc124c1bd5976341034668af3d12c087f2f1f55`.
-`mjlab_research` is pinned to
-`dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd` and resolved in the integration lock.
-See `third_party/supermimic/UPSTREAM.md` for modifications and attribution.
+`third_party/supermimic` is a real Git submodule of
+[ROBOTIS-GIT/supermimic](https://github.com/ROBOTIS-GIT/supermimic), pinned to
+`10dd5dd3f02601caf1991790952a25db63a6fb99`, descended from official HybridRobotics
+`abc124c1bd5976341034668af3d12c087f2f1f55`. Its core retains the official models,
+replay, learners and representation mathematics. Changes and licenses are recorded
+in [PATCHES.md](../third_party/supermimic/PATCHES.md).
+
+The native `forward_kinematics.py` and `native_motion.py` adapters supply the
+named-joint FK, clip boundaries and external reset distribution required by
+SuperMimic, using stable MJLab simulation. Their primary source is official
+`HybridRobotics/mjlab_research` at `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd`.
+Research MJLab is not installed into the Cyclo runtime. K1 assets, motion
+validation, simulator collection and checkpoint manifests stay in Cyclo.
+
+`integrations/supermimic` now contains optional checkout-only compatibility
+imports and a lock targeting this same dependency set. It is not a second required
+environment. Existing `uv run --project integrations/supermimic ...` commands can
+still use that project's Python 3.12 environment; ordinary train/play commands
+above need only the root environment. A previous Python 3.13 research environment
+must not be mixed with the new lock. Shared learning source also does not imply
+that Cyclo Lab's Isaac dependencies can coexist with stable MJLab in one environment.
 
 ## Data
 
 Use the **same 50 Hz reference NPZ** generated by the existing
 `scripts/tools/motion/csv_to_npz.py` for both algorithms. Pass that original file
 to `--motion-file`; train and play run the internal adapter before calling the
-original SuperMimic loader. Separate conversion is optional.
+native compact-reference loader. Separate conversion is optional.
 Specify `--motion-file` exactly once; use a comma list or quoted glob for several
 clips. Repeated options are rejected so tyro's last-value precedence cannot
 bypass validation. Numeric input must remain finite in the float32 loader format.
@@ -94,12 +96,12 @@ files and a source-SHA256/model-signature manifest live in the git-ignored
 `.supermimic-data/adapter/` directory. Inputs are fully revalidated every invocation;
 this derived cache is never trusted instead of validating the original. A comma
 list or quoted glob is accepted; every pattern must match and clip boundaries
-are preserved by the original MotionLoader.
+are preserved by the native motion provider.
 
 For workflows that need a standalone normalized file, the optional tool remains:
 
 ```bash
-uv run --project integrations/supermimic python scripts/tools/motion/to_supermimic.py \
+python scripts/tools/motion/to_supermimic.py \
   source/assets/motions/K1_rev1/dance1/dance1.npz .supermimic-data/dance1.npz
 ```
 
@@ -117,7 +119,7 @@ not claims of a completed trained policy. Use a free GPU and an appropriate
 number of environments for its memory:
 
 ```bash
-WANDB_MODE=offline uv run --project integrations/supermimic python \
+WANDB_MODE=offline python \
   scripts/reinforcement_learning/train.py --algorithm supermimic \
   Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --num-envs 64 --runner.run-name k1-dance1
@@ -146,7 +148,7 @@ logging never enumerates or prunes remote artifacts.
 Play directly from that directory, without syncing or uploading:
 
 ```bash
-uv run --project integrations/supermimic python scripts/reinforcement_learning/play.py \
+python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> \
@@ -167,6 +169,10 @@ including timestep **and decimation**, gains, action scales, observation and
 randomization configuration. It changes only the selected local reference and
 environment count (one). An incompatible checkout or altered contract is rejected.
 The manifest contains JSON data, not executable/pickled Python configuration.
+Only the complete native-order K1 joint-position action is supported; target
+clipping, joint subselection/reordering and custom action classes are rejected
+before environment creation. The dynamics model uses the same affine scale and
+offset as the native action manager.
 
 This is an inference bundle, not an optimizer/replay-state training-resume format.
 Existing Cyclo PPO checkpoint files and `sim2real.yaml` are incompatible. Default
@@ -176,10 +182,10 @@ sensor inputs. Local playback does not establish convergence or hardware readine
 ## Short verification
 
 ```bash
-uv run --project integrations/supermimic python -m pytest tests/supermimic -q
-uv run --project integrations/supermimic python -m pytest third_party/supermimic/tests -q
-uv run --project integrations/supermimic cyclo-supermimic smoke --device cpu
-uv run --project integrations/supermimic cyclo-supermimic smoke --device cpu --representation maxcoord
+python -m pytest tests/supermimic -q
+python -m pytest third_party/supermimic/tests -q
+cyclo-supermimic smoke --device cpu
+cyclo-supermimic smoke --device cpu --representation maxcoord
 ```
 
 Smoke uses two environments and a temporary standing clip, takes a real sim
@@ -193,7 +199,8 @@ current limitations are recorded in [validation.md](validation.md).
 Upstream handles two/three-hinge chains; K1's waist is one hinge. Its axis is
 completed with an orthogonal auxiliary axis, and padded coordinates are discarded
 by the existing permutation. Numerical tests compare all 23 recovered angles
-and rates against MuJoCo FK and check gradients. This is the only representation/learner algorithm change in the vendored tree.
-Small runner/artifact patches also ensure final checkpoint saving and offline
-behavior; all modifications are listed in `third_party/supermimic/UPSTREAM.md`. K1 task configuration lives outside
-that tree and leaves the normal Cyclo registration untouched.
+and rates against MuJoCo FK and check gradients. The shared fork contains this generic one-hinge extension; the original body-space
+integration is unchanged and does not project imagined bodies through FK.
+Small runner/artifact patches ensure final checkpoint saving and offline behavior;
+all modifications are listed in `third_party/supermimic/PATCHES.md`. Native K1
+configuration lives outside the submodule and preserves normal Cyclo registration.

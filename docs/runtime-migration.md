@@ -19,22 +19,28 @@ image `cyclo-mjlab:1.6.1-py312`, container `cyclo_mjlab_161`, and Compose projec
 container names as before. Docker installs the hashed runtime lock without
 retaining a second copy of downloaded wheels in a pip cache.
 
-Use a repository checkout with the `third_party/ai_sapiens` submodule initialized;
+Use a repository checkout with both submodules initialized (`git submodule update
+--init --recursive`);
 the wheel alone does not include robot assets or the CLI scripts. For an isolated
 local Python 3.12 environment:
 
 ```bash
 uv venv --python 3.12 .venv
 uv pip sync --python .venv/bin/python --require-hashes requirements.lock
-uv pip install --python .venv/bin/python --no-deps -e .
+uv pip install --python .venv/bin/python --no-deps -e third_party/supermimic -e .
 ```
 
 Regenerate the lock only when deliberately updating dependencies, then rerun
 native regressions:
 
 ```bash
-uv pip compile pyproject.toml --python-version 3.12 --generate-hashes -o requirements.lock
+uv pip compile pyproject.toml --python-version 3.12 --generate-hashes \
+  --no-emit-package supermimic -o requirements.lock
 ```
+
+The SuperMimic source dependency is resolved with the same graph but installed
+from its pinned submodule, not an unrelated package-index release. Both algorithms
+share this MJLab runtime; the optional research backend in the fork is not needed.
 
 The existing K1 Velocity and BeyondMimic/PPO task IDs, training/play arguments,
 23-action order, and original 50 Hz Dance1/Dance2 NPZ files are preserved.

@@ -71,7 +71,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 WORKDIR ${PROJECT_PATH}
 COPY . .
-RUN python -m pip install --no-cache-dir --no-deps -e . \
+RUN python -m pip install --no-cache-dir --no-deps -e third_party/supermimic -e . \
     && chown -R cyclo:0 "${PROJECT_PATH}" \
     && chmod -R g=u "${PROJECT_PATH}"
 

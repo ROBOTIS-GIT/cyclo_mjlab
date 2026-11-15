@@ -1,18 +1,26 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cyclo_mjlab"
 version = "0.0.3"
 requires-python = ">=3.12,<3.13"
+license-files = ["LICENSE", "THIRD_PARTY_LICENSES.md", "source/tasks/supermimic/LICENSE.mjlab_research"]
 dependencies = [
     "mjlab==1.6.1",
     "mujoco==3.11.0",
     "mujoco-warp==3.11.0",
     "warp-lang==1.14.0",
     "torch==2.14.0",
+    "supermimic==0.1.0",
 ]
+
+[project.scripts]
+cyclo-supermimic = "source.tasks.supermimic.cli:main"
+
+[tool.uv.sources]
+supermimic = { path = "third_party/supermimic", editable = true }
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -1,4 +1,4 @@
-"""Separate runtime entry point; forwards training/play to the real upstream runner."""
+"""Native task entry point; forwards training/play to the official shared learner."""
 
 import argparse
 import sys

@@ -83,15 +83,25 @@ def robot_contract(cfg):
     from mjlab.entity import Entity
     from mjlab.envs.mdp.actions import JointPositionActionCfg
 
-    if set(cfg.actions) != {"joint_pos"} or not isinstance(
-        cfg.actions["joint_pos"], JointPositionActionCfg
+    if (
+        set(cfg.actions) != {"joint_pos"}
+        or type(cfg.actions["joint_pos"]) is not JointPositionActionCfg
     ):
         raise ValueError("K1 bundles require the joint_pos action contract")
+    action = cfg.actions["joint_pos"]
+    if action.entity_name != "robot" or action.clip is not None:
+        raise ValueError(
+            "SuperMimic requires robot joint-position actions without target clipping"
+        )
     entity = Entity(cfg.scene.entities["robot"])
     model = entity.spec.compile()
-    _, action_names = entity.find_joints_by_actuator_names(
-        cfg.actions["joint_pos"].actuator_names
-    )
+    _, action_names = entity.find_joints_by_actuator_names(action.actuator_names)
+    names = list(model_joint_names(model))
+    if action_names != names:
+        raise ValueError(
+            "SuperMimic action joint order must exactly match all native representation "
+            "joints; reordering and subselection are unsupported"
+        )
     physical = hashlib.sha256()
     for attribute in (
         "body_pos",
@@ -117,7 +127,6 @@ def robot_contract(cfg):
         "actuator_biasprm",
     ):
         physical.update(np.asarray(getattr(model, attribute)).tobytes())
-    names = list(model_joint_names(model))
     return {
         "name": "K1-Rev1",
         "xml_sha256": hashlib.sha256(K1_REV1_XML_PATH.read_bytes()).hexdigest(),
@@ -202,6 +211,9 @@ class LocalBundleRunner(SuperMimicRunner):
     def __init__(self, *, manifest, **kwargs):
         self.manifest = manifest
         super().__init__(**kwargs)
+
+    def checkpoint_extra_files(self, log_dir):
+        return [str(log_dir / "manifest.json")]
 
     def _create_log_dir(self, *parts):
         directory = super()._create_log_dir(*parts)

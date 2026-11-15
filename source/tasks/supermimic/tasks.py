@@ -1,10 +1,13 @@
 """K1 task adaptation; all dynamics and policy learning remain upstream."""
 
-# Import only the robot asset, not source.tasks (which registers mjlab 1.2 tasks).
-from mjlab.tasks.registry import load_rl_cfg, register_mjlab_task  # noqa: E402
-from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg  # noqa: E402
+from dataclasses import fields
 
-from .robot import (  # noqa: E402
+from mjlab.managers import TerminationTermCfg
+from mjlab.tasks.registry import load_rl_cfg, register_mjlab_task
+from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
+
+from .native_motion import NativeMotionCommandCfg, motion_end
+from .robot import (
     K1_REV1_ACTION_SCALE,
     K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
     get_k1_rev1_cfg,
@@ -40,10 +43,17 @@ def k1_env_cfg(representation="gencoord", play=False):
         play=play
     )
     cfg.scene.entities = {"robot": get_k1_rev1_cfg()}
+    previous_motion = cfg.commands["motion"]
+    cfg.commands["motion"] = NativeMotionCommandCfg(
+        **{f.name: getattr(previous_motion, f.name) for f in fields(previous_motion)}
+    )
     cfg.scene.sensors = ()  # G1-only self-collision sensor is unused by SuperMimic.
     cfg.actions["joint_pos"].scale = K1_REV1_ACTION_SCALE
     cfg.commands["motion"].anchor_body_name = "pelvis"
     cfg.commands["motion"].body_names = TRACKED_BODIES
+    cfg.terminations["motion_end"] = TerminationTermCfg(
+        func=motion_end, time_out=True, params={"command_name": "motion"}
+    )
     cfg.events["foot_friction"].params[
         "asset_cfg"
     ].geom_names = K1_REV1_FOOT_COLLISION_GEOM_PATTERN

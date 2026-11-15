@@ -25,17 +25,25 @@ def test_mismatched_algorithm_rejected_before_import(monkeypatch):
 
 def test_legacy_wrong_runtime_has_setup_hint(monkeypatch):
     monkeypatch.setattr(router, "version", lambda name: "1.6.0")
-    with pytest.raises(SystemExit, match="existing Cyclo Docker"):
+    with pytest.raises(SystemExit, match="locked Python 3.12 runtime"):
         router.require_runtime("beyondmimic")
 
 
-def test_research_runtime_does_not_register_legacy():
-    assert "source.tasks.mimic" not in sys.modules
-    assert "source.tasks.velocity" not in sys.modules
+def test_common_runtime_registers_existing_tasks():
+    from mjlab.tasks.registry import list_tasks
+
+    assert "Cyclo-Mimic-K1-Rev1-Dance1" in list_tasks()
+    assert "Cyclo-Velocity-Flat-K1-Rev1-v0" in list_tasks()
 
 
 def test_supermimic_wrong_python_rejected(monkeypatch):
     with monkeypatch.context() as patch:
-        patch.setattr(sys, "version_info", (3, 12))
-        with pytest.raises(SystemExit, match="requires Python 3.13"):
+        patch.setattr(sys, "version_info", (3, 13))
+        with pytest.raises(SystemExit, match="requires Python 3.12"):
             router.require_runtime("supermimic")
+
+
+def test_both_methods_accept_the_same_runtime(monkeypatch):
+    monkeypatch.setattr(router, "version", lambda name: "1.6.1")
+    for method in ("beyondmimic", "supermimic"):
+        router.require_runtime(method)

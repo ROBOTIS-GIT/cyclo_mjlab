@@ -1,4 +1,4 @@
-"""Select an algorithm before importing its incompatible simulator runtime.
+"""Select an algorithm within the common native MJLab runtime.
 
 No installation, process launch, or environment mutation is performed. Native
 mjlab task IDs infer the family; --algorithm makes that selection explicit.
@@ -29,24 +29,16 @@ def task_family(task):
 
 
 def require_runtime(algorithm):
-    if algorithm == "supermimic" and sys.version_info[:2] != (3, 13):
-        raise SystemExit(
-            "supermimic requires Python 3.13; use uv run --project integrations/supermimic python"
-        )
-    expected = "1.6.0" if algorithm == "supermimic" else "1.2.0"
+    if sys.version_info[:2] != (3, 12):
+        raise SystemExit("Cyclo requires Python 3.12 for both learning algorithms")
     try:
         actual = version("mjlab")
     except PackageNotFoundError:
         actual = "not installed"
-    if actual != expected:
-        setup = (
-            "uv sync --project integrations/supermimic --python 3.13 --locked; "
-            "then use uv run --project integrations/supermimic python scripts/reinforcement_learning/train.py (or play.py)"
-            if algorithm == "supermimic"
-            else "use the existing Cyclo Docker / Python 3.11 environment"
-        )
+    if actual != "1.6.1":
         raise SystemExit(
-            f"{algorithm} requires mjlab {expected}; found {actual}. {setup}"
+            f"Cyclo requires mjlab 1.6.1; found {actual}. "
+            "Use the locked Python 3.12 runtime described in docs/runtime-migration.md"
         )
 
 
@@ -73,7 +65,7 @@ def dispatch(action):
             "Historical Cyclo-Mimic-* aliases and Cyclo-Velocity-* commands remain supported."
         )
         print(
-            "BeyondMimic: existing mjlab 1.2 Docker. SuperMimic: separate mjlab_research 1.6 / Python 3.13 runtime."
+            "BeyondMimic and SuperMimic share the locked MJLab 1.6.1 / Python 3.12 runtime."
         )
         return True
     family = task_family(task or "")

@@ -56,32 +56,44 @@ SOFTWARE.
 
 ## HybridRobotics/SuperMimic
 
-- Source: https://github.com/HybridRobotics/supermimic
-- Revision: `abc124c1bd5976341034668af3d12c087f2f1f55`
-- Copyright 2026 The SuperMimic Authors; Apache License 2.0.
-- Original license: [third_party/supermimic/LICENSE](third_party/supermimic/LICENSE).
-- Original README acknowledgements and local modification record:
-  [third_party/supermimic/UPSTREAM.md](third_party/supermimic/UPSTREAM.md).
-- Separate research runtime depends on HybridRobotics/mjlab_research revision
-  `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd` (Apache-2.0), without replacing
-  the main project's pinned mjlab dependency.
+- Official algorithm source: https://github.com/HybridRobotics/supermimic
+- Official base: `abc124c1bd5976341034668af3d12c087f2f1f55`.
+- Shared fork: https://github.com/ROBOTIS-GIT/supermimic, gitlink revision
+  `10dd5dd3f02601caf1991790952a25db63a6fb99`.
+- Copyright 2026 The SuperMimic Authors; original Apache License 2.0 retained at
+  [third_party/supermimic/LICENSE](third_party/supermimic/LICENSE).
+- Portable math extracted from official `mjlab_research` retains its Isaac Lab
+  BSD-3-Clause attribution and [license](third_party/supermimic/licenses/IsaacLab-BSD-3-Clause.txt).
+  The shared package declares `Apache-2.0 AND BSD-3-Clause`.
+- [PATCHES.md](third_party/supermimic/PATCHES.md) records the minimal core changes
+  and primary-source revisions. Its README retains acknowledgements to ControlVAE
+  (BSD-3-Clause), robotic_world_model (Apache-2.0), and DreamerV3 (MIT).
 
-## Modification notices and NOTICE scope
+## Native adapter provenance and NOTICE scope
 
-The official SuperMimic revision above and the pinned `mjlab_research` revision
-were inspected directly. Both contain an Apache-2.0 `LICENSE`; neither contains a
-`NOTICE` file in its tracked tree. No upstream NOTICE was removed. SuperMimic's
-license and README are byte-identical to the pinned official source. Changed
-vendored files carry explicit modification comments; the complete list is in
-[UPSTREAM.md](third_party/supermimic/UPSTREAM.md).
+`source/tasks/supermimic/forward_kinematics.py` preserves the implementation of
+`HybridRobotics/mjlab_research` revision
+`dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd:src/mjlab/utils/forward_kinematics.py`.
+`native_motion.py` adapts that revision's tracking command/termination interfaces
+to stable MJLab 1.6.1, including FK-backed body state, concatenated clip boundaries
+and external reset sampling. It adds strict compact-input validation, stable
+manager reset dispatch and pending-forward handling. The original Apache license
+is retained at [LICENSE.mjlab_research](source/tasks/supermimic/LICENSE.mjlab_research),
+and source/copyright/modification notices are in both files. Research MJLab is
+not a dependency of this native runtime.
+
+The official SuperMimic and research MJLab revisions contain Apache-2.0 licenses
+and no tracked NOTICE file; none was removed. The fork preserves the original
+license and README attribution, with explicit setup corrections for optional
+research dependencies. Core modifications are recorded in its patch record.
 
 `source/tasks/supermimic/train.py` retains the SuperMimic Authors copyright and
-Apache identifier for its adapted launcher. `robot.py` retains the existing
-ROBOTIS/Insu Park notice; `reference_profiles.py` identifies its exact historical
-Cyclo XML source (`874c7bd`) and Apache notice. The integration compatibility
-package declares Apache-2.0 and includes its own license copy when built.
-These steps preserve distribution notices; they are not a guarantee of title
-or non-infringement. Apache redistribution conditions are in
+Apache identifier for its adapted launcher. `robot.py` imports the existing
+Cyclo asset and retains the ROBOTIS/Insu Park notice. `reference_profiles.py`
+identifies its exact historical Cyclo XML source (`874c7bd`) and Apache notice.
+The optional checkout compatibility package declares Apache-2.0 and includes its
+license copy when built. These checks preserve notices; they do not guarantee
+title or non-infringement. Apache redistribution conditions are in
 [section 4 of the license](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Robot assets, reference data and weights
@@ -100,14 +112,15 @@ weights were fetched or redistributed as part of this integration.
 
 ## Installed dependency licenses
 
-The research environment resolves the official SuperMimic package and pinned
-`mjlab_research` in `integrations/supermimic/uv.lock`; it does not vendor those
-installed wheels into Git. The following were checked from installed package
-metadata/license-file declarations for the locked environment:
+The common Python 3.12 runtime resolves stable MJLab and the shared core in
+`requirements.lock`; local core source is installed from the pinned submodule.
+The optional compatibility project's lock uses the same native dependency set.
+Installed distributions retain their bundled licenses. The following declarations
+were checked for the integration; they are not a full binary redistribution audit:
 
 | Dependency | Declared license scope |
 | --- | --- |
-| SuperMimic; mjlab research; MuJoCo/MuJoCo Warp | Apache-2.0; package license files retained by their distributions |
+| SuperMimic core; MJLab; MuJoCo/MuJoCo Warp | Apache-2.0 (core math also BSD-3-Clause); package license files retained by their distributions |
 | Warp | Apache-2.0 plus bundled component license files, including CUDA-related notices |
 | RSL-RL | BSD-3-Clause plus dependency notices |
 | TensorDict, Viser, W&B | MIT declarations |
