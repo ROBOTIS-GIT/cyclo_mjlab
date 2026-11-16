@@ -36,16 +36,14 @@ from typing import Any, List, TypedDict
 
 import mujoco
 import numpy as np
+import trimesh
 import viser
 
+from mjviser.conversions import merge_geoms
 from mjlab.terrains.config import ALL_TERRAINS_CFG
 from mjlab.terrains.terrain_generator import (
   TerrainGenerator,
   TerrainGeneratorCfg,
-)
-from mjlab.viewer.viser.conversions import (
-  merge_geoms,
-  merge_geoms_global,
 )
 from source.assets.robots import get_k1_rev1_cfg
 
@@ -100,6 +98,28 @@ class _AppState(TypedDict):
   difficulty_range: tuple[float, float]
   robot_handles: list[Any]
   terrain_origins: np.ndarray | None
+
+
+def merge_geoms_world(
+  model: mujoco.MjModel, data: mujoco.MjData, geom_ids: list[int]
+) -> trimesh.Trimesh:
+  """Merge posed geoms in world space after calling mj_forward."""
+  geoms_by_body: dict[int, list[int]] = {}
+  for geom_id in geom_ids:
+    body_id = int(model.geom_bodyid[geom_id])
+    geoms_by_body.setdefault(body_id, []).append(geom_id)
+
+  meshes = []
+  for body_id, body_geom_ids in geoms_by_body.items():
+    # mjviser merges in local body space; apply the body's current world pose.
+    mesh = merge_geoms(model, body_geom_ids)
+    transform = np.eye(4)
+    transform[:3, :3] = data.xmat[body_id].reshape(3, 3)
+    transform[:3, 3] = data.xpos[body_id]
+    mesh.apply_transform(transform)
+    meshes.append(mesh)
+
+  return meshes[0] if len(meshes) == 1 else trimesh.util.concatenate(meshes)
 
 
 def main():
@@ -186,7 +206,7 @@ def main():
       print(f"Error: No visual geoms found for {state['robot_name']}")
       return
 
-    robot_mesh = merge_geoms_global(robot_model, robot_data, visual_geom_ids)
+    robot_mesh = merge_geoms_world(robot_model, robot_data, visual_geom_ids)
     n_verts = len(robot_mesh.vertices)
     n_faces = len(robot_mesh.faces)
     print(f"Robot mesh: {n_verts} vertices, {n_faces} faces.")
