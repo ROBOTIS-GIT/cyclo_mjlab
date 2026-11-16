@@ -38,7 +38,7 @@ def require_runtime(algorithm):
     if actual != "1.6.1":
         raise SystemExit(
             f"Cyclo requires mjlab 1.6.1; found {actual}. "
-            "Use the locked Python 3.12 runtime described in docs/runtime-migration.md"
+            "Use the locked Python 3.12 runtime described in docs/supermimic.md"
         )
 
 

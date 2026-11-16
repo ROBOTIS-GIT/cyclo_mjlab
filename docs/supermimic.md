@@ -20,8 +20,10 @@ implementation and task IDs remain available in the same runtime.
 ## Shared Cyclo MJLab environment
 
 Both algorithms use Python 3.12 and stable MJLab 1.6.1, with the complete binary
-dependency graph pinned in the root `requirements.lock`. Initialize the two
-submodules and follow [runtime installation](runtime-migration.md):
+dependency graph pinned in the root `requirements.lock`. The
+[Docker workflow](beyondmimic.md#installation-docker) supports both algorithms.
+For a local Linux x86-64 environment, initialize the two submodules and install
+the same locked dependencies:
 
 ```bash
 git submodule update --init --recursive
@@ -30,6 +32,13 @@ uv pip sync --python .venv/bin/python --require-hashes requirements.lock
 uv pip install --python .venv/bin/python --no-deps -e third_party/supermimic -e .
 source .venv/bin/activate
 ```
+
+The lock selects MuJoCo/MuJoCo Warp 3.11.0, Warp 1.14.0, Torch 2.14.0,
+RSL-RL 5.4.2 and mjviser 0.0.16. Use a fresh Python 3.12 environment rather than
+mixing these packages into the previous MJLab 1.2 environment. A repository
+checkout is required: the wheel alone does not include robot assets or CLI
+scripts. Install pytest and ruff separately when running the
+[validation procedures](validation.md).
 
 `third_party/supermimic` is a real Git submodule of
 [ROBOTIS-GIT/supermimic](https://github.com/ROBOTIS-GIT/supermimic), pinned to

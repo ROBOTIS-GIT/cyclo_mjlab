@@ -2,8 +2,8 @@ name: cyclo_mjlab_161
 
 services:
   cyclo_mjlab:
-    image: ${CYCLO_MJLAB_IMAGE:-cyclo-mjlab:1.6.1-py312}
-    container_name: ${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab_161}
+    image: ${CYCLO_MJLAB_IMAGE:-cyclo-mjlab:latest}
+    container_name: ${CYCLO_MJLAB_CONTAINER:-cyclo_mjlab}
     build:
       context: ..
       dockerfile: docker/Dockerfile

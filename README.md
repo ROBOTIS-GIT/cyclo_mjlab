@@ -95,9 +95,7 @@ The Docker image includes:
 - Warp 1.14.0
 - Runtime dependencies pinned with hashes in `requirements.lock`
 
-The default image/container names are `cyclo-mjlab:1.6.1-py312` and
-`cyclo_mjlab_161`, so the previous image is preserved. See
-[the runtime migration notes](docs/runtime-migration.md) for compatibility and checks.
+The default image/container names are `cyclo-mjlab:latest` and `cyclo_mjlab`.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.

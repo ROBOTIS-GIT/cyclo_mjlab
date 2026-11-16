@@ -1,7 +1,8 @@
 # Validation
 
 Run from the checkout in the common Python 3.12 / stable MJLab 1.6.1 runtime
-installed as described in [runtime-migration.md](runtime-migration.md). Tests use
+installed through [Docker](beyondmimic.md#installation-docker) or the
+[shared local environment](supermimic.md#shared-cyclo-mjlab-environment). Tests use
 local K1 references; no external dataset, W&B upload, hardware or long training
 is needed. Install pytest and ruff as development tools.
 
@@ -16,8 +17,7 @@ CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=2 CYCLO_RUN_NATIVE_TESTS=1 \
 ```
 
 The default suite skips native simulation. The opt-in suite adds bounded CPU
-Velocity/BeyondMimic PPO updates, reset/checkpoint tests, and SuperMimic native
-motion/replay checks. The latter exercise original Dance1/2 together, deterministic
+SuperMimic native motion/replay checks. These exercise original Dance1/2 together, deterministic
 multi-clip loading, partial-reset isolation, one-time failure EMA consumption,
 real clip-end and episode-timeout truncation, and replay/history boundaries.
 Nonzero raw actions also produce exactly the same native processed targets as
@@ -101,9 +101,16 @@ python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
 Historical `Cyclo-Mimic-*` and explicit `Cyclo-BeyondMimic-*` names select identical
 train/play/PPO configurations. Both remain separate from SuperMimic's runner and
 checkpoint format. See [beyondmimic.md](beyondmimic.md) for normal commands and
-[runtime-migration.md](runtime-migration.md) for checkpoint/export regression scope.
+the [recorded scope](#recorded-scope) below for historical checkpoint/export checks.
 
 ## Recorded scope
+
+The following results describe the earlier runtime integration and Docker
+acceptance at the revisions identified below. They are not reruns of the 0.0.4
+baseline synchronization. Baseline commit `59f650a` removed the migration-specific
+PPO/reset tests, old checkpoint fixtures and standalone export probe; those files
+are not part of the current test commands. The remaining alias, SuperMimic and
+shared-core tests and the explicit learner harness above are still available.
 
 The stable-runtime integration passed all 82 repository tests with native CPU
 checks enabled. The pinned shared suite separately passed 232 tests and 13
@@ -146,12 +153,15 @@ structural compatibility, not historical trained-policy quality. Older Python
 3.13/research-backend SuperMimic and Python 3.11/MJLab 1.2 checks are historical;
 they do not validate this stable-runtime combination.
 
-The baseline Docker checks separately passed native CUDA PPO, fresh-process
-playback/live-policy export parity, public train/export commands and EGL rendering;
-see [runtime-migration.md](runtime-migration.md). An earlier canceled unpack did
+The baseline Docker checks at source revision `6e09bf7` separately passed native
+CUDA PPO, fresh-process playback and live-policy/JIT/ONNX parity (including
+normalization and 23-action joint order), public train/export commands and EGL
+rendering. Full optimizer continuation and historical trained-policy compatibility
+were not established. An earlier canceled unpack did
 not establish Docker acceptance; the later completed builds and container runs
 do. Logs, final bundles, commands, source/image identities and resource records
-are preserved outside Git. Post-test follow-ups only update documentation.
+are preserved outside Git. The later 0.0.4 baseline synchronization preserves
+these historical results without claiming fresh GPU or Docker acceptance.
 
 Interactive Compose/X11 and Native/Viser viewing, authenticated W&B retrieval,
 SuperMimic's conditional ONNX deployment exporter and real-robot behavior remain
