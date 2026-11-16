@@ -1,0 +1,27 @@
+{
+  "url": "https://github.com/fuyichen0725/blinkmimic",
+  "commit": "d264658d6c9ce61fb52f9f0f8985a369f3ccc409",
+  "original_sha256": {
+    "src/blinkmimic/robot.py": "858bdfad6328fead71805417753189d691f77c1f89f95ac99294ea2f2463bd58",
+    "src/blinkmimic/kinematics.py": "9941b09d15dffce47fcf48aca55f4dd1bcaa21487a4fd5380a7e73854ad0f27a",
+    "src/blinkmimic/dr.py": "62e1258cdbf34ca39133af57bbf5aeb63faf7e96e47bf120b02d9b8eeb7c3a66",
+    "src/blinkmimic/objective.py": "ae4964f37c17bc18a9efd973ed55de7dce7cfd7ac499ed25ea3e82e7c6c5e8bf",
+    "src/blinkmimic/mdp.py": "da7d28053efb98fcc49f18491379f407ebb953cf2f18a6d08d433da2a67149ce",
+    "src/blinkmimic/train.py": "e01982ae0785788499ee4f1de95486c2a89bc596462556e0d5b194002cb74ce1",
+    "src/blinkmimic/motion.py": "1d4689303bc4cd4e3d67725a0923be88c7f4754fdb30bd0a5324d626977b41ff",
+    "src/blinkmimic/mirror.py": "59451e0d93d6e2aae36ff9c60a5edde4ac5d253f4038c1650e45e23da81fc7b9",
+    "src/blinkmimic/env.py": "94cebe50bcaa2f57e8cb7fe793be288de3e60dcf14693ff6627905e9da959aa8",
+    "src/blinkmimic/sensing.py": "765a7931039c9ebe7f524a28f60571647721bbc0503522db2589b09e4698c378",
+    "src/blinkmimic/optim.py": "f1358c1aebd14e4215766dccdd614cfa3cf5b8abc9c85e5b888d0661adef1816",
+    "src/blinkmimic/rotations.py": "c06b07af580994a4bc71d650cd9d186e4249499ebdd0bc67833e7388cf7ae6ad",
+    "src/blinkmimic/evaluate.py": "2f15ef3da6a8c925e98632ba31bda48ef8622f618f34cbb08851a68f3f726bb2",
+    "src/blinkmimic/networks.py": "3717599f53d84daf1705d741e1f249168e01cbac557a588106f60c8a8526fbe2",
+    "src/blinkmimic/buffer.py": "f7cf576e76534ab1828d09444f865e27e66c3eb76c874e9273326be59b1bb541",
+    "src/blinkmimic/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/blinkmimic/g1/g1_constants.py": "187c4c14bd60dc4518d704f8d3877fad438a1dc9a6737029a4b18c48ca31c5f0",
+    "src/blinkmimic/g1/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "modifications": {
+    "src/blinkmimic/train.py": "Enable the same contact feet for K1 by tracked body names instead of G1 robot name."
+  }
+}

@@ -2,4 +2,4 @@
 
 from mjlab.utils.lab_api.tasks.importer import import_packages
 
-import_packages(__name__, ["utils", ".mdp", ".supermimic"])
+import_packages(__name__, ["utils", ".mdp", ".supermimic", ".blinkmimic"])
