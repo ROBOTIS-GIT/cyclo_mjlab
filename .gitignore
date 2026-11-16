@@ -13,3 +13,7 @@ deploy/robots/g1_23dof/build
 deploy/robots/r1/build
 deploy/robots/a2/build
 simulate/build
+
+# Python package build outputs.
+build/
+dist/

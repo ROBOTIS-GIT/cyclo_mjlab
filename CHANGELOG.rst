@@ -2,6 +2,20 @@
 Changelog for package cyclo_mjlab
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2026-11-16)
+------------------
+* Updated the runtime to MJLab 1.6.1 and Python 3.12.
+* Breaking change: existing Python 3.11/MJLab 1.2 Docker images must be rebuilt before running this release.
+* Updated MuJoCo and MuJoCo Warp to 3.11.0, Warp to 1.14.0, and pinned Torch to 2.14.0.
+* Added hash-locked runtime dependencies in ``requirements.lock`` for Docker installation.
+* Updated Docker to Python 3.12 while retaining the ``cyclo-mjlab:latest`` image and ``cyclo_mjlab`` container defaults.
+* Added an image version label, runtime compatibility checks, and a container recreation command with upgrade instructions.
+* Made K1 collision masks and contact priorities explicit for MJLab 1.6.1.
+* Fixed Mimic partial-reset target updates, accumulated failure sampling, and state refresh after motion resampling.
+* Preserved the existing flat-ground foot-height and clearance formulas and switched to the upstream ``upright`` reward.
+* Updated runtime documentation and third-party attribution notices.
+* Contributors: Insu Park, Woojin Wie
+
 0.0.3 (2026-09-18)
 ------------------
 * Updated the ``ai_sapiens`` submodule from 0.1.1 to 0.2.2.
