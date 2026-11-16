@@ -14,6 +14,7 @@ prepare()
 from blinkmimic.dr import XiLayout
 from blinkmimic.kinematics import Kinematics
 from blinkmimic.mirror import Mirror
+from blinkmimic.networks import Policy, RunningNorm, policy_kwargs
 from blinkmimic.rotations import quat_to_mat
 
 from source.tasks.blinkmimic.cli import execution_recipe, recipe
@@ -149,6 +150,29 @@ def test_invalid_motion_rejected(tmp_path):
     np.savez(p, backend="isaac")
     with pytest.raises(ValueError, match="backend"):
         load_exact(p, r.joint_names)
+
+
+def test_normalization_and_raw_goal_reference_skip_contract():
+    norm = RunningNorm(2)
+    norm.mean.copy_(torch.tensor([2.0, -3.0]))
+    norm.var.copy_(torch.tensor([0.0, 4.0]))
+    x = torch.tensor([[2.01, 1.0]])
+    torch.testing.assert_close(norm(x), (x - norm.mean) / torch.sqrt(norm.var + 0.0001))
+    robot = make_robot()
+    policy = Policy(81, 610, 23, **policy_kwargs({"pi_ref_skip": True}, robot))
+    with torch.no_grad():
+        policy.dec[-1].weight.zero_()
+        policy.dec[-1].bias.fill_(0.25)
+        policy.goal_norm.mean.fill_(10.0)
+        policy.goal_norm.var.fill_(0.25)
+    goal = torch.zeros(1, 610)
+    goal[:, 15:38] = 0.1
+    with torch.no_grad():
+        action = policy(torch.zeros(1, 10, 81), goal)
+    expected = 0.25 + (goal[:, 15:38] - policy.ref_q0) / policy.ref_alpha
+    torch.testing.assert_close(action, expected)
+    target = policy.ref_q0 + policy.ref_alpha * action
+    torch.testing.assert_close(target, goal[:, 15:38] + policy.ref_alpha * 0.25)
 
 
 def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypatch):

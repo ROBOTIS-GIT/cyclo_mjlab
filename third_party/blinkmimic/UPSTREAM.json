@@ -23,5 +23,10 @@
   },
   "modifications": {
     "src/blinkmimic/train.py": "Enable the same contact feet for K1 by tracked body names instead of G1 robot name."
+  },
+  "vendoring_scope": {
+    "included": "Python runtime source, original license/notices, project metadata and released presets",
+    "excluded": "G1 data/assets, tools, figures and standalone reproduction scripts",
+    "documentation": "Vendor README replaced with subset instructions; no upstream source math changed"
   }
 }
