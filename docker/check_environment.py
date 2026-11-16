@@ -1,3 +1,7 @@
+# Copyright 2026 ROBOTIS CO., LTD.
+#
+# Author: Insu Park
+
 """Check the installed runtime against this checkout's requirements."""
 
 import argparse
