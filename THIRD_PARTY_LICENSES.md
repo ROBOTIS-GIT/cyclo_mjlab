@@ -135,3 +135,14 @@ the actual artifacts and their bundled notices/terms. Upstream acknowledgements
 are preserved separately from verified copied-source notices; they do not by
 themselves establish that third-party code was copied or that all downstream
 rights have been independently cleared.
+
+## BlinkMimic
+
+`third_party/blinkmimic` vendors Fuyi Chen's official BlinkMimic at
+`d264658d6c9ce61fb52f9f0f8985a369f3ccc409` from
+https://github.com/fuyichen0725/blinkmimic under MIT. Its LICENSE and
+THIRD_PARTY_NOTICES.md retain the Fuyi Chen, InstantTrack / Huy-Quang-Dao,
+and supermimic_vibed / ETH Zurich, Chong Zhang notices.
+`UPSTREAM.json` records original source hashes and the one contact-foot adaptation.
+The K1 exact-state motion adapter follows the vendored MotionLib indexing API.
+Software licensing does not grant rights to the separate K-POP motion data.

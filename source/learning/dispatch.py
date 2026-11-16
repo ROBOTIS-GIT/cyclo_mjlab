@@ -9,6 +9,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 
 TASKS = {
+    "blinkmimic": ("Cyclo-BlinkMimic-K1-Rev1",),
     "beyondmimic": (
         "Cyclo-BeyondMimic-K1-Rev1-Dance1",
         "Cyclo-BeyondMimic-K1-Rev1-Dance2",
@@ -21,6 +22,8 @@ TASKS = {
 
 
 def task_family(task):
+    if task == "Cyclo-BlinkMimic-K1-Rev1":
+        return "blinkmimic"
     if task.startswith("Cyclo-SuperMimic-"):
         return "supermimic"
     if task.startswith(("Cyclo-Mimic-", "Cyclo-BeyondMimic-")):
@@ -72,6 +75,12 @@ def dispatch(action):
     if args.algorithm and family != args.algorithm:
         parser.error(f"--algorithm {args.algorithm} does not match task {task!r}")
     family = args.algorithm or family
+    if family == "blinkmimic":
+        require_runtime(family)
+        from source.tasks.blinkmimic.cli import main
+
+        main(action, remaining)
+        return True
     if family == "supermimic":
         require_runtime(family)
         from source.tasks.supermimic.cli import main
