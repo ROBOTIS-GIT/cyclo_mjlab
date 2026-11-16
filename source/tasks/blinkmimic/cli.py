@@ -63,7 +63,12 @@ def main(action="train", argv=None):
             parser.error(
                 "play requires an existing --checkpoint (headless all-clip evaluation)"
             )
+        name = args.checkpoint.name
+        if not re.fullmatch(r"ckpt_[0-9]{6}\.pt", name):
+            parser.error("Evaluation requires an official ckpt_NNNNNN.pt checkpoint")
         out.mkdir(parents=True, exist_ok=False)
+        # The upstream one-shot directory evaluator retains per-clip JSON and CSV.
+        (out / name).symlink_to(args.checkpoint.resolve())
         flags = [
             *extra,
             "--robot",
@@ -72,8 +77,6 @@ def main(action="train", argv=None):
             str(args.motion_dir.resolve()),
             "--run_dir",
             str(out),
-            "--ckpt",
-            str(args.checkpoint.resolve()),
         ]
         mode = "evaluate"
     command = [
@@ -107,6 +110,7 @@ def main(action="train", argv=None):
         ).strip(),
         upstream=json.loads((VENDOR / "UPSTREAM.json").read_text())["commit"],
         manifest=str(args.motion_dir.resolve() / "manifest.json"),
+        checkpoint=str(args.checkpoint.resolve()) if args.checkpoint else None,
         manifest_sha256=hashlib.sha256(
             (args.motion_dir / "manifest.json").read_bytes()
         ).hexdigest(),
@@ -134,7 +138,7 @@ def main(action="train", argv=None):
         record_path.write_text(json.dumps(record, indent=2))
         code = child.wait()
     record.update(
-        status="completed" if code == 0 else "failed",
+        status="completed" if code == 0 else "interrupted" if code == -2 else "failed",
         returncode=code,
         finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
     )
