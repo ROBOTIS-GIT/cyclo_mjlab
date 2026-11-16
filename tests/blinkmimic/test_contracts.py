@@ -126,3 +126,64 @@ def test_invalid_motion_rejected(tmp_path):
     np.savez(p, backend="isaac")
     with pytest.raises(ValueError, match="backend"):
         load_exact(p, r.joint_names)
+
+
+def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypatch):
+    from source.tasks.blinkmimic import cli
+
+    commands = []
+
+    class Child:
+        pid = 123456
+
+        def __init__(self, command, **kwargs):
+            commands.append(command)
+            assert kwargs["env"]["WANDB_MODE"] == "disabled"
+
+        def wait(self):
+            return 0
+
+    monkeypatch.setattr(cli.subprocess, "check_output", lambda *a, **k: "test-source")
+    monkeypatch.setattr(cli.subprocess, "Popen", Child)
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "manifest.json").write_text("{}")
+    train = tmp_path / "train"
+    with pytest.raises(SystemExit) as result:
+        cli.main(
+            "train",
+            [
+                cli.TASK,
+                "--motion-dir",
+                str(data),
+                "--run-dir",
+                str(train),
+                "--num_envs",
+                "2048",
+            ],
+        )
+    assert result.value.code == 0
+    assert commands[-1][4] == "train"
+    assert commands[-1][commands[-1].index("--num_envs") + 1] == "2048"
+    assert "--enc_hidden" not in commands[-1] and "--dec_hidden" not in commands[-1]
+    ckpt = train / "ckpt_000100.pt"
+    ckpt.write_bytes(b"test-only; subprocess mocked")
+    evaluation = tmp_path / "eval"
+    with pytest.raises(SystemExit) as result:
+        cli.main(
+            "play",
+            [
+                cli.TASK,
+                "--motion-dir",
+                str(data),
+                "--run-dir",
+                str(evaluation),
+                "--checkpoint",
+                str(ckpt),
+            ],
+        )
+    assert result.value.code == 0
+    assert commands[-1][4] == "evaluate"
+    assert "--ckpt" not in commands[-1]  # directory mode writes per-clip JSON
+    assert (evaluation / ckpt.name).resolve() == ckpt
+    assert ckpt.read_bytes() == b"test-only; subprocess mocked"
