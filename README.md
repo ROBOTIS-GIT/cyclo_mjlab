@@ -21,7 +21,7 @@ The repository currently provides:
 - Automatic generation of `params/sim2real.yaml` when Velocity or Mimic training starts
 - Automatic export of `exported/policy.onnx` and `exported/policy.pt` during Velocity or Mimic play
 - **SuperMimic**: differentiable world-model motion tracking with native MuJoCo/mjlab tasks
-- **BlinkMimic**: isolated official recipe with K1 Rev.1 exact-state K-POP adapter;
+- **BlinkMimic**: isolated released recipe with a K1 Rev.1 exact-state reference adapter;
   see [recipe, commands and validation scope](docs/blinkmimic.md)
 
 > [!IMPORTANT]

@@ -1,5 +1,5 @@
 # ruff: noqa: E402  # Vendored path bootstrap must precede upstream imports.
-"""Bounded all-73 native GPU diagnostic; full widths, one-step gradients.
+"""Bounded native GPU diagnostic; full widths, one-step gradients.
 
 This is not the full released training loop or a convergence result.
 Run separately from training, on an idle GPU.
@@ -29,12 +29,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--motion-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--verify-sources", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     dev = "cuda:0"
     torch.manual_seed(0)
     robot = make_robot()
-    manifest = verify_manifest(args.motion_dir / "manifest.json", verify_sources=True)
+    manifest = verify_manifest(
+        args.motion_dir / "manifest.json", verify_sources=args.verify_sources
+    )
     kin = Kinematics(robot, dev)
     motion = ExactMotionLib(manifest, robot, kin, dev)
     layout = XiLayout(robot, dev)
@@ -49,7 +52,7 @@ def main():
         for side in ("left", "right")
     ]
     motion.set_ref_contact(mdp.feet)
-    N, K, hist = 73, 10, 10
+    N, K, hist = len(motion.names), 10, 10
     env = TrackingSim(
         make_sim(robot), N, robot, motion, mdp, dev, bin_fix=True, fail_reset=0.3
     )
@@ -122,9 +125,10 @@ def main():
     assert all(torch.equal(v, ck["wm"][k]) for k, v in wm.state_dict().items())
     result = dict(
         status="PASS",
-        clips=73,
+        clips=N,
         frames=motion.num_frames,
-        steps_per_clip=8,
+        initial_clip_starts=N,
+        vector_steps=8,
         wm_hidden=[1024] * 3,
         encoder_decoder=[2048, 1024, 512, 256],
         history=hist,

@@ -31,7 +31,7 @@ TRACKED_BODIES = (
 
 def robot_cfg():
     cfg = get_k1_rev1_cfg()
-    # Recorded K-POP producer nominal pose. Independent deepcopy; shared defaults stay intact.
+    # Task-local nominal elbow. Independent deepcopy; shared defaults stay intact.
     cfg.init_state.joint_pos[".*_elbow_joint"] = 0.6
     return cfg
 

@@ -143,6 +143,10 @@ rights have been independently cleared.
 https://github.com/fuyichen0725/blinkmimic under MIT. Its LICENSE and
 THIRD_PARTY_NOTICES.md retain the Fuyi Chen, InstantTrack / Huy-Quang-Dao,
 and supermimic_vibed / ETH Zurich, Chong Zhang notices.
-`UPSTREAM.json` records original source hashes and the one contact-foot adaptation.
+`UPSTREAM.json` records original source hashes, vendoring scope and the one contact-foot adaptation.
 The K1 exact-state motion adapter follows the vendored MotionLib indexing API.
-Software licensing does not grant rights to the separate K-POP motion data.
+The existing HybridRobotics SuperMimic core has separate Apache/BSD code provenance;
+algorithmic lineage does not make these codebases or licenses identical.
+No new motion library, private dataset, trained weight or exported model is
+distributed by the BlinkMimic feature. Those materials have separate provenance
+and usage/redistribution conditions; the software license does not clear them.

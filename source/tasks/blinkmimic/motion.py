@@ -23,17 +23,41 @@ def digest(path):
 
 
 def verify_manifest(path, verify_sources=False):
-    manifest = json.loads(Path(path).read_text())
-    rows = manifest["clips"]
-    if len(rows) != 73 or sum(r["frames"] for r in rows) != 223812:
-        raise ValueError("Expected the complete 73-song, 223812-frame library")
-    if len({r["derived"] for r in rows}) != 73:
-        raise ValueError("Duplicate derived clips")
+    path = Path(path).resolve()
+    manifest = json.loads(path.read_text())
+    rows = manifest.get("clips")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("Manifest requires a nonempty clips array")
+    names, files = set(), set()
     for row in rows:
-        if row["fps"] != 50 or digest(row["derived"]) != row["derived_sha256"]:
-            raise ValueError(f"Derived hash/rate mismatch: {row['song']}")
-        if verify_sources and digest(row["source"]) != row["source_sha256"]:
-            raise ValueError(f"Source hash mismatch: {row['song']}")
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("song"), str)
+            or not row["song"].strip()
+        ):
+            raise ValueError("Each clip requires a nonempty song identifier")
+        if row["song"] in names:
+            raise ValueError(f"Duplicate clip identifier: {row['song']}")
+        names.add(row["song"])
+        if (
+            type(row.get("frames")) is not int
+            or row["frames"] < 2
+            or row.get("fps") != 50
+        ):
+            raise ValueError(f"Invalid frame count/rate: {row['song']}")
+        for key in ("derived", "source") if verify_sources else ("derived",):
+            value = row.get(key)
+            expected = row.get(f"{key}_sha256")
+            if not isinstance(value, str) or not value or not isinstance(expected, str):
+                raise ValueError(f"Missing {key} path/hash: {row['song']}")
+            resolved = (path.parent / value).resolve()
+            if key == "derived":
+                if resolved in files:
+                    raise ValueError("Duplicate derived clips")
+                files.add(resolved)
+            if digest(resolved) != expected:
+                raise ValueError(f"{key.capitalize()} hash mismatch: {row['song']}")
+            row[key] = str(resolved)
     return manifest
 
 
@@ -65,11 +89,15 @@ def load_exact(path, joint_names):
             )
         ]
         arrays[-2:] = [a[:, perm] for a in arrays[-2:]]
-    T = len(arrays[0])
+    T = arrays[0].shape[0] if arrays[0].ndim == 2 else 0
     dims = (3, 4, 3, 3, len(joint_names), len(joint_names))
-    for a, d in zip(arrays, dims, strict=True):
-        if a.shape != (T, d) or T < 2 or not np.isfinite(a).all():
+    for i, (a, d) in enumerate(zip(arrays, dims, strict=True)):
+        if a.shape != (T, d) or T < 2 or a.dtype.kind not in "fiu":
             raise ValueError(f"Invalid shape/values in {path}")
+        with np.errstate(over="ignore", invalid="ignore"):
+            arrays[i] = np.ascontiguousarray(a, dtype=np.float32)
+        if not np.isfinite(arrays[i]).all():
+            raise ValueError(f"Invalid values in float32 loader representation: {path}")
     if not np.allclose(np.linalg.norm(arrays[1], axis=-1), 1, atol=1e-4, rtol=0):
         raise ValueError("Unnormalized root quaternion")
     return arrays
