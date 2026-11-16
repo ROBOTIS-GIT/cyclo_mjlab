@@ -90,9 +90,8 @@ def play(task, cfg):
     if cfg.num_steps_rollout < 1:
         raise ValueError("--num-steps-rollout must be positive")
     if cfg.wandb_path is not None:
-        from supermimic.utils.wandb_artifacts import download_model_dir
-
         import wandb
+        from supermimic.utils.wandb_artifacts import download_model_dir
 
         directory = download_model_dir(wandb.Api().run(cfg.wandb_path))
         play(task, replace(cfg, checkpoint_dir=directory, wandb_path=None))

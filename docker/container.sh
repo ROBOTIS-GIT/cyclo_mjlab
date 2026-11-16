@@ -19,11 +19,10 @@ Usage: ./docker/container.sh <command>
 
 Commands:
   build       Build or update the Docker image using the cache
-  rebuild     Pull the base image and rebuild without the Docker cache
   start       Build the image when missing, then start the container
+  recreate    Recreate the container from the current image and check its runtime
   enter       Open an interactive shell in the running container
   stop        Stop the container
-  status      Show the container status
   logs        Follow the container logs
   clean       Remove the container and image (cache volumes are preserved)
   help        Show this help
@@ -96,23 +95,40 @@ build_image() {
   compose build cyclo_mjlab
 }
 
-rebuild_image() {
-  echo "[INFO] Rebuilding ${CYCLO_MJLAB_IMAGE} without cache..."
-  compose build --pull --no-cache cyclo_mjlab
-}
-
 container_is_running() {
   [[ "$(docker inspect -f '{{.State.Running}}' \
     "${CYCLO_MJLAB_CONTAINER}" 2>/dev/null || true)" == "true" ]]
 }
 
+upgrade_help() {
+  echo "[INFO] For an outdated image, run './docker/container.sh build', then './docker/container.sh recreate'." >&2
+  echo "[INFO] Keep any CYCLO_MJLAB_IMAGE/CYCLO_MJLAB_CONTAINER overrides when running these commands." >&2
+}
+
+verify_image() {
+  echo "[INFO] Checking ${CYCLO_MJLAB_IMAGE} against this checkout..."
+  if ! docker run --rm --entrypoint python \
+    --env PYTHONDONTWRITEBYTECODE=1 \
+    --mount "type=bind,source=${PROJECT_PATH},target=/workspace/cyclo_mjlab,readonly" \
+    "${CYCLO_MJLAB_IMAGE}" /workspace/cyclo_mjlab/docker/check_environment.py; then
+    upgrade_help
+    return 1
+  fi
+}
+
 verify_environment() {
-  echo "[INFO] Verifying the Python and GPU environment..."
-  docker exec --user cyclo \
+  if ! container_is_running; then
+    echo "[ERROR] Container is not running. Run './docker/container.sh start' first." >&2
+    return 1
+  fi
+  echo "[INFO] Verifying the container runtime and CUDA..."
+  if ! docker exec --user cyclo \
     --workdir /workspace/cyclo_mjlab \
     "${CYCLO_MJLAB_CONTAINER}" \
-    python -c \
-      'import importlib.metadata as md; import mujoco, torch, warp; assert torch.cuda.is_available(); mjlab_version = md.version("mjlab"); print(f"[INFO] Ready: torch={torch.__version__}, CUDA={torch.version.cuda}, GPU={torch.cuda.get_device_name(0)}, mjlab={mjlab_version}, mujoco={mujoco.__version__}, warp={warp.__version__}")'
+    python docker/check_environment.py --gpu; then
+    upgrade_help
+    return 1
+  fi
 }
 
 start_container() {
@@ -123,8 +139,10 @@ start_container() {
     build_image
   fi
 
+  # Reject incompatible images before creating or replacing a user's container.
+  verify_image
   echo "[INFO] Starting ${CYCLO_MJLAB_CONTAINER}..."
-  compose up -d --no-build cyclo_mjlab
+  compose up -d --no-build --pull never "$@" cyclo_mjlab
   verify_environment
   echo "[INFO] Enter with: ./docker/container.sh enter"
 }
@@ -146,10 +164,6 @@ enter_container() {
 
 stop_container() {
   compose stop cyclo_mjlab
-}
-
-show_status() {
-  compose ps cyclo_mjlab
 }
 
 show_logs() {
@@ -188,23 +202,19 @@ main() {
       initialize_submodules
       build_image
       ;;
-    rebuild)
-      check_gpu
-      initialize_submodules
-      rebuild_image
-      ;;
     start)
       check_gpu
       start_container
+      ;;
+    recreate)
+      check_gpu
+      start_container --force-recreate
       ;;
     enter)
       enter_container
       ;;
     stop)
       stop_container
-      ;;
-    status)
-      show_status
       ;;
     logs)
       show_logs

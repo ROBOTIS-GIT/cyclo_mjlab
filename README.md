@@ -81,7 +81,9 @@ run directly from `/workspace/cyclo_mjlab`.
 
 | Command | Description |
 | --- | --- |
-| `./docker/container.sh start` | Build the image if needed, initialize submodules, and start the container |
+| `./docker/container.sh build` | Build or update the image using the build cache |
+| `./docker/container.sh start` | Build if missing, check image compatibility, and start and verify the container |
+| `./docker/container.sh recreate` | Check the current image, recreate the container, and verify its runtime and CUDA |
 | `./docker/container.sh enter` | Open an interactive shell in the running container |
 | `./docker/container.sh stop` | Stop the container |
 | `./docker/container.sh logs` | Follow the container logs |
@@ -96,9 +98,48 @@ The Docker image includes:
 - Runtime dependencies pinned with hashes in `requirements.lock`
 
 The default image/container names are `cyclo-mjlab:latest` and `cyclo_mjlab`.
+The image carries `LABEL version="1.0.0"` to identify its release. This label is
+metadata; compatibility checks use the actual installed runtime versions.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.
+
+### Upgrading an existing Docker environment
+
+Release 1.0.0 requires Python 3.12 and MJLab 1.6.1. Images built for the previous
+Python 3.11/MJLab 1.2 environment are incompatible. Updating the checkout does not
+update an existing image, even when its tag is `latest`.
+
+After updating the checkout, finish or stop any training or playback before
+replacing the container, then run on the host:
+
+```bash
+git submodule update --init --recursive
+./docker/container.sh build
+./docker/container.sh recreate
+./docker/container.sh enter
+```
+
+`build` updates the image using the build cache; `recreate` replaces the container using that
+image. Recreating preserves the source bind mount, training logs, and named cache
+volumes, but discards changes stored only in the old container's writable layer.
+Keep the same `CYCLO_MJLAB_IMAGE` and `CYCLO_MJLAB_CONTAINER` overrides, if used.
+
+Both `start` and `recreate` check the image against this checkout's
+`pyproject.toml` before changing containers. An incompatible image causes the
+command to fail with rebuild instructions. After startup, the container's
+runtime and CUDA are checked again; failures are reported without declaring the
+environment ready. Driver or GPU-access failures require fixing the host's
+NVIDIA setup rather than simply rebuilding the image.
+
+To run checks manually inside the container:
+
+```bash
+python docker/check_environment.py        # Runtime versions and imports
+python docker/check_environment.py --gpu  # Also execute a CUDA tensor operation
+```
+
+These checks verify the runtime, not training convergence or individual tasks.
 
 ## Try Examples
 
