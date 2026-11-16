@@ -22,6 +22,34 @@ def recipe():
     return shlex.split(re.search(r'\[main\]="([^"]+)"', text)[1])
 
 
+def execution_recipe(mode):
+    """An explicit systems-only alternative; model and learning settings are intact."""
+    flags = recipe()
+    removed = []
+    if mode == "compiled_no_torch_graphs":
+        switches = {
+            "--cuda_graph",
+            "--graph_early",
+            "--collect_graph",
+            "--reset_masked",
+            "--eprobe_graph",
+        }
+        result = []
+        i = 0
+        while i < len(flags):
+            flag = flags[i]
+            if flag in switches:
+                removed.append(flag)
+            elif flag == "--eprobe_async":
+                removed.extend(flags[i : i + 2])
+                i += 1
+            else:
+                result.append(flag)
+            i += 1
+        flags = result
+    return flags, removed
+
+
 def main(action="train", argv=None):
     parser = argparse.ArgumentParser(
         description="K1 Rev.1 motion-only official BlinkMimic"
@@ -30,6 +58,12 @@ def main(action="train", argv=None):
     parser.add_argument("--motion-dir", type=Path, required=True)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument(
+        "--execution",
+        choices=("official", "compiled_no_torch_graphs"),
+        default="official",
+        help="Explicit systems-only memory alternative; preserves models/batches/horizons. Native MuJoCo physics graphs remain.",
+    )
     parser.add_argument(
         "--cache-dir",
         type=Path,
@@ -45,10 +79,11 @@ def main(action="train", argv=None):
     if not (args.motion_dir / "manifest.json").is_file():
         parser.error("Motion directory requires its provenance manifest.json")
     out = args.run_dir.resolve()
+    effective_recipe, removed_systems_flags = execution_recipe(args.execution)
     if action == "train":
         out.mkdir(parents=True, exist_ok=False)
         flags = [
-            *recipe(),
+            *effective_recipe,
             *extra,
             "--robot",
             "k1",
@@ -124,6 +159,8 @@ def main(action="train", argv=None):
             ["git", "status", "--short"], cwd=ROOT, text=True
         ),
         recipe=recipe(),
+        execution=args.execution,
+        removed_systems_flags=removed_systems_flags,
         explicit_overrides=extra,
         status="starting",
         stop="Verify child PID and command, then SIGINT that PID only. No automatic restart.",

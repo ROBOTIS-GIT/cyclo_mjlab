@@ -16,7 +16,7 @@ from blinkmimic.kinematics import Kinematics
 from blinkmimic.mirror import Mirror
 from blinkmimic.rotations import quat_to_mat
 
-from source.tasks.blinkmimic.cli import recipe
+from source.tasks.blinkmimic.cli import execution_recipe, recipe
 from source.tasks.blinkmimic.motion import digest, load_exact
 from source.tasks.blinkmimic.robot import make_robot
 
@@ -36,6 +36,29 @@ def test_recipe_and_vendor_identity():
             assert digest(VENDOR / name) == sha
     assert "--enc_hidden" not in flags  # upstream full-size default
     assert "--dec_hidden" not in flags
+
+
+def test_systems_memory_alternative_preserves_all_learning_options():
+    official, removed = execution_recipe("official")
+    assert official == recipe() and not removed
+    alternative, removed = execution_recipe("compiled_no_torch_graphs")
+    restore = iter(official)
+    expected = []
+    for flag in restore:
+        if flag == "--eprobe_async":
+            assert next(restore) == "20"
+        elif flag not in {
+            "--cuda_graph",
+            "--graph_early",
+            "--collect_graph",
+            "--reset_masked",
+            "--eprobe_graph",
+        }:
+            expected.append(flag)
+    assert alternative == expected
+    assert "--compile_more" in alternative
+    assert "--pi_batch" in alternative and "--wm_hidden" in alternative
+    assert "--pi_opt" in alternative and "--wm_opt" in alternative
 
 
 def test_nominal_pose_does_not_modify_shared_asset():

@@ -76,6 +76,15 @@ All recipe flags are present by default. Execution of later mechanisms (policy
 updates, graph capture, probes, schedule) requires reaching their corresponding
 stage; merely configuring them is not validation that they ran.
 
+The explicit `--execution compiled_no_torch_graphs` comparison preserves every
+model, learning rate, batch, history, horizon, mirror and reset-allocation setting.
+It removes only `--cuda_graph --graph_early --collect_graph --reset_masked
+--eprobe_graph --eprobe_async 20`. Torch compilation remains enabled and probes
+run synchronously. MJLab's underlying native MuJoCo physics graph remains.
+This is an explicitly recorded departure from the released systems recipe;
+its wall-clock results cannot be labeled the complete official recipe.
+`run-record.json` lists the removed systems flags. The default remains `official`.
+
 ## Isolation and execution
 
 The common launcher routes only the new task to `source/tasks/blinkmimic`.
