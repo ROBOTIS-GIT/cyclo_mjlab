@@ -1,7 +1,8 @@
 import sys
 
 import pytest
-from cyclo_supermimic import cli
+
+from source.tasks.supermimic import cli
 
 
 def test_k1_training_requires_local_motion(monkeypatch):

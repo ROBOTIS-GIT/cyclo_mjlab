@@ -14,7 +14,7 @@ available through the upstream runner configuration.
 Native task implementation: `source/tasks/supermimic`. The shared
 `source/learning/dispatch.py` selects this family before version-specific imports.
 Both train and play use the standard `scripts/reinforcement_learning` entry points;
-`cyclo-supermimic` remains a compatibility command. Existing BeyondMimic/PPO
+`cyclo-supermimic` is also installed by the root project. Existing BeyondMimic/PPO
 implementation and task IDs remain available in the same runtime.
 
 ## Shared Cyclo MJLab environment
@@ -54,13 +54,9 @@ SuperMimic, using stable MJLab simulation. Their primary source is official
 Research MJLab is not installed into the Cyclo runtime. K1 assets, motion
 validation, simulator collection and checkpoint manifests stay in Cyclo.
 
-`integrations/supermimic` now contains optional checkout-only compatibility
-imports and a lock targeting this same dependency set. It is not a second required
-environment. Existing `uv run --project integrations/supermimic ...` commands can
-still use that project's Python 3.12 environment; ordinary train/play commands
-above need only the root environment. A previous Python 3.13 research environment
-must not be mixed with the new lock. Shared learning source also does not imply
-that Cyclo Lab's Isaac dependencies can coexist with stable MJLab in one environment.
+The root project and `requirements.lock` provide the common installation for both
+task families. Shared learning source does not imply that Cyclo Lab's Isaac
+dependencies can coexist with stable MJLab in one environment.
 
 ## Data
 
@@ -115,7 +111,7 @@ python scripts/tools/motion/to_supermimic.py \
 ```
 
 It uses the same strict adapter and refuses to overwrite source/output files.
-The original `cyclo-supermimic convert` compatibility command also remains.
+The `cyclo-supermimic convert` command uses the same native adapter.
 The repository already contains Dance1/2 reference files; no new dataset or
 pretrained checkpoint is downloaded or added by this integration. Their provenance
 and permissions are separate from the software license; see

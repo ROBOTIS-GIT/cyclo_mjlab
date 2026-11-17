@@ -1,6 +1,11 @@
 import numpy as np
 import pytest
-from cyclo_supermimic.motion import ROOT_CONTRACT, convert_motion, validate_motion
+
+from source.tasks.supermimic.motion import (
+    ROOT_CONTRACT,
+    convert_motion,
+    validate_motion,
+)
 
 
 def clip():
