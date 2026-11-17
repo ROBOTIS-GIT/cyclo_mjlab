@@ -1,9 +1,15 @@
 import mujoco
 import numpy as np
 import torch
-from cyclo_supermimic.motion import model_joint_names
-from cyclo_supermimic.tasks import TASKS, TRACKED_BODIES, k1_env_cfg, register_tasks
 from supermimic.utils.analytic_ik import AnalyticIK
+
+from source.tasks.supermimic.motion import model_joint_names
+from source.tasks.supermimic.tasks import (
+    TASKS,
+    TRACKED_BODIES,
+    k1_env_cfg,
+    register_tasks,
+)
 
 
 def test_registry_and_robot_contract():
