@@ -91,8 +91,7 @@ research dependencies. Core modifications are recorded in its patch record.
 Apache identifier for its adapted launcher. `robot.py` imports the existing
 Cyclo asset and retains the ROBOTIS/Insu Park notice. `reference_profiles.py`
 identifies its exact historical Cyclo XML source (`874c7bd`) and Apache notice.
-The optional checkout compatibility package declares Apache-2.0 and includes its
-license copy when built. These checks preserve notices; they do not guarantee
+These checks preserve notices; they do not guarantee
 title or non-infringement. Apache redistribution conditions are in
 [section 4 of the license](https://www.apache.org/licenses/LICENSE-2.0).
 
@@ -114,7 +113,6 @@ weights were fetched or redistributed as part of this integration.
 
 The common Python 3.12 runtime resolves stable MJLab and the shared core in
 `requirements.lock`; local core source is installed from the pinned submodule.
-The optional compatibility project's lock uses the same native dependency set.
 Installed distributions retain their bundled licenses. The following declarations
 were checked for the integration; they are not a full binary redistribution audit:
 
