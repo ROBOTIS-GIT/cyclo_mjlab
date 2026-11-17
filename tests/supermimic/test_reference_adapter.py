@@ -13,7 +13,7 @@ from source.tasks.supermimic.motion import (
     prepare_motion_files,
 )
 from source.tasks.supermimic.native_motion import NativeMotionLoader as MotionLoader
-from source.tasks.supermimic.robot import get_k1_rev1_cfg
+from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +41,7 @@ def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_pa
         np.testing.assert_array_equal(
             output["root_quat_w"], data["body_quat_w"][:, root]
         )
-        assert output["source_velocity_profiles"].tolist() == ["legacy_k1_874c7bd_com"]
+        assert output["source_velocity_profiles"].tolist() == ["current_k1_com"]
         assert output["profile_max_errors"].max() < 2e-4
     hinges = np.where(model.jnt_type == mujoco.mjtJoint.mjJNT_HINGE)[0]
     fk = ForwardKinematics(
@@ -67,10 +67,8 @@ def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_pa
     )
     from mjlab.utils.lab_api.math import matrix_from_quat
 
-    from source.tasks.supermimic.reference_profiles import LEGACY_K1_COM
-
     local_com = torch.tensor(
-        [LEGACY_K1_COM[model.body(i).name] for i in range(1, model.nbody)],
+        model.body_ipos[1:].copy(),
         dtype=linear.dtype,
     )
     world_com = (matrix_from_quat(quats) @ local_com[None, :, :, None]).squeeze(-1)
