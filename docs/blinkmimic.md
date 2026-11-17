@@ -267,11 +267,11 @@ No hardware controller or motion/deployment assets are supplied.
 ## Validation
 
 ```bash
-PYTHONPATH=.:third_party/supermimic/src:integrations/supermimic/src \
+PYTHONPATH=.:third_party/supermimic/src \
   python -m pytest tests -q
 # With onnxruntime installed, require the export parity suite to run:
 python -c 'import onnxruntime'
-PYTHONPATH=.:third_party/supermimic/src:integrations/supermimic/src \
+PYTHONPATH=.:third_party/supermimic/src \
   python -m pytest tests/blinkmimic/test_export.py -q
 PYTHONPATH=.:third_party/supermimic/src python -m pytest third_party/supermimic/tests -q
 python tests/blinkmimic/validate_native.py --motion-dir /absolute/path/to/data \
