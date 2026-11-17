@@ -5,6 +5,7 @@ Only this K1 input adapter differs from its CSV/resampling path.
 """
 
 import hashlib
+from functools import lru_cache
 import json
 from pathlib import Path
 
@@ -61,34 +62,51 @@ def verify_manifest(path, verify_sources=False):
     return manifest
 
 
+@lru_cache(maxsize=1)
+def reference_model():
+    import mujoco
+    from source.assets.robots.robotis_k1.k1_rev1 import K1_REV1_XML_PATH
+
+    return mujoco.MjModel.from_xml_path(str(K1_REV1_XML_PATH))
+
+
 def load_exact(path, joint_names):
-    with np.load(path, allow_pickle=False) as data:
-        for field, value in {
-            "backend": "mujoco",
-            "quaternion_order": "wxyz",
-            "velocity_frame": "world",
-            "velocity_point": "link_origin",
-        }.items():
-            if str(data[field].item()) != value:
-                raise ValueError(f"Unsupported {field} in {path}")
-        if float(data["fps"]) != 50:
-            raise ValueError("K1 BlinkMimic requires exact 50 Hz input")
-        names = data["joint_names"].tolist()
-        if len(set(names)) != len(names) or set(names) != set(joint_names):
-            raise ValueError("Joint names do not match public K1 Rev.1")
-        perm = [names.index(n) for n in joint_names]
-        arrays = [
-            data[k].copy()
-            for k in (
-                "root_pos_w",
-                "root_quat_w",
-                "root_lin_vel_w",
-                "root_ang_vel_w",
-                "joint_pos",
-                "joint_vel",
-            )
-        ]
-        arrays[-2:] = [a[:, perm] for a in arrays[-2:]]
+    from source.utils.k1_motion_npz_adapter import BODY_FIELDS, adapt_motion
+
+    with np.load(path, allow_pickle=False) as archive:
+        data = dict(archive)
+    if any(key in data for key in BODY_FIELDS):
+        data = adapt_motion(data, joint_names, reference_model())
+    return validate_exact(data, joint_names, path)
+
+
+def validate_exact(data, joint_names, path):
+    for field, value in {
+        "backend": "mujoco",
+        "quaternion_order": "wxyz",
+        "velocity_frame": "world",
+        "velocity_point": "link_origin",
+    }.items():
+        if str(data[field].item()) != value:
+            raise ValueError(f"Unsupported {field} in {path}")
+    if float(data["fps"]) != 50:
+        raise ValueError("K1 BlinkMimic requires exact 50 Hz input")
+    names = data["joint_names"].tolist()
+    if len(set(names)) != len(names) or set(names) != set(joint_names):
+        raise ValueError("Joint names do not match public K1 Rev.1")
+    perm = [names.index(n) for n in joint_names]
+    arrays = [
+        data[k].copy()
+        for k in (
+            "root_pos_w",
+            "root_quat_w",
+            "root_lin_vel_w",
+            "root_ang_vel_w",
+            "joint_pos",
+            "joint_vel",
+        )
+    ]
+    arrays[-2:] = [a[:, perm] for a in arrays[-2:]]
     T = arrays[0].shape[0] if arrays[0].ndim == 2 else 0
     dims = (3, 4, 3, 3, len(joint_names), len(joint_names))
     for i, (a, d) in enumerate(zip(arrays, dims, strict=True)):
