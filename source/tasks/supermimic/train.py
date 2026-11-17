@@ -36,6 +36,15 @@ def validate_control_rate(env_cfg):
         )
 
 
+def training_defaults(task):
+    """Cyclo training defaults; saved bundle settings remain authoritative."""
+    cfg = TrainConfig.from_task(task)
+    cfg.runner.representation = "maxcoord" if "MaxCoord" in task else "gencoord"
+    cfg.runner.actor_obs = "proprio"
+    cfg.runner.history_length = 10
+    return cfg
+
+
 def main():
     chosen_task, remaining_args = tyro.cli(
         tyro.extras.literal_type_from_choices(list_tasks()),
@@ -43,10 +52,7 @@ def main():
         return_unknown_args=True,
         config=mjlab.TYRO_FLAGS,
     )
-    default = TrainConfig.from_task(chosen_task)
-    default.runner.representation = (
-        "maxcoord" if "MaxCoord" in chosen_task else "gencoord"
-    )
+    default = training_defaults(chosen_task)
     args = tyro.cli(
         TrainConfig,
         args=remaining_args,

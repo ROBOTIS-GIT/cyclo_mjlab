@@ -143,8 +143,11 @@ Swap `GenCoord` for `MaxCoord` to use body-space dynamics. The native launcher
 defaults the representation from the task ID and rejects conflicting explicit
 representation overrides before device/environment setup. It exposes nested runner/WM/
 policy settings through tyro, and writes `logs/<task>/<timestamp>/` relative
-to the working directory. `--runner.actor-obs proprio` selects deployable
-sensor inputs; default `rep_state` uses privileged state. Offline W&B avoids
+to the working directory. Training defaults to `--runner.actor-obs proprio
+--runner.history-length 10` (sensor inputs, newest frame last). For privileged
+state training, explicitly pass `--runner.actor-obs rep_state
+--runner.history-length 1`; upstream rejects longer `rep_state` histories.
+Offline W&B avoids
 remote logging but preserves local results; omit it for normal authenticated
 W&B tracking. Local `--motion-file` disables the upstream G1 registry default.
 
@@ -185,8 +188,9 @@ offset as the native action manager.
 
 This is an inference bundle, not an optimizer/replay-state training-resume format.
 Existing Cyclo PPO checkpoint files and `sim2real.yaml` are incompatible. Default
-`rep_state` remains privileged; `--runner.actor-obs proprio` explicitly selects
-sensor inputs. Local playback does not establish convergence or hardware readiness.
+training settings do not convert existing `rep_state` checkpoints to `proprio`.
+Playback uses the saved observation mode and history, including legacy
+`rep_state` bundles. Local playback does not establish convergence or hardware readiness.
 
 ## Short verification
 
