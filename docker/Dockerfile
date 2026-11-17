@@ -32,7 +32,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       ca-certificates \
       ffmpeg \
       git \
-      gosu \
       less \
       libegl1 \
       libgl1 \
@@ -84,7 +83,12 @@ RUN chmod +x /usr/local/bin/cyclo-entrypoint \
       'export MUJOCO_GL=${MUJOCO_GL:-egl}' \
       'cd "${PROJECT_PATH}"' \
       >> /home/cyclo/.bashrc \
-    && chown cyclo:0 /home/cyclo/.bashrc
+    && chown cyclo:0 /home/cyclo/.bashrc \
+    && git config --system --replace-all safe.directory "${PROJECT_PATH}" \
+    && chown -R "cyclo:$(id -gn cyclo)" /home/cyclo/.cache
+
+# Apply the host-mapped user to both container startup and docker exec.
+USER cyclo
 
 ENTRYPOINT ["/usr/local/bin/cyclo-entrypoint"]
 CMD ["sleep", "infinity"]
