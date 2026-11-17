@@ -106,7 +106,15 @@ contract; adding q_ref or an unrecorded action clamp changes the policy.
 ## Metadata and runtime integration
 
 The graph embeds `cyclo.policy_contract`; `metadata.json` carries the same
-contract plus the output ONNX SHA256. It records task/encoder, mode, ordered
+contract plus the output ONNX SHA256. The export also includes `NOTICE.txt` and
+`licenses/` with the Apache-2.0 text and the installed RSL-RL BSD-3-Clause text
+for its traced normalizer. Keep these files with redistributed export bundles;
+their paths/hashes are recorded in metadata. The existing Isaac Lab BSD notices
+remain in the source repository; FK/IK math is not traced into this policy-only
+graph. Framework/runtime binaries and development tools are not bundled.
+These software notices do not grant rights to training data or learned weights.
+
+The contract records task/encoder, mode, ordered
 observation terms and offsets, history/goal layout, normalization, affine action
 values, body/joint order, physical fingerprint, source file hashes and shared
 exporter revision/hash. No source directory, checkpoint tensors or motion arrays

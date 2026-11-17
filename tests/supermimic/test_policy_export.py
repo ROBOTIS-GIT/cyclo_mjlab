@@ -11,6 +11,8 @@ from supermimic.representations import create_representation
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg, build_actor
 from supermimic.tasks.task_spec import build_actor_obs_td
 
+from source.learning.export_notices import distribution_license
+from source.tasks.supermimic import REPO_ROOT
 from source.tasks.supermimic.checkpoint import make_manifest
 from source.tasks.supermimic.export import (
     export_policy,
@@ -116,6 +118,22 @@ def test_full_width_motion_policy_onnx_parity(
     assert metadata["input"]["shape"] == [1, expected_width]
     assert metadata["actor_obs"] == mode
     assert metadata["onnx_sha256"] == sha256(path)
+    assert set(metadata["software_notices"]) == {
+        "NOTICE.txt",
+        "licenses/Apache-2.0.txt",
+        "licenses/RSL-RL-BSD-3-Clause.txt",
+    }
+    notice = (path.parent / "NOTICE.txt").read_text()
+    assert "Copyright (c) 2020 Preferred Networks, Inc." in notice
+    assert "Copyright 2026 The SuperMimic Authors" in notice
+    for relative, digest in metadata["software_notices"].items():
+        assert sha256(path.parent / relative) == digest
+    assert (path.parent / "licenses/Apache-2.0.txt").read_bytes() == (
+        REPO_ROOT / "third_party/supermimic/LICENSE"
+    ).read_bytes()
+    assert (
+        path.parent / "licenses/RSL-RL-BSD-3-Clause.txt"
+    ).read_bytes() == distribution_license("rsl-rl-lib").read_bytes()
     assert metadata["source_sha256"]["actor.pt"] == sha256(directory / "actor.pt")
     model = onnx.load(path)
     onnx.checker.check_model(model, full_check=True)
