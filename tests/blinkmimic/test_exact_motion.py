@@ -20,7 +20,7 @@ from source.tasks.blinkmimic.motion import (
     verify_manifest,
 )
 from source.tasks.blinkmimic.prepare import prepare_library
-from source.tasks.blinkmimic.robot import make_robot
+from source.tasks.blinkmimic.config.k1_rev1.robot_spec import make_robot
 
 
 def reference(path, names, frames=4, reverse=False, **changes):

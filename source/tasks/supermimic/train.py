@@ -12,9 +12,10 @@ import os
 import mjlab
 import tyro
 from mjlab.tasks.registry import list_tasks
-from supermimic.runners.run_config import check_representation_matches
 from supermimic.scripts.train import TrainConfig
 from supermimic.scripts.train_utils import create_env, setup_device
+
+from .config import TASKS, check_representation_matches
 
 from .checkpoint import LocalBundleRunner as SuperMimicRunner
 from .checkpoint import environment_options, make_manifest, validate_manifest
@@ -39,15 +40,17 @@ def validate_control_rate(env_cfg):
 def training_defaults(task):
     """Cyclo training defaults; saved bundle settings remain authoritative."""
     cfg = TrainConfig.from_task(task)
-    cfg.runner.representation = "maxcoord" if "MaxCoord" in task else "gencoord"
+    representation, _ = TASKS[task]
+    cfg.runner.representation = representation
     cfg.runner.actor_obs = "proprio"
     cfg.runner.history_length = 10
     return cfg
 
 
-def main():
+def main(argv=None):
     chosen_task, remaining_args = tyro.cli(
         tyro.extras.literal_type_from_choices(list_tasks()),
+        args=argv,
         add_help=False,
         return_unknown_args=True,
         config=mjlab.TYRO_FLAGS,

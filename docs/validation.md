@@ -91,16 +91,15 @@ artifact handling never calls the remote API.
 ## Existing BeyondMimic behavior
 
 ```bash
-python tests/beyondmimic/test_task_aliases.py
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python tests/beyondmimic/test_task_registration.py
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --gpu-ids None --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --env.scene.num-envs 2 --agent.max-iterations 1 --agent.num-steps-per-env 4 \
   --agent.algorithm.num-mini-batches 1 --agent.algorithm.num-learning-epochs 1
 ```
 
-Historical `Cyclo-Mimic-*` and explicit `Cyclo-BeyondMimic-*` names select identical
-train/play/PPO configurations. Both remain separate from SuperMimic's runner and
-checkpoint format. See [beyondmimic.md](beyondmimic.md) for normal commands and
+`Cyclo-BeyondMimic-*` task IDs preserve the existing train/play/PPO
+configurations and remain separate from SuperMimic's runner and checkpoint format. See [beyondmimic.md](beyondmimic.md) for normal commands and
 the [recorded scope](#recorded-scope) below for historical checkpoint/export checks.
 
 ## Recorded scope

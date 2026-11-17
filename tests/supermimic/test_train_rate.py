@@ -7,11 +7,12 @@ from mjlab.tasks.registry import list_tasks
 from supermimic.scripts.train import TrainConfig
 
 from source.tasks.supermimic import train
-from source.tasks.supermimic.tasks import TASKS, k1_env_cfg, register_tasks
+from source.tasks.supermimic.config import TASKS, register_tasks
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 
 def test_control_rate_allows_default_and_compensating_overrides():
-    cfg = k1_env_cfg()
+    cfg = make_env_cfg()
     train.validate_control_rate(cfg)
     cfg.decimation = 8
     cfg.sim.mujoco.timestep = 0.0025
@@ -31,7 +32,7 @@ def test_cli_rejects_25hz_before_environment_construction(monkeypatch):
         "argv",
         [
             "train.py",
-            "Cyclo-SuperMimic-GenCoord-K1-Rev1",
+            "Cyclo-SuperMimic-GenCoord-K1-Rev1-001",
             "--motion-file",
             "reference.npz",
             "--env.decimation",
@@ -48,7 +49,7 @@ def test_parsed_compensating_options_keep_50hz():
     cfg = tyro.cli(
         TrainConfig,
         args=["--env.decimation", "8", "--env.sim.mujoco.timestep", "0.0025"],
-        default=TrainConfig.from_task("Cyclo-SuperMimic-GenCoord-K1-Rev1"),
+        default=TrainConfig.from_task("Cyclo-SuperMimic-GenCoord-K1-Rev1-001"),
         config=mjlab.TYRO_FLAGS,
     )
     train.validate_control_rate(cfg.env)
@@ -58,7 +59,7 @@ def test_parsed_compensating_options_keep_50hz():
 def test_valid_native_launcher_routes_original_runner(monkeypatch, representation):
     if not set(TASKS).issubset(list_tasks()):
         register_tasks()
-    task = f"Cyclo-SuperMimic-{representation}-K1-Rev1"
+    task = f"Cyclo-SuperMimic-{representation}-K1-Rev1-001"
     from types import SimpleNamespace
 
     sentinel = SimpleNamespace(close=lambda: None)

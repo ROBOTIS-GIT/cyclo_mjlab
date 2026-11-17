@@ -1,4 +1,4 @@
-# Copyright 2025 ROBOTIS CO., LTD.
+# Copyright 2026 ROBOTIS CO., LTD.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Author: Insu Park
-#
+# Author: Kiwoong Park
 
-"""Shared native K1 asset used by BeyondMimic and SuperMimic."""
+"""K1 Rev.1 BlinkMimic task configuration."""
 
-from source.assets.robots.robotis_k1.k1_rev1 import (  # noqa: F401
-    K1_REV1_ACTION_SCALE,
-    K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
-    K1_REV1_XML_PATH,
-    get_k1_rev1_cfg,
+from source import SRC_PATH
+
+from .. import BlinkMimicTaskCfg
+from .robot_spec import make_robot
+
+
+MOTION_PATHS = (
+    SRC_PATH / "assets/motions/K1_rev1/dance1/dance1.npz",
+    SRC_PATH / "assets/motions/K1_rev1/dance2/dance2.npz",
 )
+
+
+def make_task_cfg() -> BlinkMimicTaskCfg:
+    return BlinkMimicTaskCfg(robot_factory=make_robot, motion_paths=MOTION_PATHS)

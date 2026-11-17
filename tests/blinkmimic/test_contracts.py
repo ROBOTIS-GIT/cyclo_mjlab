@@ -1,6 +1,7 @@
 # ruff: noqa: E402  # Vendored path bootstrap must precede upstream imports.
 """Recipe, exact-input and numerical K1 adaptation regression checks."""
 
+import datetime
 import json
 
 import mujoco
@@ -19,7 +20,7 @@ from blinkmimic.rotations import quat_to_mat
 
 from source.tasks.blinkmimic.cli import execution_recipe, recipe
 from source.tasks.blinkmimic.motion import digest, load_exact
-from source.tasks.blinkmimic.robot import make_robot
+from source.tasks.blinkmimic.config.k1_rev1.robot_spec import make_robot
 
 
 def test_recipe_and_vendor_identity():
@@ -176,26 +177,44 @@ def test_normalization_and_raw_goal_reference_skip_contract():
 
 
 def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypatch):
+    from types import SimpleNamespace
     from source.tasks.blinkmimic import cli
 
+    from dataclasses import replace
+
+    selected_robot = SimpleNamespace(name="task_selected_robot")
+    monkeypatch.setitem(cli.TASKS, cli.TASK, replace(
+        cli.TASKS[cli.TASK], robot_factory=lambda: selected_robot,
+    ))
     commands = []
+    config_exports = []
+
+    def export_config(child, run_dir, robot):
+        assert robot is selected_robot
+        config_exports.append(run_dir)
+        return run_dir / "params/sim2real.yaml"
 
     class Child:
         pid = 123456
+        returncode = 0
 
         def __init__(self, command, **kwargs):
             commands.append(command)
             assert kwargs["env"]["WANDB_MODE"] == "disabled"
+
+        def poll(self):
+            return 0
 
         def wait(self):
             return 0
 
     monkeypatch.setattr(cli.subprocess, "check_output", lambda *a, **k: "test-source")
     monkeypatch.setattr(cli.subprocess, "Popen", Child)
+    monkeypatch.setattr(cli, "export_training_config_when_ready", export_config)
     data = tmp_path / "data"
     data.mkdir()
     (data / "manifest.json").write_text("{}")
-    train = tmp_path / "train"
+    train = tmp_path / "logs" / cli.TASK / "train"
     with pytest.raises(SystemExit) as result:
         cli.main(
             "train",
@@ -211,6 +230,9 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
         )
     assert result.value.code == 0
     assert commands[-1][4] == "train"
+    assert commands[-1][commands[-1].index("--task") + 1] == cli.TASK
+    assert commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    assert config_exports == [train]
     assert commands[-1][commands[-1].index("--num_envs") + 1] == "2048"
     assert "--enc_hidden" not in commands[-1] and "--dec_hidden" not in commands[-1]
     ckpt = train / "ckpt_000100.pt"
@@ -227,10 +249,189 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
                 str(evaluation),
                 "--checkpoint",
                 str(ckpt),
+                "--viewer",
+                "headless",
             ],
         )
     assert result.value.code == 0
     assert commands[-1][4] == "evaluate"
+    assert commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    assert config_exports == [train]
     assert "--ckpt" not in commands[-1]  # directory mode writes per-clip JSON
     assert (evaluation / ckpt.name).resolve() == ckpt
     assert ckpt.read_bytes() == b"test-only; subprocess mocked"
+
+    monkeypatch.setattr(cli, "ROOT", tmp_path)
+    def run_gui(command, **kwargs):
+        commands.append(command)
+        assert "stdout" not in kwargs and "stderr" not in kwargs
+        assert "XDG_CACHE_HOME" not in kwargs["env"]
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setattr(cli.subprocess, "run", run_gui)
+    record = (train / "run-record.json").read_bytes()
+    with pytest.raises(SystemExit) as result:
+        cli.main("play", [cli.TASK])
+    assert result.value.code == 0
+    assert commands[-1][4] == "play"
+    assert commands[-1][commands[-1].index("--task") + 1] == cli.TASK
+    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(ckpt)
+    assert commands[-1][commands[-1].index("--motion-dir") + 1] == str(data)
+    assert config_exports == [train]
+    assert not (train / "play").exists()
+    assert (train / "run-record.json").read_bytes() == record
+
+    prepared = []
+    def prepare_task(task, output):
+        assert task in cli.TASKS
+        prepared.append((task, output))
+        output.mkdir()
+        (output / "manifest.json").write_text("{}")
+        return output
+
+    monkeypatch.setattr(cli, "prepare_task_motions", prepare_task)
+    default_run = tmp_path / "task-defaults"
+    with pytest.raises(SystemExit) as result:
+        cli.main("train", [cli.TASK, "--run-dir", str(default_run)])
+    assert result.value.code == 0
+    assert prepared == [(cli.TASK, default_run / "motions")]
+    assert commands[-1][commands[-1].index("--motion_dir") + 1] == str(default_run / "motions")
+    saved = json.loads((default_run / "run-record.json").read_text())
+    assert saved["task"] == cli.TASK
+    assert saved["manifest"] == str(default_run / "motions/manifest.json")
+
+    with pytest.raises(SystemExit) as result:
+        cli.main("train", [cli.TASK])
+    assert result.value.code == 0
+    automatic = prepared[-1][1].parent
+    assert automatic.parent == tmp_path / "logs" / cli.TASK
+    datetime.datetime.strptime(automatic.name, "%Y-%m-%d_%H-%M-%S")
+    (automatic / "ckpt_000200.pt").touch()
+    with pytest.raises(SystemExit) as result:
+        cli.main("play", [cli.TASK])
+    assert result.value.code == 0
+    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(automatic / "ckpt_000200.pt")
+
+
+
+def test_task_motion_paths_support_files_directories_and_globs(tmp_path):
+    from source.tasks.blinkmimic.prepare import resolve_motion_files
+
+    nested = tmp_path / "library/nested"
+    nested.mkdir(parents=True)
+    files = [tmp_path / "single.npz", nested / "one.npz", nested / "two.npz"]
+    for path in files:
+        path.touch()
+    paths = (files[0], tmp_path / "library", nested / "*.npz")
+    assert resolve_motion_files(paths) == files
+    with pytest.raises(ValueError, match="No motion files matched"):
+        resolve_motion_files((tmp_path / "missing/*.npz",))
+    with pytest.raises(ValueError, match="at least one motion"):
+        resolve_motion_files(())
+
+
+def test_latest_training_run_uses_task_and_start_time(tmp_path):
+    from source.tasks.blinkmimic.cli import TASK, latest_training_checkpoint
+
+    def run(name, started_at, *, task=TASK, action="train", iteration=100):
+        directory = tmp_path / TASK / name
+        directory.mkdir(parents=True)
+        (directory / "run-record.json").write_text(json.dumps(dict(
+            task=task, action=action, started_at=started_at,
+        )))
+        checkpoint = directory / f"ckpt_{iteration:06d}.pt"
+        if iteration:
+            checkpoint.touch()
+        return checkpoint
+
+    # Run names, modification times, and iteration counts do not define run recency.
+    expected = run("a_new", "2026-11-17T07:00:00+00:00")
+    run("z_old", "2026-11-17T06:00:00+00:00", iteration=900)
+    run("starting", "2026-11-17T08:00:00+00:00", iteration=0)
+    run("different_task", "2026-11-17T09:00:00+00:00", task="other")
+    run("evaluation", "2026-11-17T09:00:00+00:00", action="play")
+    run("a_new/play/viewer", "2026-11-17T09:00:00+00:00", action="play")
+    incomplete = tmp_path / TASK / "incomplete"
+    incomplete.mkdir()
+    (incomplete / "run-record.json").write_text('{"task":')
+    assert latest_training_checkpoint(tmp_path, TASK) == expected
+    with pytest.raises(ValueError, match="No saved training checkpoints"):
+        latest_training_checkpoint(tmp_path / "missing", TASK)
+
+
+def test_training_motion_directory_supports_host_and_container_paths(tmp_path, monkeypatch):
+    from source.tasks.blinkmimic import cli
+
+    checkpoint = tmp_path / "ckpt_000100.pt"
+    record_path = tmp_path / "run-record.json"
+    data = tmp_path / ".blinkmimic-data/dances"
+    data.mkdir(parents=True)
+    monkeypatch.setattr(cli, "ROOT", tmp_path)
+    for root in (str(tmp_path), "/different/container/checkout"):
+        record_path.write_text(json.dumps(dict(
+            cwd=root, manifest=f"{root}/.blinkmimic-data/dances/manifest.json",
+        )))
+        assert cli.training_motion_directory(checkpoint) == data
+    record_path.unlink()
+    with pytest.raises(ValueError, match="use --motion-dir"):
+        cli.training_motion_directory(checkpoint)
+
+
+def test_checkpoint_selection_uses_iteration_and_explicit_override(tmp_path):
+    from source.tasks.blinkmimic.cli import select_checkpoint
+
+    newest = tmp_path / "ckpt_000300.pt"
+    newest.write_bytes(b"newer iteration")
+    older = tmp_path / "ckpt_000100.pt"
+    older.write_bytes(b"later file modification")
+    (tmp_path / "ckpt_000400.pt.tmp").write_bytes(b"save in progress")
+    (tmp_path / "ckpt_000500.pt").mkdir()
+    (tmp_path / "last.pt").write_bytes(b"not an iteration checkpoint")
+    assert select_checkpoint(None, tmp_path) == newest
+    assert select_checkpoint(older, tmp_path) == older
+    assert select_checkpoint(older, tmp_path / "missing") == older
+
+
+def test_checkpoint_selection_reports_missing_or_invalid_inputs(tmp_path):
+    from source.tasks.blinkmimic.cli import select_checkpoint
+
+    with pytest.raises(ValueError, match="No ckpt"):
+        select_checkpoint(None, tmp_path)
+    with pytest.raises(ValueError, match="requires"):
+        select_checkpoint(None, None)
+    invalid = tmp_path / "last.pt"
+    invalid.touch()
+    with pytest.raises(ValueError, match="Expected"):
+        select_checkpoint(invalid, tmp_path)
+
+
+@pytest.mark.parametrize("mode", ["train", "evaluate", "play"])
+def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode):
+    from dataclasses import replace
+    import sys
+
+    import blinkmimic.motion
+    from blinkmimic.robot import get_robot
+    from source.tasks.blinkmimic import play, worker
+    from source.tasks.blinkmimic.config import BlinkMimicTaskCfg
+
+    robot = replace(make_robot(), name="task_robot")
+    task = "Cyclo-BlinkMimic-Test"
+    monkeypatch.setitem(worker.TASKS, task, BlinkMimicTaskCfg(
+        robot_factory=lambda: robot, motion_paths=(),
+    ))
+    # Restore the process-local upstream registration after this test.
+    monkeypatch.setitem(sys.modules, "blinkmimic.task_robot", None)
+    monkeypatch.setitem(sys.modules, "blinkmimic.task_robot.task_robot_constants", None)
+    monkeypatch.setattr(blinkmimic.motion, "MotionLib", blinkmimic.motion.MotionLib)
+    monkeypatch.setattr(sys, "argv", ["worker", mode, "--task", task, "--test-option"])
+    calls = []
+    monkeypatch.setattr(worker.runpy, "run_module", lambda module, **kw: calls.append(module))
+    monkeypatch.setattr(play, "main", lambda **kw: calls.append(kw["robot"]))
+
+    worker.main()
+
+    assert get_robot(robot.name) is robot
+    assert calls == ([robot] if mode == "play" else [f"blinkmimic.{mode}"])
+    assert sys.argv == ["worker", "--test-option"]

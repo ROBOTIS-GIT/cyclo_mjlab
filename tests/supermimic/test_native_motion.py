@@ -10,7 +10,7 @@ from supermimic.scripts.train_utils import create_env
 from source.tasks.supermimic import REPO_ROOT
 from source.tasks.supermimic.export import nominal_action_contract
 from source.tasks.supermimic.motion import prepare_motion_files
-from source.tasks.supermimic.tasks import k1_env_cfg
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("CYCLO_RUN_NATIVE_TESTS") != "1",
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.parametrize("representation", ["gencoord", "maxcoord"])
 def test_native_partial_reset_and_multiclip_replay(representation, tmp_path):
-    cfg = k1_env_cfg(representation)
+    cfg = make_env_cfg(representation)
     source = REPO_ROOT / "source/assets/motions/K1_rev1"
     paths = [source / name / f"{name}.npz" for name in ("dance1", "dance2")]
     originals = [p.read_bytes() for p in paths]
@@ -79,7 +79,7 @@ def test_native_partial_reset_and_multiclip_replay(representation, tmp_path):
             critic_hidden_dims=(16, 16),
         )
         runner = SuperMimicRunner(
-            env, cfg_runner, f"Cyclo-SuperMimic-{representation}-K1-Rev1", device="cpu"
+            env, cfg_runner, f"Cyclo-SuperMimic-{representation}-K1-Rev1-001", device="cpu"
         )
         raw = torch.linspace(-1.7, 1.4, 23).repeat(3, 1)
         action = native.action_manager.get_term("joint_pos")

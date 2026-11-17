@@ -4,12 +4,9 @@ import torch
 from supermimic.utils.analytic_ik import AnalyticIK
 
 from source.tasks.supermimic.motion import model_joint_names
-from source.tasks.supermimic.tasks import (
-    TASKS,
-    TRACKED_BODIES,
-    k1_env_cfg,
-    register_tasks,
-)
+from source.tasks.supermimic.config import TASKS, register_tasks
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import TRACKED_BODIES
 
 
 def test_registry_and_robot_contract():
@@ -31,7 +28,7 @@ def test_registry_and_robot_contract():
 
 
 def test_k1_maxcoord_ik_roundtrip_and_gradient():
-    model = k1_env_cfg().scene.entities["robot"].spec_fn().compile()
+    model = make_env_cfg().scene.entities["robot"].spec_fn().compile()
     data = mujoco.MjData(model)
     hinges = np.where(model.jnt_type == mujoco.mjtJoint.mjJNT_HINGE)[0]
     qadr = model.jnt_qposadr[hinges]

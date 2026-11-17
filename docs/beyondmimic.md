@@ -2,13 +2,13 @@
 
 This is Cyclo's K1/mjlab adaptation of the motion-tracking stack from
 HybridRobotics/whole_body_tracking (BeyondMimic). See
-[attribution](../THIRD_PARTY_LICENSES.md). The source remains at
-`source/tasks/mimic` to preserve imports and downstream extensions.
+[attribution](../THIRD_PARTY_LICENSES.md). The source is located at
+`source/tasks/beyondmimic`.
 
-Explicit names `Cyclo-BeyondMimic-K1-Rev1-Dance1` and `Dance2` reuse exactly
-the old `Cyclo-Mimic-K1-Rev1-Dance1` and `Dance2` environment/PPO settings.
-Both spellings work with the same native train/play scripts. Existing task IDs,
-checkpoints, outputs and flags remain supported; Velocity remains unchanged.
+Tasks are registered directly as `Cyclo-BeyondMimic-K1-Rev1-Dance1` and
+`Cyclo-BeyondMimic-K1-Rev1-Dance2`, preserving their environment and PPO settings.
+Use these IDs for training and playback; the previous Mimic task IDs are no longer
+registered. Velocity remains unchanged.
 
 ## Installation (Docker)
 
@@ -93,21 +93,21 @@ Task IDs also infer the algorithm, so existing commands below remain valid.
 #### Train Dance1
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --env.scene.num-envs 4096
 ```
 
 #### Train Dance2
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --env.scene.num-envs 4096
 ```
 
 #### Play Dance1
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```
@@ -115,7 +115,7 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 To display the reference trajectory next to the trained policy during playback:
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1 \
   --reference-ghost-offset 1.4,0,0
@@ -124,7 +124,7 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 #### Play Dance2
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```

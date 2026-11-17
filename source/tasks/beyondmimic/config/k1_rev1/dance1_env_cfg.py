@@ -18,7 +18,7 @@
 
 from mjlab.envs import ManagerBasedRlEnvCfg
 from source import SRC_PATH
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
+from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 
 from .base_env_cfg import k1_rev1_mimic_env_cfg
 

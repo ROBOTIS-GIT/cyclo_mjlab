@@ -11,7 +11,7 @@ def prepare():
     sys.path.insert(0, str(VENDOR / "src"))
 
 
-def install_k1():
+def install_robot(robot):
     """Process-local registration; never imports or mutates SuperMimic learner."""
     import types
 
@@ -19,11 +19,10 @@ def install_k1():
     import blinkmimic.robot
 
     from .motion import ExactMotionLib
-    from .robot import make_robot
 
-    module = types.ModuleType("blinkmimic.k1.k1_constants")
-    module.SPEC = make_robot()
-    package = types.ModuleType("blinkmimic.k1")
+    module = types.ModuleType(f"blinkmimic.{robot.name}.{robot.name}_constants")
+    module.SPEC = robot
+    package = types.ModuleType(f"blinkmimic.{robot.name}")
     package.__path__ = []
     sys.modules[package.__name__] = package
     sys.modules[module.__name__] = module

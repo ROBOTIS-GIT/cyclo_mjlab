@@ -12,12 +12,12 @@ from pathlib import Path
 import mjlab
 import numpy as np
 import tyro
-from supermimic.runners.run_config import check_representation_matches, load_runner_cfg
+from supermimic.runners.run_config import load_runner_cfg
 from supermimic.runners.supermimic_runner import SuperMimicRunner
 from supermimic.scripts.train import TrainConfig
 
 from .motion import model_joint_names
-from .robot import K1_REV1_XML_PATH
+from source.assets.robots.robotis_k1.k1_rev1 import K1_REV1_XML_PATH
 
 SCHEMA_VERSION = 1
 
@@ -151,7 +151,7 @@ def make_manifest(task, cfg, runner_cfg, options):
 
 
 def validate_manifest(manifest, task):
-    from .tasks import TASKS
+    from .config import TASKS, check_representation_matches
     from .train import validate_control_rate
 
     if manifest.get("schema_version") != SCHEMA_VERSION:
@@ -210,10 +210,11 @@ class LocalBundleRunner(SuperMimicRunner):
 
     def __init__(self, *, manifest, **kwargs):
         self.manifest = manifest
+        self._deployment_files = []
         super().__init__(**kwargs)
 
     def checkpoint_extra_files(self, log_dir):
-        return [str(log_dir / "manifest.json")]
+        return [str(log_dir / "manifest.json"), *self._deployment_files]
 
     def _create_log_dir(self, *parts):
         directory = super()._create_log_dir(*parts)
@@ -222,4 +223,19 @@ class LocalBundleRunner(SuperMimicRunner):
             json.dumps(self.manifest, indent=2, allow_nan=False) + "\n"
         )
         temporary.replace(directory / "manifest.json")
+        self._export_deployment_configs(directory)
         return directory
+
+    def _export_deployment_configs(self, directory):
+        from .export_sim2real_cfg import export_sim2real_cfg, validate_policy_config
+
+        cfg = self.env.unwrapped.cfg
+        validate_policy_config(cfg, self.cfg, self.manifest["task_id"])
+        names = self.manifest["robot"]["joint_order"]
+        self._deployment_files = []
+        for spec in self.policy_learner.actor.task_specs:
+            path = export_sim2real_cfg(
+                directory, cfg, self.cfg, self._representation, names, encoder=spec.name,
+            )
+            self._deployment_files.append(str(path))
+            print(f"[INFO] Exported {spec.name} deployment configuration: {path}")

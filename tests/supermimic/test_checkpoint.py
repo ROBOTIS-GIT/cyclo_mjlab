@@ -7,7 +7,8 @@ import torch
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 
 from source.tasks.supermimic.checkpoint import make_manifest, validate_manifest
-from source.tasks.supermimic.tasks import TASKS, k1_env_cfg, register_tasks
+from source.tasks.supermimic.config import TASKS, register_tasks
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 
 @pytest.fixture
@@ -16,12 +17,12 @@ def manifest():
 
     if not set(TASKS).issubset(list_tasks()):
         register_tasks()
-    cfg = k1_env_cfg()
+    cfg = make_env_cfg()
     cfg.sim.mujoco.timestep = 0.0025
     cfg.decimation = 8
     cfg.commands["motion"].sampling_mode = "external"
     return make_manifest(
-        "Cyclo-SuperMimic-GenCoord-K1-Rev1",
+        "Cyclo-SuperMimic-GenCoord-K1-Rev1-001",
         cfg,
         SuperMimicRunnerCfg(),
         ["--env.sim.mujoco.timestep", "0.0025", "--env.decimation", "8"],
@@ -67,7 +68,7 @@ def test_train_mismatch_fails_before_device(monkeypatch, manifest, rep, override
         "argv",
         [
             "train.py",
-            f"Cyclo-SuperMimic-{rep}-K1-Rev1",
+            f"Cyclo-SuperMimic-{rep}-K1-Rev1-001",
             "--motion-file",
             "unused.npz",
             "--runner.representation",
@@ -197,7 +198,7 @@ def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
 
     from source.tasks.supermimic.checkpoint import robot_contract
 
-    cfg = k1_env_cfg()
+    cfg = make_env_cfg()
     action = cfg.actions["joint_pos"]
     if variant == "clipping":
         action.clip = {".*": (-1.0, 1.0)}
@@ -215,3 +216,54 @@ def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
         monkeypatch.setattr(Entity, "find_joints_by_actuator_names", reverse)
     with pytest.raises(ValueError, match="clipping|joint order"):
         robot_contract(cfg)
+
+
+def test_latest_saved_bundle_skips_incomplete_and_other_tasks(tmp_path):
+    import json
+    from source.tasks.supermimic.play import latest_checkpoint_directory
+
+    task = "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"
+
+    def run(task_dir, timestamp, saved_task, *, complete=True):
+        directory = tmp_path / task_dir / timestamp
+        directory.mkdir(parents=True)
+        (directory / "manifest.json").write_text(json.dumps({"task_id": saved_task}))
+        (directory / "actor.pt").touch()
+        if complete:
+            (directory / "world_model.pt").touch()
+        return directory
+
+    expected = run(task, "2026-11-17_13-00-00", task)
+    run(task, "2026-11-17_14-00-00", task, complete=False)
+    run(task, "2026-11-17_15-00-00", "another-task")
+    assert latest_checkpoint_directory(tmp_path, task) == expected
+    with pytest.raises(ValueError, match="No saved checkpoint bundle"):
+        latest_checkpoint_directory(tmp_path, "missing-task")
+
+
+def test_play_resolves_latest_only_without_explicit_checkpoint(tmp_path, monkeypatch):
+    from source.tasks.supermimic import play
+
+    task = "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"
+    directory = tmp_path / "saved"
+    selected = []
+    monkeypatch.setattr(play, "latest_checkpoint_directory", lambda root, name: directory)
+
+    class BeforeLoading(Exception):
+        pass
+
+    def read_bundle(path, name):
+        selected.append((path, name))
+        raise BeforeLoading
+
+    monkeypatch.setattr(play, "read_bundle", read_bundle)
+    with pytest.raises(BeforeLoading):
+        play.play(task, play.PlayConfig(motion_file="reference.npz"))
+    assert selected == [(directory, task)]
+    explicit = tmp_path / "explicit"
+    monkeypatch.setattr(play, "latest_checkpoint_directory", lambda *args: pytest.fail("unexpected search"))
+    with pytest.raises(BeforeLoading):
+        play.play(task, play.PlayConfig(motion_file="reference.npz", checkpoint_dir=explicit))
+    assert selected[-1] == (explicit, task)
+    with pytest.raises(ValueError, match="Choose only one"):
+        play.play(task, play.PlayConfig(motion_file="reference.npz", checkpoint_dir=explicit, wandb_path="run"))

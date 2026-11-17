@@ -3,8 +3,8 @@
 This integration uses the actual HybridRobotics SuperMimic differentiable world
 model, replay buffer, supervised dynamics learner, imagination rollouts and
 BPTT/actor-critic policy learners. It does not route to Cyclo's PPO imitation
-runner. Both `Cyclo-SuperMimic-GenCoord-K1-Rev1` and
-`Cyclo-SuperMimic-MaxCoord-K1-Rev1` use Cyclo's 23-joint K1 Rev.1 MJCF,
+runner. Both `Cyclo-SuperMimic-GenCoord-K1-Rev1-001` and
+`Cyclo-SuperMimic-MaxCoord-K1-Rev1-001` use Cyclo's 23-joint K1 Rev.1 MJCF,
 actuator gains/action scales, and 14 tracked bodies.
 Both algorithms import the same native K1 asset configuration, including collision
 masks, actuator settings and action scales. Root/anchor is pelvis.
@@ -13,7 +13,7 @@ The original multi-encoder motion/velocity architecture is preserved. A
 goal features through the common export entry point.
 
 Native task implementation: `source/tasks/supermimic`. The shared
-`source/learning/dispatch.py` selects this family before version-specific imports.
+`scripts/reinforcement_learning/dispatch.py` selects this family before version-specific imports.
 Both train and play use the standard `scripts/reinforcement_learning` entry points;
 `cyclo-supermimic` is also installed by the root project. Existing BeyondMimic/PPO
 implementation and task IDs remain available in the same runtime.
@@ -104,15 +104,9 @@ this derived cache is never trusted instead of validating the original. A comma
 list or quoted glob is accepted; every pattern must match and clip boundaries
 are preserved by the native motion provider.
 
-For workflows that need a standalone normalized file, the optional tool remains:
+Training and playback prepare these internal files automatically from the task
+configuration or `--motion-file`; no separate conversion command is needed.
 
-```bash
-python scripts/tools/motion/to_supermimic.py \
-  source/assets/motions/K1_rev1/dance1/dance1.npz .supermimic-data/dance1.npz
-```
-
-It uses the same strict adapter and refuses to overwrite source/output files.
-The `cyclo-supermimic convert` command uses the same native adapter.
 The repository already contains Dance1/2 reference files; no new dataset or
 pretrained checkpoint is downloaded or added by this integration. Their provenance
 and permissions are separate from the software license; see
@@ -127,7 +121,7 @@ number of environments for its memory:
 ```bash
 WANDB_MODE=offline python \
   scripts/reinforcement_learning/train.py --algorithm supermimic \
-  Cyclo-SuperMimic-GenCoord-K1-Rev1 --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
+  Cyclo-SuperMimic-GenCoord-K1-Rev1-001 --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
   --num-envs 64 --runner.run-name k1-dance1
 ```
 
@@ -146,7 +140,7 @@ state training, explicitly pass `--runner.actor-obs rep_state
 --runner.history-length 1`; upstream rejects longer `rep_state` histories.
 Offline W&B avoids
 remote logging but preserves local results; omit it for normal authenticated
-W&B tracking. Local `--motion-file` disables the upstream G1 registry default.
+W&B tracking. Local `--motion-file` disables the upstream remote motion registry default.
 
 Completed training writes a local inference bundle containing `manifest.json`,
 `world_model.pt`, `actor.pt`, and `critic.pt` when the policy has a critic. The last
@@ -158,15 +152,17 @@ Play directly from that directory, without syncing or uploading:
 
 ```bash
 python scripts/reinforcement_learning/play.py \
-  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
+  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
-  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> \
+  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> \
   --viewer viser
 ```
 
 For bounded local validation, select `--viewer headless --device cpu
---num-steps-rollout 4`. Native and Viser viewers remain available. Use exactly one
-of `--checkpoint-dir` or `--wandb-path ENTITY/PROJECT/RUN`; W&B access is explicit,
+--num-steps-rollout 4`. Native and Viser viewers remain available. When neither checkpoint option is supplied, play selects the latest saved bundle
+under `logs/<task>/<timestamp>/`, skipping runs without saved weights. Explicit
+`--checkpoint-dir` or `--wandb-path ENTITY/PROJECT/RUN` overrides this selection;
+W&B access is explicit,
 downloads a bundle, and applies the same validation. Older bundles lacking the
 manifest are rejected instead of guessing training settings.
 

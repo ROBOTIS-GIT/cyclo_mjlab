@@ -3,6 +3,7 @@
 # Adapted for Cyclo: local validated bundles and bounded headless playback.
 """Local K1 bundle playback with the official actor and optional W&B playback."""
 
+import json
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
@@ -26,6 +27,7 @@ class PlayConfig:
     viewer: Literal["headless", "native", "viser"] = "viser"
     num_steps_rollout: int = 1000
     initial_task: Literal["motion", "velocity"] = "motion"
+    export_policy: bool = True
 
 
 def load_models(directory, rcfg, env, device):
@@ -84,9 +86,31 @@ def headless_play(env, wm, actor, steps, task="motion"):
     print(f"PASS local playback: {steps} native simulator steps, finite actions")
 
 
+def latest_checkpoint_directory(log_root, task):
+    """Find the latest saved run, skipping runs that have no complete bundle yet."""
+    for directory in sorted((log_root / task).glob("*"), reverse=True):
+        required_files = ("manifest.json", "actor.pt", "world_model.pt")
+        if not all((directory / name).is_file() for name in required_files):
+            continue
+        try:
+            manifest = json.loads((directory / "manifest.json").read_text())
+            if manifest["task_id"] == task:
+                return directory
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    raise ValueError(
+        f"No saved checkpoint bundle for {task} in {log_root / task}; "
+        "use --checkpoint-dir for a run outside this directory"
+    )
+
+
 def play(task, cfg):
-    if (cfg.checkpoint_dir is None) == (cfg.wandb_path is None):
-        raise ValueError("Choose exactly one --checkpoint-dir or --wandb-path")
+    if cfg.checkpoint_dir is not None and cfg.wandb_path is not None:
+        raise ValueError("Choose only one --checkpoint-dir or --wandb-path")
+    if cfg.checkpoint_dir is None and cfg.wandb_path is None:
+        directory = latest_checkpoint_directory(Path("logs"), task)
+        cfg = replace(cfg, checkpoint_dir=directory)
+        print(f"[INFO] Selected checkpoint directory: {directory}")
     if cfg.num_steps_rollout < 1:
         raise ValueError("--num-steps-rollout must be positive")
     if cfg.wandb_path is not None:
@@ -98,6 +122,10 @@ def play(task, cfg):
         return
     env_cfg, rcfg = read_bundle(cfg.checkpoint_dir, task)
     env_cfg.commands["motion"].motion_file = cfg.motion_file
+    if cfg.export_policy:
+        from .export import export_play_policies
+
+        export_play_policies(cfg.checkpoint_dir, task)
     device = setup_device(cfg.device)
     env = create_env(env_cfg, 1, device)
     try:
@@ -143,11 +171,12 @@ def play(task, cfg):
         env.close()
 
 
-def main():
-    from .tasks import TASKS
+def main(argv=None):
+    from .config import TASKS
 
     task, remaining = tyro.cli(
         tyro.extras.literal_type_from_choices(TASKS),
+        args=argv,
         add_help=False,
         return_unknown_args=True,
         config=mjlab.TYRO_FLAGS,
