@@ -155,7 +155,7 @@ def play(task, cfg):
                 if cfg.viewer == "viser"
                 else {}
             )
-            viewer(
+            playback = viewer(
                 env=env,
                 actor=actor,
                 dynamics=wm.dynamics,
@@ -166,7 +166,11 @@ def play(task, cfg):
                 task_specs=actor.task_specs,
                 initial_task=cfg.initial_task,
                 **options,
-            ).run()
+            )
+            from .viewer import adapt_ghost_visualizer
+
+            adapt_ghost_visualizer(playback)
+            playback.run()
     finally:
         env.close()
 
