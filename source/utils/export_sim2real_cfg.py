@@ -23,41 +23,13 @@ from pathlib import Path
 from typing import Any, Sequence
 
 import torch
-import yaml
-
 from mjlab.actuator import BuiltinPositionActuator, IdealPdActuator
 from mjlab.entity import Entity
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.envs.mdp.actions import JointPositionAction
 
+from source.utils.sim2real_yaml import dump_sim2real_yaml
 
-class _FlowList(list):
-  """YAML list rendered in flow style, matching the ROBOTIS config format."""
-
-
-class _Sim2RealYamlDumper(yaml.SafeDumper):
-  pass
-
-
-def _represent_flow_list(
-  dumper: yaml.SafeDumper, data: _FlowList
-) -> yaml.SequenceNode:
-  return dumper.represent_sequence(
-    "tag:yaml.org,2002:seq", data, flow_style=True
-  )
-
-
-_Sim2RealYamlDumper.add_representer(_FlowList, _represent_flow_list)
-
-_FLOW_LIST_KEYS = {
-  "scale",
-  "offset",
-  "clip",
-  "lin_vel_x",
-  "lin_vel_y",
-  "ang_vel_z",
-  "heading",
-}
 
 # Use deployment-facing term names while preserving the mjlab actor order.
 _OBSERVATION_NAME_MAP = {
@@ -144,19 +116,6 @@ def _pd_gains(
   stiffness = [gains[name][0] for name in joint_names]
   damping = [gains[name][1] for name in joint_names]
   return _plain_value(stiffness), _plain_value(damping)
-
-
-def _format_yaml(value: Any, key: str | None = None) -> Any:
-  value = _plain_value(value)
-  if isinstance(value, list):
-    items = [_format_yaml(item) for item in value]
-    return _FlowList(items) if key in _FLOW_LIST_KEYS else items
-  if isinstance(value, dict):
-    return {
-      item_key: _format_yaml(item, item_key)
-      for item_key, item in value.items()
-    }
-  return value
 
 
 def _commands(env: ManagerBasedRlEnv) -> dict[str, Any]:
@@ -309,13 +268,5 @@ def export_sim2real_cfg(
 
   output_path = Path(log_dir) / "params" / "sim2real.yaml"
   output_path.parent.mkdir(parents=True, exist_ok=True)
-  with output_path.open("w", encoding="utf-8") as file:
-    yaml.dump(
-      _format_yaml(cfg),
-      file,
-      Dumper=_Sim2RealYamlDumper,
-      sort_keys=False,
-      default_flow_style=False,
-      allow_unicode=True,
-    )
+  output_path.write_text(dump_sim2real_yaml(_plain_value(cfg)), encoding="utf-8")
   return output_path
