@@ -4,3 +4,4 @@
 [submodule "third_party/supermimic"]
 	path = third_party/supermimic
 	url = https://github.com/ROBOTIS-GIT/supermimic.git
+	branch = feature-cyclo-native
