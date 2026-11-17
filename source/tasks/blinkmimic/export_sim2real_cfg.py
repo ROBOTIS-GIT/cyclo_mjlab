@@ -128,7 +128,7 @@ def export_sim2real_cfg(output_dir, training_args, robot):
         joint_properties=joint_properties(robot),
         commands={},
         actions={"joint_pos": dict(clip=None, scale=robot.action_scale_list(), offset="default_position")},
-        observations={"blink_mimic": dict(
+        observations={"blinkmimic": dict(
             schema="cyclo.blinkmimic.csv.v1",
             **observation_config(history, future, robot.num_joints),
             input_name="observations",

@@ -207,7 +207,7 @@ def export_sim2real_cfg(
         actions={"joint_pos": dict(
             clip=None, scale=action["scale"], offset=action["offset"],
         )},
-        observations={"super_mimic": observation},
+        observations={"supermimic": observation},
     )
     directory = Path(output_dir) / "params"
     if encoder != "motion":

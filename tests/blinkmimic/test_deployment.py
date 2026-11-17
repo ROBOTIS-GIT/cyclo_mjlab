@@ -58,7 +58,7 @@ with patch('blinkmimic.kinematics.Kinematics', side_effect=ReachedGpuInitializat
     assert cfg["policy_joints"] == list(robot.joint_names)
     assert cfg["step_dt"] == .02
     assert cfg["actions"]["joint_pos"]["scale"] == [float(f"{value:.3g}") for value in robot.action_scale_list()]
-    observations = cfg["observations"]["blink_mimic"]
+    observations = cfg["observations"]["blinkmimic"]
     assert observations["history"]["layout"] == "frame_major"
     assert list(observations["history"]["terms"]) == [
         "joint_pos_rel", "joint_vel", "base_ang_vel", "projected_gravity",

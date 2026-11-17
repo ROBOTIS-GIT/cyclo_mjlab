@@ -285,7 +285,7 @@ def test_training_start_writes_deployment_configs(
         expected_files.append(str(path))
         cfg = yaml.safe_load(path.read_text())
         contract = policy_contract(bundle, encoder)
-        obs = cfg["observations"]["super_mimic"]
+        obs = cfg["observations"]["supermimic"]
         assert cfg["step_dt"] == 0.02
         assert cfg["policy_joints"] == contract["action"]["joint_order"]
         assert cfg["actions"]["joint_pos"]["scale"] == [
@@ -344,7 +344,7 @@ def test_observation_preprocessing_uses_resolved_training_settings(synthetic_bun
         tmp_path, bundle.env_cfg, bundle.runner_cfg, bundle.representation,
         bundle.action["joint_order"],
     )
-    observation = yaml.safe_load(path.read_text())["observations"]["super_mimic"]
+    observation = yaml.safe_load(path.read_text())["observations"]["supermimic"]
     assert observation["history"]["terms"]["base_ang_vel"] == dict(
         scale=[0.123, 0.25, 0.5], clip=[-12.3, 12.3], history_length=10,
     )
