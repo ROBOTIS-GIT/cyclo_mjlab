@@ -8,6 +8,7 @@ from supermimic.runners.supermimic_runner import SuperMimicRunner, SuperMimicRun
 from supermimic.scripts.train_utils import create_env
 
 from source.tasks.supermimic import REPO_ROOT
+from source.tasks.supermimic.export import nominal_action_contract
 from source.tasks.supermimic.motion import prepare_motion_files
 from source.tasks.supermimic.tasks import k1_env_cfg
 
@@ -82,6 +83,11 @@ def test_native_partial_reset_and_multiclip_replay(representation, tmp_path):
         )
         raw = torch.linspace(-1.7, 1.4, 23).repeat(3, 1)
         action = native.action_manager.get_term("joint_pos")
+        exported = nominal_action_contract(cfg, list(native.scene["robot"].joint_names))
+        for field, actual in (("scale", action.scale), ("offset", action._offset)):
+            torch.testing.assert_close(
+                torch.tensor(exported[field]).expand_as(actual), actual, rtol=0, atol=0
+            )
         action.process_actions(raw)
         torch.testing.assert_close(action.raw_action, raw, rtol=0, atol=0)
         torch.testing.assert_close(
