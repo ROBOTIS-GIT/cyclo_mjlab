@@ -8,8 +8,9 @@ runner. Both `Cyclo-SuperMimic-GenCoord-K1-Rev1` and
 actuator gains/action scales, and 14 tracked bodies.
 Both algorithms import the same native K1 asset configuration, including collision
 masks, actuator settings and action scales. Root/anchor is pelvis.
-The original multi-encoder motion/velocity architecture and exporter remain
-available through the upstream runner configuration.
+The original multi-encoder motion/velocity architecture is preserved. A
+[motion-independent ONNX export](supermimic-export.md) takes external history and
+goal features through the common export entry point.
 
 Native task implementation: `source/tasks/supermimic`. The shared
 `source/learning/dispatch.py` selects this family before version-specific imports.
