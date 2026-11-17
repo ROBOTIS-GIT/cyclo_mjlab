@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from source.tasks.blinkmimic.export import export_policy, load_policy, sha256
-from source.tasks.blinkmimic.runtime import prepare
+from source.tasks.blinkmimic.runtime import ROOT, VENDOR, prepare
 
 prepare()
 from blinkmimic.networks import Policy, policy_kwargs  # noqa: E402
@@ -77,6 +77,16 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
     assert not metadata["includes_motion"]
     assert metadata["checkpoint_sha256"] == sha256(source)
     assert metadata["onnx_sha256"] == sha256(path)
+    expected_notices = {
+        "licenses/Apache-2.0.txt": ROOT / "LICENSE",
+        "licenses/BlinkMimic-MIT.txt": VENDOR / "LICENSE",
+        "licenses/BlinkMimic-THIRD_PARTY_NOTICES.md": VENDOR / "THIRD_PARTY_NOTICES.md",
+    }
+    assert set(metadata["software_notices"]) == {"NOTICE.txt", *expected_notices}
+    for relative, digest in metadata["software_notices"].items():
+        assert sha256(path.parent / relative) == digest
+    for relative, original_license in expected_notices.items():
+        assert (path.parent / relative).read_bytes() == original_license.read_bytes()
     embedded = json.loads(model.metadata_props[0].value)
     assert embedded == {k: v for k, v in metadata.items() if k != "onnx_sha256"}
     options = ort.SessionOptions()

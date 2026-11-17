@@ -267,3 +267,5 @@ reference-data and external-weight rights are described separately in
 - **HybridRobotics/SuperMimic**: Apache License 2.0 with BSD-3-Clause math notices;
   original license, acknowledgements and modification record in
   [third_party/supermimic/PATCHES.md](third_party/supermimic/PATCHES.md)
+- **fuyichen0725/blinkmimic**: [MIT](third_party/blinkmimic/LICENSE), with original
+  [InstantTrack / supermimic_vibed notices](third_party/blinkmimic/THIRD_PARTY_NOTICES.md).
