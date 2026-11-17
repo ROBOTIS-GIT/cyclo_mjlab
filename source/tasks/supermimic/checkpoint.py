@@ -213,6 +213,15 @@ class LocalBundleRunner(SuperMimicRunner):
         self._deployment_files = []
         super().__init__(**kwargs)
 
+    def run(self):
+        from .tensorboard import SuperMimicTensorBoardLogger
+
+        try:
+            return super().run()
+        finally:
+            if isinstance(self.logger, SuperMimicTensorBoardLogger):
+                self.logger.close()
+
     def checkpoint_extra_files(self, log_dir):
         return [str(log_dir / "manifest.json"), *self._deployment_files]
 
@@ -224,6 +233,9 @@ class LocalBundleRunner(SuperMimicRunner):
         )
         temporary.replace(directory / "manifest.json")
         self._export_deployment_configs(directory)
+        from .tensorboard import SuperMimicTensorBoardLogger
+
+        self.logger = SuperMimicTensorBoardLogger(self.logger, directory, self.cfg.log_interval)
         return directory
 
     def _export_deployment_configs(self, directory):

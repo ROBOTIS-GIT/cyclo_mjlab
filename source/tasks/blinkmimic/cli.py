@@ -331,7 +331,12 @@ def main(action="train", argv=None):
                               finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
                 record_path.write_text(json.dumps(record, indent=2))
                 raise
-        code = child.wait()
+        if action == "train":
+            from .tensorboard import wait_with_tensorboard
+
+            code = wait_with_tensorboard(child, out)
+        else:
+            code = child.wait()
     record.update(
         status="completed" if code == 0 else "interrupted" if code == -2 else "failed",
         returncode=code,
