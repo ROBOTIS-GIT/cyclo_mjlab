@@ -213,17 +213,66 @@ Joint order, q0 and action scale must match the same K1 task/checkpoint.
 The nominal evaluation joint offset is zero; a nonzero simulated joint offset
 is added to the PD target and subtracted in the observation as shown above.
 
-This PR supplies training/evaluation and documents the export contract; it does
-not add an ONNX export command, ONNX runtime, robot controller or deployment
-assets. Existing PPO exporters are not interchangeable. Any future FP32 export
-of a BF16-autocast policy must disclose that precision choice and establish
-numerical parity separately before claiming compatibility.
+## Motion-independent ONNX export
+
+Export a local official Blink checkpoint without loading a motion library or
+constructing a simulator:
+
+```bash
+python scripts/reinforcement_learning/export.py --algorithm blinkmimic \
+  Cyclo-BlinkMimic-K1-Rev1 --checkpoint /path/to/ckpt_003500.pt \
+  --output-dir /path/to/new-export
+# Equivalent task module entry point:
+python -m source.tasks.blinkmimic.export --checkpoint /path/to/ckpt_003500.pt \
+  --output-dir /path/to/another-new-export
+```
+
+The output directory must be new. It receives `policy.onnx` and `metadata.json`.
+The graph takes `observations: float32[batch, history*obs_dim + goal_dim]` and
+returns only `actions: float32[batch, num_joints]`, with a dynamic batch axis.
+The released K1 recipe uses 1420 inputs and 23 outputs as detailed above; other
+recorded history/goal lengths and encoder/decoder widths are reconstructed
+exactly, with dimensions recorded in metadata. `FlatPolicy` only reshapes/slices
+inputs and calls the original `blinkmimic.networks.Policy`; it does not rewrite
+normalization, latent activation, decoder, or reference residual mathematics.
+
+The exporter reads the deployed `pi` key, which is EMA when the run enables
+`pi_ema`. It never falls back to `pi_live`. Required run settings, strict state
+shapes, finite FP32 tensors, nonnegative normalization variance, robot name and
+reference-skip q0/scales are checked. Unsupported pruned architectures, incomplete
+checkpoints and inconsistent contracts fail rather than changing the model.
+The CLI supports the public K1 Rev.1 task. The Python `load_policy` and
+`export_policy` APIs accept its RobotSpec separately; robot-specific file bundles
+and selectors are outside this exporter. Legacy checkpoints identify the robot
+by name and do not contain an independently verified physical-model fingerprint.
+
+Metadata is embedded in the ONNX graph and written beside it. It describes
+feature ordering/formulas, history/goal dimensions, frames, normalizers, action
+joint order/q0/scales, reference skip, upstream revision, checkpoint SHA256 and
+source precision. The sidecar additionally contains the output ONNX SHA256.
+No motion clip, time-step lookup, selector, world model or critic is exported.
+A consumer maintains history and builds raw reference features externally; it
+must use the exact current-reference/future-reference conventions above.
+
+Export uses CPU FP32 and opset 18; the locked environment already includes ONNX.
+The command runs the ONNX checker. CPU ONNX Runtime is an optional test dependency
+(`pip install onnxruntime`); it is not required for export or training. Synthetic
+full-width tests compare original Policy, flat wrapper and ONNX Runtime at batch
+sizes 1 and 3, with nontrivial normalizer buffers and reference skip both on/off.
+They use `rtol=1e-5, atol=2e-5` against FP32 Policy. These checks do not establish
+bitwise equivalence to CUDA BF16 autocast or validate a particular trained model
+or robot. Existing PPO and SuperMimic exporters have different contracts.
+No hardware controller or motion/deployment assets are supplied.
 
 ## Validation
 
 ```bash
 PYTHONPATH=.:third_party/supermimic/src:integrations/supermimic/src \
   python -m pytest tests -q
+# With onnxruntime installed, require the export parity suite to run:
+python -c 'import onnxruntime'
+PYTHONPATH=.:third_party/supermimic/src:integrations/supermimic/src \
+  python -m pytest tests/blinkmimic/test_export.py -q
 PYTHONPATH=.:third_party/supermimic/src python -m pytest third_party/supermimic/tests -q
 python tests/blinkmimic/validate_native.py --motion-dir /absolute/path/to/data \
   --output /absolute/path/to/new-diagnostic
