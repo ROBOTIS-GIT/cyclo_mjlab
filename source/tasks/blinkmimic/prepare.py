@@ -1,9 +1,11 @@
-"""Prepare a portable manifest for already normalized 50 Hz K1 reference NPZs."""
+"""Prepare a portable manifest for shared Mimic or normalized 50 Hz K1 reference NPZs."""
 
 import argparse
 import json
 import shutil
 from pathlib import Path
+
+from source.utils.motion_paths import resolve_motion_files
 
 from .runtime import prepare
 
@@ -47,13 +49,15 @@ def prepare_library(inputs, output, joint_names):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    from .config import TASKS
+
+    parser.add_argument("--task", choices=tuple(TASKS), required=True)
     parser.add_argument("inputs", nargs="+", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     prepare()
-    from .robot import make_robot
-
-    print(prepare_library(args.inputs, args.output, make_robot().joint_names))
+    robot = TASKS[args.task].robot_factory()
+    print(prepare_library(args.inputs, args.output, robot.joint_names))
 
 
 if __name__ == "__main__":

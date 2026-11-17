@@ -1,22 +1,32 @@
 """Private subprocess boundary for upstream MJLab performance patches."""
 
+import argparse
 import json
 import runpy
 import sys
 import traceback
 from pathlib import Path
 
-from .runtime import install_k1, prepare
+from .runtime import install_robot, prepare
+from .config import TASKS
 
 
 def main():
-    mode = sys.argv.pop(1)
-    if mode not in ("train", "evaluate"):
-        raise ValueError(mode)
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("mode", choices=("train", "evaluate", "play"))
+    parser.add_argument("--task", choices=tuple(TASKS), required=True)
+    args, remaining = parser.parse_known_args()
+    sys.argv = [sys.argv[0], *remaining]
     prepare()
-    install_k1()
+    robot = TASKS[args.task].robot_factory()
+    install_robot(robot)
     try:
-        runpy.run_module(f"blinkmimic.{mode}", run_name="__main__")
+        if args.mode == "play":
+            from .play import main as play
+
+            play(robot=robot)
+        else:
+            runpy.run_module(f"blinkmimic.{args.mode}", run_name="__main__")
     except BaseException as error:
         # Read only Python bookkeeping from the failing frame; do not touch a failed
         # CUDA context or restart. Preserve the exact loop index absent from sparse logs.

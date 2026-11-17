@@ -1,6 +1,6 @@
 # BlinkMimic on K1 Rev.1
 
-Task: `Cyclo-BlinkMimic-K1-Rev1`. This motion-only task is selected explicitly
+Task: `Cyclo-BlinkMimic-K1-Rev1-001`. This motion-only task is selected explicitly
 through the common launcher. Existing BeyondMimic and SuperMimic implementations,
 task configurations, asset defaults and shared-core revision remain unchanged.
 
@@ -71,7 +71,7 @@ policy decoder through the official imagined-rollout objective.
 - Runtime is the existing locked Cyclo Python 3.12 / MJLab 1.6.1, Torch 2.14.0
   CUDA 13.0, MuJoCo 3.11.0 and Warp 1.14.0. The official measurements used
   Torch 2.9.0 CUDA 12.8 and Warp 1.16.0 on a 4090. Timing/convergence claims
-  for G1/LAFAN1 do not establish K1 convergence or performance on another GPU.
+  on the original robot and dataset do not establish K1 convergence or performance on another GPU.
 
 All recipe flags are present by default. Execution of later mechanisms (policy
 updates, graph capture, probes, schedule) requires reaching their corresponding
@@ -89,8 +89,11 @@ its wall-clock results cannot be labeled the complete official recipe.
 ## Reference preparation
 
 The library accepts any nonempty number of clips. No dataset or checkpoint is
-bundled with this feature. Inputs must be compact K1 NPZ files with scalar `fps=50`,
-all 23 unique `joint_names`, and these finite arrays in the float32 loader format:
+bundled with this feature. Tasks can reference the existing full-body Cyclo K1
+NPZ files directly. The loader validates and adapts them internally without
+modifying the source files. It also accepts compact K1 NPZ files with scalar
+`fps=50`, all 23 unique `joint_names`, and these finite arrays in the float32
+loader format:
 
 | Field | Shape | Convention |
 | --- | --- | --- |
@@ -100,32 +103,19 @@ all 23 unique `joint_names`, and these finite arrays in the float32 loader forma
 | `root_ang_vel_w` | T × 3 | rad/s, world frame |
 | `joint_pos`, `joint_vel` | T × 23 | radians and rad/s, named joint order |
 
-Every clip needs at least two frames and the explicit scalar declarations
+Every clip needs at least two frames. Compact root-only inputs require the
+explicit scalar declarations
 `backend=mujoco`, `quaternion_order=wxyz`, `velocity_frame=world`, and
 `velocity_point=link_origin`. Unknown producer conventions must be resolved
 before preparation; do not relabel data to bypass that requirement.
 
-For a supported full-body Cyclo reference, the existing input converter can
-produce this compact format. It is a data adapter, not a call to the SuperMimic
-learner. For example, using the pre-existing Dance1 reference:
-
-```bash
-mkdir -p .blinkmimic-data
-python scripts/tools/motion/to_supermimic.py \
-  source/assets/motions/K1_rev1/dance1/dance1.npz .blinkmimic-data/dance1.npz
-python scripts/tools/motion/prepare_blinkmimic.py .blinkmimic-data/dance1.npz \
-  --output .blinkmimic-data/example
-```
-
-For several already normalized files, pass them in the desired clip order to
-`prepare_blinkmimic.py`. Basenames must be unique. Preparation validates inputs,
-copies their bytes into a new directory, and writes `manifest.json`. Existing
-output directories are rejected. The manifest's `clips` array preserves order;
-each row has `song` (a clip identifier), `derived`, `derived_sha256`, `frames`,
-and `fps`. Paths are resolved relative to the manifest; legacy absolute paths
-also work. The helper additionally records the supplied compact source path/hash.
-Keep original producer/conversion provenance separately: a hash does not certify
-author identity, capture consent or redistribution rights.
+Training automatically prepares the motions declared in the task configuration
+when `--motion-dir` is omitted. No separate conversion command is needed.
+Preparation validates inputs, copies their original bytes into the run's
+`motions/` directory, and writes `manifest.json`. Basenames must be unique and
+existing output directories are rejected. The manifest's `clips` array preserves
+input order; each row records the clip identifier, copied filename, hashes,
+frame count, and FPS. The loader adapts the copied NPZ data when reading it.
 
 All NPZ files in the selected directory must match the manifest exactly. Every
 invocation checks derived hashes and declared frame counts. Source hashes are
@@ -151,16 +141,15 @@ shared GPU, use `--eprobe_async 0` and record that override. Do not run a separa
 GPU evaluator concurrently with asynchronous training probes.
 
 ```bash
-python scripts/reinforcement_learning/train.py --algorithm blinkmimic \
-  Cyclo-BlinkMimic-K1-Rev1 --motion-dir .blinkmimic-data/example \
-  --run-dir logs/blinkmimic/run-001
+python scripts/reinforcement_learning/train.py Cyclo-BlinkMimic-K1-Rev1-001
 
-# Headless all-clip, first-frame evaluation with the official evaluator.
-python scripts/reinforcement_learning/play.py --algorithm blinkmimic \
-  Cyclo-BlinkMimic-K1-Rev1 --motion-dir .blinkmimic-data/example \
-  --run-dir logs/blinkmimic/eval-001 \
-  --checkpoint logs/blinkmimic/run-001/ckpt_003500.pt
+# Play the latest saved run for this task in the browser viewer.
+python scripts/reinforcement_learning/play.py Cyclo-BlinkMimic-K1-Rev1-001
 ```
+
+Training defaults to `logs/<task>/<YYYY-MM-DD_HH-MM-SS>/`; `--run-dir` overrides
+that location. Play searches saved runs under `logs/<task>/` for the selected
+task. Explicit `--checkpoint` and `--checkpoint-dir` remain available. Use `--viewer headless` for the official all-clip evaluator.
 
 Extra upstream flags use their original underscore spelling. Every explicit
 override is recorded separately from the preset. The task never silently changes
@@ -220,10 +209,11 @@ constructing a simulator:
 
 ```bash
 python scripts/reinforcement_learning/export.py --algorithm blinkmimic \
-  Cyclo-BlinkMimic-K1-Rev1 --checkpoint /path/to/ckpt_003500.pt \
+  Cyclo-BlinkMimic-K1-Rev1-001 --checkpoint /path/to/ckpt_003500.pt \
   --output-dir /path/to/new-export
 # Equivalent task module entry point:
-python -m source.tasks.blinkmimic.export --checkpoint /path/to/ckpt_003500.pt \
+python -m source.tasks.blinkmimic.export Cyclo-BlinkMimic-K1-Rev1-001 \
+  --checkpoint /path/to/ckpt_003500.pt \
   --output-dir /path/to/another-new-export
 ```
 

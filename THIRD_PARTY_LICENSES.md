@@ -26,7 +26,7 @@ license text shared by both projects is provided in `LICENSE`.
 - Source: https://github.com/HybridRobotics/whole_body_tracking
 - License: MIT
 - Used in:
-  - `source/tasks/mimic`
+  - `source/tasks/beyondmimic`
   - `scripts/tools/motion/csv_to_npz.py`
 
 The mimic task stack and motion-conversion workflow adapt reference-motion

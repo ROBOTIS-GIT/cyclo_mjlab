@@ -25,10 +25,10 @@ from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 
-import source.tasks.mimic.mdp as mdp
+import source.tasks.beyondmimic.mdp as mdp
 from source.assets.robots import K1_REV1_ACTION_SCALE, get_k1_rev1_cfg
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
-from source.tasks.mimic.tracking_env_cfg import make_mimic_env_cfg
+from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
+from source.tasks.beyondmimic.tracking_env_cfg import make_mimic_env_cfg
 
 TRACKED_BODY_NAMES = (
   "pelvis",

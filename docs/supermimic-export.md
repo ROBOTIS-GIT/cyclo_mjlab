@@ -9,10 +9,10 @@ unchanged.
 
 ```bash
 python scripts/reinforcement_learning/export.py --algorithm supermimic \
-  Cyclo-SuperMimic-GenCoord-K1-Rev1 \
+  Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --checkpoint-dir /path/to/local-bundle --output-dir /path/to/new-export
 # Equivalent module entry point; MaxCoord is supported too:
-python -m source.tasks.supermimic.export Cyclo-SuperMimic-MaxCoord-K1-Rev1 \
+python -m source.tasks.supermimic.export Cyclo-SuperMimic-MaxCoord-K1-Rev1-001 \
   --checkpoint-dir /path/to/local-bundle --output-dir /path/to/another-new-export
 ```
 

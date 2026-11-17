@@ -168,28 +168,28 @@ python scripts/reinforcement_learning/play.py Cyclo-Velocity-Flat-K1-Rev1-v0 \
 
 ### Mimic
 
-These existing commands use BeyondMimic/PPO. The explicit task aliases
-`Cyclo-BeyondMimic-K1-Rev1-Dance1` and `Dance2` select the same configurations.
+These commands use BeyondMimic/PPO. Tasks are registered directly as
+`Cyclo-BeyondMimic-K1-Rev1-Dance1` and `Dance2`.
 See the [BeyondMimic guide](docs/beyondmimic.md) for details.
 
 #### Train Dance1
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --env.scene.num-envs 4096
 ```
 
 #### Train Dance2
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --env.scene.num-envs 4096
 ```
 
 #### Play Dance1
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```
@@ -197,7 +197,7 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 To display the reference trajectory next to the trained policy during playback:
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1 \
   --reference-ghost-offset 1.4,0,0
@@ -206,7 +206,7 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 #### Play Dance2
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```
@@ -224,17 +224,17 @@ the original file:
 ```bash
 WANDB_MODE=offline python \
   scripts/reinforcement_learning/train.py --algorithm supermimic \
-  Cyclo-SuperMimic-GenCoord-K1-Rev1 \
+  Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz --num-envs 64
 
 python scripts/reinforcement_learning/play.py \
-  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1 \
+  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
-  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1/<timestamp> --viewer viser
+  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> --viewer viser
 ```
 
 Replace `<timestamp>` with the training run directory. Select
-`Cyclo-SuperMimic-MaxCoord-K1-Rev1` for maximal-coordinate tracking. Local inference
+`Cyclo-SuperMimic-MaxCoord-K1-Rev1-001` for maximal-coordinate tracking. Local inference
 bundles use `--checkpoint-dir` without requiring W&B sync; they are not PPO
 checkpoint files. Export/support limits and [validation scope](docs/validation.md)
 are documented in the guide.

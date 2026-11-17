@@ -25,22 +25,27 @@ def config_value(value):
     return value
 
 
-class BeyondMimicCompatibility(unittest.TestCase):
-    def test_alias_configs_are_identical(self):
+class BeyondMimicRegistration(unittest.TestCase):
+    def test_registered_configs_preserve_training_and_play_settings(self):
         from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
         import source.tasks  # noqa: F401
 
-        for dance in ("Dance1", "Dance2"):
-            old = f"Cyclo-Mimic-K1-Rev1-{dance}"
+        from source.tasks.beyondmimic.config.k1_rev1.dance1_env_cfg import k1_rev1_dance1_env_cfg
+        from source.tasks.beyondmimic.config.k1_rev1.dance2_env_cfg import k1_rev1_dance2_env_cfg
+        from source.tasks.beyondmimic.config.k1_rev1.agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
+
+        for dance, make_cfg in (
+            ("Dance1", k1_rev1_dance1_env_cfg), ("Dance2", k1_rev1_dance2_env_cfg),
+        ):
             explicit = f"Cyclo-BeyondMimic-K1-Rev1-{dance}"
             for play in (False, True):
                 self.assertEqual(
-                    config_value(asdict(load_env_cfg(old, play=play))),
+                    config_value(asdict(make_cfg(play=play))),
                     config_value(asdict(load_env_cfg(explicit, play=play))),
                 )
             self.assertEqual(
-                config_value(asdict(load_rl_cfg(old))),
+                config_value(asdict(k1_rev1_mimic_ppo_runner_cfg())),
                 config_value(asdict(load_rl_cfg(explicit))),
             )
 

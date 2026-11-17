@@ -8,9 +8,12 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from source.learning.export_notices import write_software_notices
+from source.utils.export_notices import write_software_notices
 
 from .runtime import ROOT, VENDOR, prepare
+from .export_sim2real_cfg import (
+    goal_fields, native_dimensions, observation_config, observation_fields,
+)
 
 
 def sha256(path):
@@ -43,7 +46,6 @@ def load_policy(checkpoint, robot):
     """Rebuild the recorded architecture strictly; never substitute live weights."""
     prepare()
     from blinkmimic import networks
-    from blinkmimic.mdp import obs_dim
     from blinkmimic.networks import Policy, check_pruned, policy_kwargs
 
     if networks.AMP_DTYPE is not None:
@@ -101,9 +103,10 @@ def load_policy(checkpoint, robot):
             raise ValueError(f"Nonfinite policy tensor: {name}")
         if name.endswith(".var") and (value < 0).any():
             raise ValueError(f"Negative normalizer variance: {name}")
+    obs_width, goal_width = native_dimensions(joints)
     policy = Policy(
-        obs_dim(joints),
-        args["goal_frames"] * (15 + 2 * joints),
+        obs_width,
+        args["goal_frames"] * goal_width,
         joints,
         hist=args["hist"],
         enc_hidden=widths("enc_hidden"),
@@ -114,18 +117,38 @@ def load_policy(checkpoint, robot):
     return FlatPolicy(policy.eval()).eval()
 
 
+def metadata_fields(fields):
+    """Describe observation semantics for optional ONNX metadata."""
+    descriptions = {
+        "joint_pos_rel": ("joint_position_relative", "q-q0-joint_offset"),
+        "joint_vel": ("joint_velocity", "qdot, raw rad/s"),
+        "base_ang_vel": ("root_angular_velocity_body", "R_actual.T @ omega_world, raw rad/s"),
+        "projected_gravity": ("projected_gravity_body", "-R_actual[2,:]"),
+        "last_action": ("previous_action", "previous final normalized action including skip"),
+        "reference_orientation": ("reference_relative_orientation_6d", "sixd(R_actual.T @ R_ref[f])"),
+        "future_root_displacement": ("root_displacement", "H_ref[f].T @ (p_ref[t]-p_ref[f])"),
+        "future_root_orientation": ("root_orientation_6d", "sixd(H_ref[f].T @ R_ref[t])"),
+        "future_root_linear_velocity": (
+            "root_linear_velocity_body", "R_ref[t].T @ v_world_link_origin[t]",
+        ),
+        "future_root_angular_velocity": ("root_angular_velocity_body", "R_ref[t].T @ omega_world[t]"),
+        "future_joint_pos": ("joint_position", "q_ref[t]"),
+        "future_joint_vel": ("joint_velocity_scaled", "0.1*qdot_ref[t]"),
+    }
+    result, offset = [], 0
+    for field in fields:
+        name, formula = descriptions[field.name]
+        result.append(dict(name=name, offset=offset, width=field.width, formula=formula))
+        offset += field.width
+    return result
+
+
 def contract(wrapper, checkpoint, robot):
     """Machine-readable external feature and action contract, with no clip assets."""
     j = robot.num_joints
 
-    def fields(items):
-        result, offset = [], 0
-        for name, width, formula in items:
-            result.append(dict(name=name, offset=offset, width=width, formula=formula))
-            offset += width
-        return result
-
     return dict(
+        observation_config=observation_config(wrapper.hist, checkpoint["args"]["goal_frames"], j),
         schema="cyclo.blinkmimic.external_goal.v1",
         upstream=json.loads((VENDOR / "UPSTREAM.json").read_text())["commit"],
         weights_key="pi",
@@ -139,7 +162,7 @@ def contract(wrapper, checkpoint, robot):
             shape=["batch", wrapper.input_size],
             layout="temporal history flattened oldest first, then flattened future goals",
             history_shape=[wrapper.hist, wrapper.obs_dim],
-            goal_shape=[checkpoint["args"]["goal_frames"], 15 + 2 * j],
+            goal_shape=[checkpoint["args"]["goal_frames"], native_dimensions(j)[1]],
         ),
         output=dict(
             name="actions",
@@ -152,34 +175,8 @@ def contract(wrapper, checkpoint, robot):
             eps=0.01,
             scope="inside graph, frozen pi obs_norm and goal_norm; no clipping",
         ),
-        observation_fields=fields(
-            [
-                ("joint_position_relative", j, "q-q0-joint_offset"),
-                ("joint_velocity", j, "qdot, raw rad/s"),
-                (
-                    "root_angular_velocity_body",
-                    3,
-                    "R_actual.T @ omega_world, raw rad/s",
-                ),
-                ("projected_gravity_body", 3, "-R_actual[2,:]"),
-                (
-                    "previous_action",
-                    j,
-                    "previous final normalized action including skip",
-                ),
-                ("reference_relative_orientation_6d", 6, "sixd(R_actual.T @ R_ref[f])"),
-            ]
-        ),
-        goal_fields_per_future_frame=fields(
-            [
-                ("root_displacement", 3, "H_ref[f].T @ (p_ref[t]-p_ref[f])"),
-                ("root_orientation_6d", 6, "sixd(H_ref[f].T @ R_ref[t])"),
-                ("root_linear_velocity_body", 3, "R_ref[t].T @ v_world_link_origin[t]"),
-                ("root_angular_velocity_body", 3, "R_ref[t].T @ omega_world[t]"),
-                ("joint_position", j, "q_ref[t]"),
-                ("joint_velocity_scaled", j, "0.1*qdot_ref[t]"),
-            ]
-        ),
+        observation_fields=metadata_fields(observation_fields(j)),
+        goal_fields_per_future_frame=metadata_fields(goal_fields(j)),
         future_frames="t=min(f+k, current_clip_last_frame), k=1..goal_frames",
         frame=dict(
             quaternion="wxyz",
@@ -207,7 +204,7 @@ def contract(wrapper, checkpoint, robot):
     )
 
 
-def export_policy(checkpoint_path, output_dir, robot):
+def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
     """Export on CPU without a simulator, dataset, selector or robot connection."""
     import onnx
 
@@ -216,7 +213,7 @@ def export_policy(checkpoint_path, output_dir, robot):
     wrapper = load_policy(checkpoint, robot)
     metadata = contract(wrapper, checkpoint, robot)
     metadata["checkpoint_sha256"] = sha256(checkpoint_path)
-    output_dir.mkdir(parents=True, exist_ok=False)
+    output_dir.mkdir(parents=True, exist_ok=overwrite)
     metadata["software_notices"] = write_software_notices(
         output_dir,
         "Cyclo MJLab policy-only ONNX export\n"
@@ -233,7 +230,8 @@ def export_policy(checkpoint_path, output_dir, robot):
             "BlinkMimic-THIRD_PARTY_NOTICES.md": VENDOR / "THIRD_PARTY_NOTICES.md",
         },
     )
-    path = output_dir / "policy.onnx"
+    path = output_dir / "exported" / "policy.onnx"
+    path.parent.mkdir(exist_ok=overwrite)
     with torch.no_grad():
         torch.onnx.export(
             wrapper,
@@ -247,6 +245,9 @@ def export_policy(checkpoint_path, output_dir, robot):
             dynamo=False,
         )
     model = onnx.load(path)
+    # The legacy exporter leaves a symbolic action width after the reference skip.
+    # Deployment accepts a dynamic batch only; the joint count is known here.
+    model.graph.output[0].type.tensor_type.shape.dim[1].dim_value = robot.num_joints
     onnx.helper.set_model_props(model, {"cyclo.policy_contract": json.dumps(metadata)})
     onnx.checker.check_model(model, full_check=True)
     onnx.save(model, path)
@@ -256,14 +257,17 @@ def export_policy(checkpoint_path, output_dir, robot):
 
 
 def main(argv=None):
+    from .config import TASKS
+
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("task", choices=tuple(TASKS))
     parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True,
+                        help="New export directory; use params/sim2real.yaml from the training run")
     args = parser.parse_args(argv)
     prepare()
-    from .robot import make_robot
-
-    print(export_policy(args.checkpoint, args.output_dir, make_robot()))
+    robot = TASKS[args.task].robot_factory()
+    print(export_policy(args.checkpoint, args.output_dir, robot))
 
 
 if __name__ == "__main__":

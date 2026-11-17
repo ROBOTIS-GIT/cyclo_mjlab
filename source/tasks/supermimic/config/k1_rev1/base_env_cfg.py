@@ -1,17 +1,21 @@
-"""K1 task adaptation; all dynamics and policy learning remain upstream."""
+# Copyright 2026 ROBOTIS CO., LTD.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Author: Kiwoong Park
 
-from dataclasses import fields
+"""K1 task adaptation; dynamics and policy learning remain upstream."""
 
-from mjlab.managers import TerminationTermCfg
-from mjlab.tasks.registry import load_rl_cfg, register_mjlab_task
-from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
-
-from .native_motion import NativeMotionCommandCfg, motion_end
-from .robot import (
-    K1_REV1_ACTION_SCALE,
-    K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
-    get_k1_rev1_cfg,
-)
 
 # K1 has one-joint waist/knee chains as well as 2/3-joint chains. Keeping all
 # 23 hinges covered exactly once is required by maximal-coordinate analytic IK.
@@ -31,12 +35,21 @@ TRACKED_BODIES = (
     "right_elbow_link",
     "right_wrist_roll_rubber_hand",
 )
-TASKS = {
-    f"Cyclo-SuperMimic-{rep}-K1-Rev1": rep.lower() for rep in ("GenCoord", "MaxCoord")
-}
 
 
-def k1_env_cfg(representation="gencoord", play=False):
+def make_env_cfg(representation="gencoord", play=False):
+    from dataclasses import fields
+
+    from mjlab.managers import TerminationTermCfg
+    from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
+
+    from ...native_motion import NativeMotionCommandCfg, motion_end
+    from source.assets.robots.robotis_k1.k1_rev1 import (
+        K1_REV1_ACTION_SCALE,
+        K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
+        get_k1_rev1_cfg,
+    )
+
     if representation not in ("gencoord", "maxcoord"):
         raise ValueError(f"Unknown representation: {representation}")
     cfg = (gencoord_env_cfg if representation == "gencoord" else maxcoord_env_cfg)(
@@ -47,7 +60,7 @@ def k1_env_cfg(representation="gencoord", play=False):
     cfg.commands["motion"] = NativeMotionCommandCfg(
         **{f.name: getattr(previous_motion, f.name) for f in fields(previous_motion)}
     )
-    cfg.scene.sensors = ()  # G1-only self-collision sensor is unused by SuperMimic.
+    cfg.scene.sensors = ()  # The upstream self-collision sensor is unused by this task.
     cfg.actions["joint_pos"].scale = K1_REV1_ACTION_SCALE
     cfg.commands["motion"].anchor_body_name = "pelvis"
     cfg.commands["motion"].body_names = TRACKED_BODIES
@@ -63,15 +76,3 @@ def k1_env_cfg(representation="gencoord", play=False):
     cfg.sim.njmax = 300
     cfg.scene.num_envs = 1 if play else 4096
     return cfg
-
-
-def register_tasks():
-    import mjlab.tasks  # noqa: F401
-
-    for task_id, representation in TASKS.items():
-        register_mjlab_task(
-            task_id=task_id,
-            env_cfg=k1_env_cfg(representation),
-            play_env_cfg=k1_env_cfg(representation, play=True),
-            rl_cfg=load_rl_cfg("Mjlab-Tracking-Flat-Unitree-G1"),
-        )

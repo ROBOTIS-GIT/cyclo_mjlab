@@ -8,10 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import torch
-from mjlab.entity import Entity
 from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.utils.lab_api.string import resolve_matching_names_values
-from mjlab.utils.string import resolve_expr
 from supermimic.models import MultiEncoderAE
 from supermimic.representations import (
     GOAL_FRAME_STRIDE,
@@ -23,11 +20,14 @@ from supermimic.runners.exporter import _export_module, _SingleEncoderOnnx
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 from supermimic.tasks.task_spec import resolve_task_specs
 
-from source.learning.export_notices import distribution_license, write_software_notices
+from source.utils.export_notices import distribution_license, write_software_notices
 
 from . import REPO_ROOT
 from .checkpoint import json_value, read_bundle
-from .tasks import TASKS, k1_env_cfg, register_tasks
+from .config import TASKS, register_tasks
+from .export_sim2real_cfg import (
+    observation_config, observation_terms, resolve_action_settings, validate_policy_config,
+)
 
 
 def sha256(path):
@@ -36,40 +36,6 @@ def sha256(path):
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             h.update(block)
     return h.hexdigest()
-
-
-def nominal_action_contract(cfg, joint_names):
-    """Resolve the same native pose and affine action values without a simulator."""
-    entity = Entity(cfg.scene.entities["robot"])
-    model = entity.spec.compile()
-    qadr = [model.joint(name).qposadr[0] for name in joint_names]
-    q0 = torch.tensor(model.key("init_state").qpos[qadr], dtype=torch.float32)
-    qd0 = torch.tensor(
-        resolve_expr(entity.cfg.init_state.joint_vel, joint_names, 0.0),
-        dtype=torch.float32,
-    )
-
-    def resolve(value, fallback):
-        if isinstance(value, (int, float)):
-            return torch.full_like(q0, float(value))
-        values = torch.full_like(q0, fallback)
-        ids, _, matched = resolve_matching_names_values(value, joint_names)
-        values[ids] = torch.tensor(matched, dtype=torch.float32)
-        return values
-
-    action = cfg.actions["joint_pos"]
-    scale = resolve(action.scale, 1.0)
-    offset = q0.clone() if action.use_default_offset else resolve(action.offset, 0.0)
-    imu = model.site("imu")
-    return dict(
-        joint_order=joint_names,
-        q0=q0.tolist(),
-        qdot0=qd0.tolist(),
-        scale=scale.tolist(),
-        offset=offset.tolist(),
-        imu_site_body=model.body(int(model.site_bodyid[imu.id])).name,
-        imu_site_quaternion_wxyz=model.site_quat[imu.id].tolist(),
-    )
 
 
 @dataclass
@@ -81,6 +47,20 @@ class PolicyBundle:
     manifest: dict
     action: dict
     term_widths: list[int]
+
+
+def nominal_action_contract(cfg, joint_names):
+    """Add model-frame documentation to the deployment action settings."""
+    from mjlab.entity import Entity
+
+    action = resolve_action_settings(cfg, joint_names)
+    model = Entity(cfg.scene.entities["robot"]).spec.compile()
+    imu = model.site("imu")
+    return dict(
+        **action,
+        imu_site_body=model.body(int(model.site_bodyid[imu.id])).name,
+        imu_site_quaternion_wxyz=model.site_quat[imu.id].tolist(),
+    )
 
 
 def load_policy_bundle(directory, task):
@@ -95,14 +75,7 @@ def load_policy_bundle(directory, task):
     # The generic loader supports old partial configs; export must not guess them.
     if json_value(rcfg) != manifest.get("runner_cfg"):
         raise ValueError("Export requires a complete, recognized saved runner_cfg")
-    if type(rcfg.history_length) is not int or rcfg.history_length < 1:
-        raise ValueError("Invalid saved history_length")
-    if rcfg.actor_obs == "rep_state":
-        if rcfg.history_length != 1:
-            raise ValueError("rep_state export requires saved history_length=1")
-    reference = k1_env_cfg(rcfg.representation)
-    if json_value(cfg.observations) != json_value(reference.observations):
-        raise ValueError("Custom observation groups are not supported by this exporter")
+    validate_policy_config(cfg, rcfg, task)
     names = manifest["robot"]["joint_order"]
     action = nominal_action_contract(cfg, names)
     # These are the actual affine buffers used by the trained dynamics model.
@@ -201,45 +174,31 @@ def policy_contract(bundle, encoder):
         raise ValueError(f"Unknown policy encoder: {encoder}")
     j = len(bundle.action["joint_order"])
     h = rcfg.history_length
+    terms = observation_terms(bundle.env_cfg, rcfg, bundle.representation, j)
     if rcfg.actor_obs == "proprio":
-        terms = [
-            dict(name=name, width=w, history=h)
-            for name, w in zip(
-                (
-                    "projected_gravity",
-                    "base_ang_vel",
-                    "joint_pos",
-                    "joint_vel",
-                    "actions",
-                ),
-                bundle.term_widths,
-                strict=True,
-            )
-        ]
-        formulas = [
-            "R_root.T @ [0,0,-1]",
-            "pelvis IMU gyro in IMU site axes, rad/s",
-            "q + encoder_bias - q0, rad",
-            "qdot - qdot0, rad/s",
-            "previous raw policy output, no reference addition",
-        ]
-    elif rcfg.representation == "gencoord":
-        terms = [dict(name="rep_state", width=actor.obs_dim, history=1)]
+        native_formulas = {
+            "projected_gravity": "R_root.T @ [0,0,-1]",
+            "base_ang_vel": "pelvis IMU gyro in IMU site axes, rad/s",
+            "joint_pos": "q + encoder_bias - q0, rad",
+            "joint_vel": "qdot - qdot0, rad/s",
+            "actions": "previous raw policy output, no reference addition",
+        }
+        formulas = [native_formulas[term["name"]] for term in terms]
+    else:
         formulas = [
             "[root_z(1), gravity_body(3), root_v_body(3), root_omega_body(3), absolute_q(J), qdot(J)]"
-        ]
-    else:
-        terms = [dict(name="rep_state", width=actor.obs_dim, history=1)]
-        formulas = [
+            if rcfg.representation == "gencoord" else
             "[root_relative_body_pos(3B), root_relative_body_rot6d(6B), body_linear_vel_in_root(3B), body_angular_vel_in_root(3B), root_z(1), gravity_body(3)]"
         ]
     for term, formula in zip(terms, formulas, strict=True):
         term["formula"] = formula
+    if sum(term["width"] for term in terms) != actor.obs_dim:
+        raise ValueError("Observation term dimensions differ from the trained actor input")
     offset = 0
     for term in terms:
         term["flat_offset"] = offset
         offset += term["width"] * h
-    return dict(
+    contract = dict(
         schema="cyclo.supermimic.external_goal.v1",
         algorithm="supermimic",
         task=bundle.manifest["task_id"],
@@ -313,9 +272,13 @@ def policy_contract(bundle, encoder):
         includes_world_model=False,
         physical_robot_validation="not performed by export",
     )
+    contract["observation_config"] = observation_config(
+        bundle.env_cfg, rcfg, bundle.representation, j, encoder,
+    )
+    return contract
 
 
-def export_policy(directory, task, output_dir, *, encoder="motion"):
+def export_policy(directory, task, output_dir, *, encoder="motion", overwrite=False):
     import onnx
 
     directory, output_dir = Path(directory).expanduser(), Path(output_dir).expanduser()
@@ -333,7 +296,7 @@ def export_policy(directory, task, output_dir, *, encoder="motion"):
     metadata["shared_exporter_sha256"] = sha256(
         REPO_ROOT / "third_party/supermimic/src/supermimic/runners/exporter.py"
     )
-    output_dir.mkdir(parents=True, exist_ok=False)
+    output_dir.mkdir(parents=True, exist_ok=overwrite)
     metadata["software_notices"] = write_software_notices(
         output_dir,
         "Cyclo MJLab policy-only ONNX export\n"
@@ -368,6 +331,20 @@ def export_policy(directory, task, output_dir, *, encoder="motion"):
     metadata["onnx_sha256"] = sha256(path)
     (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return Path(path)
+
+
+def export_play_policies(directory, task):
+    """Refresh deployment graphs on play; training owns the YAML files."""
+    directory = Path(directory).expanduser()
+    paths = []
+    for encoder in ("motion", "velocity"):
+        output_dir = directory / "exported"
+        if encoder != "motion":
+            output_dir /= encoder
+        path = export_policy(directory, task, output_dir, encoder=encoder, overwrite=True)
+        print(f"[INFO] Exported {encoder} policy: {path}")
+        paths.append(path)
+    return paths
 
 
 def main(argv=None):

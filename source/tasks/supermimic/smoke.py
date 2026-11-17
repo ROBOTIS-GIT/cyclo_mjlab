@@ -24,11 +24,11 @@ def main(argv=None):
     from supermimic.tasks.task_spec import build_actor_obs_td
 
     from .motion import model_joint_names
-    from .tasks import k1_env_cfg
+    from .config.k1_rev1.base_env_cfg import make_env_cfg
 
     torch.manual_seed(7)
     with tempfile.TemporaryDirectory(prefix="cyclo-supermimic-") as tmp:
-        cfg = k1_env_cfg(args.representation, play=True)
+        cfg = make_env_cfg(args.representation, play=True)
         model = cfg.scene.entities["robot"].spec_fn().compile()
         names = model_joint_names(model)
         robot_cfg = cfg.scene.entities["robot"]

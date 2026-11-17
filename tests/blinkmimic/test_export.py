@@ -13,7 +13,7 @@ from source.tasks.blinkmimic.runtime import ROOT, VENDOR, prepare
 prepare()
 from blinkmimic.networks import Policy, policy_kwargs  # noqa: E402
 
-from source.tasks.blinkmimic.robot import make_robot  # noqa: E402
+from source.tasks.blinkmimic.config.k1_rev1.robot_spec import make_robot  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -67,6 +67,8 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
     destination = tmp_path / "export"
     path = export_policy(source, destination, robot)
     metadata = json.loads((destination / "metadata.json").read_text())
+    assert path == destination / "exported/policy.onnx"
+    assert not (destination / "params/sim2real.yaml").exists()
     model = onnx.load(path)
     onnx.checker.check_model(model, full_check=True)
     assert [i.name for i in model.graph.input] == ["observations"]
@@ -84,9 +86,9 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
     }
     assert set(metadata["software_notices"]) == {"NOTICE.txt", *expected_notices}
     for relative, digest in metadata["software_notices"].items():
-        assert sha256(path.parent / relative) == digest
+        assert sha256(destination / relative) == digest
     for relative, original_license in expected_notices.items():
-        assert (path.parent / relative).read_bytes() == original_license.read_bytes()
+        assert (destination / relative).read_bytes() == original_license.read_bytes()
     embedded = json.loads(model.metadata_props[0].value)
     assert embedded == {k: v for k, v in metadata.items() if k != "onnx_sha256"}
     options = ort.SessionOptions()
@@ -107,6 +109,15 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
         np.testing.assert_allclose(actual, expected.numpy(), rtol=1e-5, atol=2e-5)
     with pytest.raises(FileExistsError):
         export_policy(source, destination, robot)
+    config = destination / "params/sim2real.yaml"
+    config.parent.mkdir()
+    config.write_text("training config must remain unchanged\n")
+    record = destination / "run-record.json"
+    record.write_text("training record must remain unchanged\n")
+    assert export_policy(source, destination, robot, overwrite=True) == path
+    assert config.read_text() == "training config must remain unchanged\n"
+    assert record.read_text() == "training record must remain unchanged\n"
+    onnx.checker.check_model(onnx.load(path), full_check=True)
 
 
 @pytest.mark.parametrize(

@@ -27,7 +27,8 @@ from source.tasks.supermimic.checkpoint import (
 )
 from source.tasks.supermimic.motion import prepare_motion_files
 from source.tasks.supermimic.play import PlayConfig, load_models, play
-from source.tasks.supermimic.tasks import k1_env_cfg, register_tasks
+from source.tasks.supermimic.config import register_tasks
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 
 def parameters(module):
@@ -96,8 +97,8 @@ def main():
     torch.manual_seed(7)
     setup_device(args.device)
     register_tasks()
-    task = f"Cyclo-SuperMimic-{representation}-K1-Rev1"
-    cfg = k1_env_cfg(representation.lower())
+    task = f"Cyclo-SuperMimic-{representation}-K1-Rev1-001"
+    cfg = make_env_cfg(representation.lower())
     # Exercise the nondefault substep contract in actual training and playback.
     cfg.sim.mujoco.timestep, cfg.decimation = 0.0025, 8
     source = REPO_ROOT / f"source/assets/motions/K1_rev1/{dance}/{dance}.npz"

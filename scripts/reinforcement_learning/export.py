@@ -21,13 +21,6 @@ def main():
         parser.print_help()
         return
     args, remaining = parser.parse_known_args()
-    if args.algorithm == "blinkmimic":
-        from source.tasks.blinkmimic.cli import TASK
-
-        if remaining and remaining[0] == TASK:
-            remaining = remaining[1:]
-        elif not any(flag in remaining for flag in ("-h", "--help")):
-            parser.error(f"Pass the BlinkMimic task ID: {TASK}")
     importlib.import_module(EXPORTERS[args.algorithm]).main(remaining)
 
 

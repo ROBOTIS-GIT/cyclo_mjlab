@@ -39,8 +39,8 @@ from mjlab.terrains import TerrainEntityCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
 
-import source.tasks.mimic.mdp as mdp
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
+import source.tasks.beyondmimic.mdp as mdp
+from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 
 
 # Scene definition

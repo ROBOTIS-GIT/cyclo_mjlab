@@ -18,9 +18,9 @@
 # This file includes modifications by ROBOTIS CO., LTD. to code derived
 # from mujocolab/mjlab.
 
-"""K1 Rev.1 Mimic task registration."""
+"""K1 Rev.1 BeyondMimic task registration."""
 
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, register_mjlab_task
+from mjlab.tasks.registry import register_mjlab_task
 
 from .agents.rsl_rl_ppo_cfg import k1_rev1_mimic_ppo_runner_cfg
 from .dance1_env_cfg import k1_rev1_dance1_env_cfg
@@ -28,25 +28,15 @@ from .dance2_env_cfg import k1_rev1_dance2_env_cfg
 
 
 register_mjlab_task(
-  task_id="Cyclo-Mimic-K1-Rev1-Dance1",
+  task_id="Cyclo-BeyondMimic-K1-Rev1-Dance1",
   env_cfg=k1_rev1_dance1_env_cfg(),
   play_env_cfg=k1_rev1_dance1_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
 )
 
 register_mjlab_task(
-  task_id="Cyclo-Mimic-K1-Rev1-Dance2",
+  task_id="Cyclo-BeyondMimic-K1-Rev1-Dance2",
   env_cfg=k1_rev1_dance2_env_cfg(),
   play_env_cfg=k1_rev1_dance2_env_cfg(play=True),
   rl_cfg=k1_rev1_mimic_ppo_runner_cfg(),
 )
-
-# Explicit names reuse the registered historical task, including play overrides.
-for dance in ("Dance1", "Dance2"):
-  legacy_task = f"Cyclo-Mimic-K1-Rev1-{dance}"
-  register_mjlab_task(
-    task_id=f"Cyclo-BeyondMimic-K1-Rev1-{dance}",
-    env_cfg=load_env_cfg(legacy_task),
-    play_env_cfg=load_env_cfg(legacy_task, play=True),
-    rl_cfg=load_rl_cfg(legacy_task),
-  )

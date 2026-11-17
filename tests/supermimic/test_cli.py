@@ -5,18 +5,10 @@ import pytest
 from source.tasks.supermimic import cli
 
 
-def test_k1_training_requires_local_motion(monkeypatch):
-    monkeypatch.setattr(
-        sys, "argv", ["cyclo-supermimic", "train", "Cyclo-SuperMimic-GenCoord-K1-Rev1"]
-    )
-    with pytest.raises(SystemExit) as error:
-        cli.main()
-    assert error.value.code == 2
-
-
 @pytest.mark.parametrize("action", ["train", "play"])
+@pytest.mark.parametrize("use_task_motion", [False, True])
 def test_direct_body_reference_is_adapted_before_upstream(
-    action, monkeypatch, tmp_path
+    action, use_task_motion, monkeypatch, tmp_path
 ):
     import types
 
@@ -24,11 +16,19 @@ def test_direct_body_reference_is_adapted_before_upstream(
 
     import source.tasks.supermimic as native
     from source.tasks.supermimic import cli as native_cli
-    from source.tasks.supermimic import tasks
+    from source.tasks.supermimic import config
 
     reference = native.REPO_ROOT / "source/assets/motions/K1_rev1/dance1/dance1.npz"
     monkeypatch.setattr(native, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(tasks, "register_tasks", lambda: None)
+    monkeypatch.setattr(config, "register_tasks", lambda: None)
+    task_id = "Cyclo-SuperMimic-GenCoord-K1-Rev1-Custom"
+    monkeypatch.setitem(config.TASKS, task_id, config.TASKS["Cyclo-SuperMimic-GenCoord-K1-Rev1-001"])
+    from mjlab.tasks import registry
+    from source.tasks.supermimic.config.k1_rev1 import task_001
+
+    env_cfg = task_001.make_env_cfg()
+    env_cfg.commands["motion"].motion_file = [str(reference)]
+    monkeypatch.setattr(registry, "load_env_cfg", lambda task: env_cfg)
     module_name = (
         "source.tasks.supermimic.train"
         if action == "train"
@@ -37,8 +37,9 @@ def test_direct_body_reference_is_adapted_before_upstream(
     module = types.ModuleType(module_name)
     called = []
 
-    def upstream():
-        path = sys.argv[sys.argv.index("--motion-file") + 1]
+    def upstream(argv):
+        assert argv[0] == task_id
+        path = argv[argv.index("--motion-file") + 1]
         assert path != str(reference)
         with np.load(path) as prepared:
             assert prepared["fps"].item() == 50
@@ -54,12 +55,13 @@ def test_direct_body_reference_is_adapted_before_upstream(
         [
             "cyclo-supermimic",
             action,
-            "Cyclo-SuperMimic-GenCoord-K1-Rev1",
-            "--motion-file",
-            str(reference),
+            task_id,
+            *([] if use_task_motion else ["--motion-file", str(reference)]),
         ],
     )
+    original_args = list(sys.argv)
     native_cli.main()
+    assert sys.argv == original_args
     assert called == [True]
 
 
@@ -82,7 +84,7 @@ def test_duplicate_motion_options_cannot_bypass_adapter(monkeypatch, options):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["train.py", "train", "Cyclo-SuperMimic-GenCoord-K1-Rev1", *options],
+        ["train.py", "train", "Cyclo-SuperMimic-GenCoord-K1-Rev1-001", *options],
     )
     with pytest.raises(SystemExit) as error:
         native_cli.main()

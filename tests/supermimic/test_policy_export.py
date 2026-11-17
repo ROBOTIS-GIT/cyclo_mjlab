@@ -11,7 +11,7 @@ from supermimic.representations import create_representation
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg, build_actor
 from supermimic.tasks.task_spec import build_actor_obs_td
 
-from source.learning.export_notices import distribution_license
+from source.utils.export_notices import distribution_license
 from source.tasks.supermimic import REPO_ROOT
 from source.tasks.supermimic.checkpoint import make_manifest
 from source.tasks.supermimic.export import (
@@ -23,7 +23,8 @@ from source.tasks.supermimic.export import (
     sha256,
 )
 from source.tasks.supermimic.motion import model_joint_names
-from source.tasks.supermimic.tasks import TASKS, k1_env_cfg, register_tasks
+from source.tasks.supermimic.config import TASKS, register_tasks
+from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 
 @pytest.fixture(scope="module")
@@ -40,8 +41,8 @@ def synthetic_bundles(tmp_path_factory):
         ("maxcoord", "proprio", 10),
         ("maxcoord", "rep_state", 1),
     ):
-        task = f"Cyclo-SuperMimic-{'GenCoord' if representation == 'gencoord' else 'MaxCoord'}-K1-Rev1"
-        cfg = k1_env_cfg(representation)
+        task = f"Cyclo-SuperMimic-{'GenCoord' if representation == 'gencoord' else 'MaxCoord'}-K1-Rev1-001"
+        cfg = make_env_cfg(representation)
         cfg.commands["motion"].sampling_mode = "external"
         rcfg = SuperMimicRunnerCfg(
             representation=representation, actor_obs=mode, history_length=history
@@ -241,3 +242,281 @@ def test_mismatched_bundle_is_rejected(tmp_path, synthetic_bundles, failure):
     with pytest.raises((ValueError, RuntimeError)):
         export_policy(tmp_path, task, tmp_path / "out")
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    "representation,mode",
+    [("gencoord", "proprio"), ("maxcoord", "proprio"),
+     ("gencoord", "rep_state"), ("maxcoord", "rep_state")],
+)
+def test_training_start_writes_deployment_configs(
+    synthetic_bundles, tmp_path, monkeypatch, representation, mode,
+):
+    import yaml
+    from source.tasks.supermimic.checkpoint import LocalBundleRunner
+    from source.tasks.supermimic.export import policy_contract
+    from supermimic.runners.supermimic_runner import SuperMimicRunner
+
+    directory, task, _ = synthetic_bundles[representation, mode]
+    bundle = load_policy_bundle(directory, task)
+    runner = object.__new__(LocalBundleRunner)
+    runner.manifest = bundle.manifest
+    runner.cfg = bundle.runner_cfg
+    runner.env = SimpleNamespace(unwrapped=SimpleNamespace(cfg=bundle.env_cfg))
+    runner.policy_learner = SimpleNamespace(actor=bundle.actor)
+    runner._representation = bundle.representation
+    runner.logger = SimpleNamespace()
+    monkeypatch.setattr(SuperMimicRunner, "_create_log_dir", lambda *args: tmp_path)
+
+    def unexpected_metadata(*args, **kwargs):
+        pytest.fail("Training YAML export must not construct ONNX metadata")
+
+    monkeypatch.setattr("source.tasks.supermimic.export.policy_contract", unexpected_metadata)
+
+    assert runner._create_log_dir() == tmp_path
+    assert not (tmp_path / "actor.pt").exists()
+    assert not (tmp_path / "world_model.pt").exists()
+    expected_files = [str(tmp_path / "manifest.json")]
+    for encoder, relative in (
+        ("motion", "params/sim2real.yaml"),
+        ("velocity", "params/velocity/sim2real.yaml"),
+    ):
+        path = tmp_path / relative
+        expected_files.append(str(path))
+        cfg = yaml.safe_load(path.read_text())
+        contract = policy_contract(bundle, encoder)
+        obs = cfg["observations"]["super_mimic"]
+        assert cfg["step_dt"] == 0.02
+        assert cfg["policy_joints"] == contract["action"]["joint_order"]
+        assert cfg["actions"]["joint_pos"]["scale"] == [
+            float(f"{value:.3g}") for value in contract["action"]["scale"]
+        ]
+        assert cfg["actions"]["joint_pos"]["offset"] == [
+            float(f"{value:.3g}") for value in contract["action"]["offset"]
+        ]
+        assert "input" not in obs
+        assert "body_order" not in obs
+        assert "history_reset" not in obs
+        assert "normalization_in_onnx" not in obs
+        assert "imu_site_quaternion_wxyz" not in obs
+        assert obs.get("default_joint_velocity", [0.] * len(cfg["policy_joints"])) == [
+            float(f"{value:.3g}") for value in contract["action"]["qdot0"]
+        ]
+        assert all(term["history_length"] == bundle.actor.history_length
+                   for term in obs["history"]["terms"].values())
+        assert obs["actor_obs"] == mode
+        if encoder == "motion":
+            assert obs["motion_goal"] == contract["observation_config"]["motion_goal"]
+            assert [list(group["terms"]) for group in obs["motion_goal"]["groups"]] == [
+                ["future_joint_pos", "future_joint_vel"], ["future_root_orientation"],
+            ]
+            assert not cfg["commands"]
+        else:
+            assert "motion_goal" not in obs
+            assert cfg["commands"]["base_velocity"]["ranges"]["lin_vel_x"] == list(
+                bundle.runner_cfg.tasks.velocity.lin_vel_x_range
+            )
+        model = Entity(bundle.env_cfg.scene.entities["robot"]).spec.compile()
+        for name, props in cfg["joint_properties"].items():
+            aid = model.actuator(name).id
+            assert props["stiffness"] == float(f"{model.actuator_gainprm[aid, 0]:.3g}")
+            assert props["damping"] == float(f"{-model.actuator_biasprm[aid, 2]:.3g}")
+    assert runner.checkpoint_extra_files(tmp_path) == expected_files
+    runner.logger.close()
+
+
+def test_observation_preprocessing_uses_resolved_training_settings(synthetic_bundles, tmp_path):
+    import yaml
+    from source.tasks.supermimic.export import policy_contract
+    from source.tasks.supermimic.export_sim2real_cfg import export_sim2real_cfg
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    bundle = load_policy_bundle(directory, task)
+    source = bundle.env_cfg.observations["actor"].terms["base_ang_vel"]
+    source.scale = (0.123456, 0.25, 0.5)
+    source.clip = (-12.3456, 12.3456)
+
+    contract = policy_contract(bundle, "motion")
+    term = contract["observation_config"]["history"]["terms"]["base_ang_vel"]
+    assert term == dict(scale=list(source.scale), clip=source.clip, history_length=10)
+
+    path = export_sim2real_cfg(
+        tmp_path, bundle.env_cfg, bundle.runner_cfg, bundle.representation,
+        bundle.action["joint_order"],
+    )
+    observation = yaml.safe_load(path.read_text())["observations"]["super_mimic"]
+    assert observation["history"]["terms"]["base_ang_vel"] == dict(
+        scale=[0.123, 0.25, 0.5], clip=[-12.3, 12.3], history_length=10,
+    )
+    assert observation["motion_goal"] == contract["observation_config"]["motion_goal"]
+
+
+def test_observation_order_must_match_native_representation(synthetic_bundles):
+    from source.tasks.supermimic.export import policy_contract
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    bundle = load_policy_bundle(directory, task)
+    group = bundle.env_cfg.observations["actor"]
+    group.terms = dict(reversed(list(group.terms.items())))
+    with pytest.raises(ValueError, match="observation order"):
+        policy_contract(bundle, "motion")
+
+
+def test_play_exports_before_simulator_and_refreshes_existing_files(
+    synthetic_bundles, tmp_path, monkeypatch,
+):
+    import shutil
+    from source.tasks.supermimic import play
+
+    source, task, _ = synthetic_bundles["gencoord", "proprio"]
+    directory = tmp_path / "checkpoint"
+    shutil.copytree(source, directory)
+    params = directory / "params" / "sim2real.yaml"
+    params.parent.mkdir()
+    params.write_text("training-owned yaml\n")
+
+    class BeforeSimulator(Exception):
+        pass
+
+    def stop_before_simulator(_):
+        raise BeforeSimulator
+
+    monkeypatch.setattr(play, "setup_device", stop_before_simulator)
+    cfg = play.PlayConfig(motion_file="unused.npz", checkpoint_dir=directory)
+    assert cfg.viewer == "viser"
+    for iteration in range(2):
+        with pytest.raises(BeforeSimulator):
+            play.play(task, cfg)
+        for relative in ("exported/policy.onnx", "exported/velocity/policy.onnx"):
+            path = directory / relative
+            metadata = json.loads((path.parent / "metadata.json").read_text())
+            assert metadata["onnx_sha256"] == sha256(path)
+            assert metadata["source_sha256"]["actor.pt"] == sha256(directory / "actor.pt")
+        assert params.read_text() == "training-owned yaml\n"
+        path = directory / "exported/policy.onnx"
+        if iteration == 0:
+            previous_hash = sha256(path)
+            state = torch.load(directory / "actor.pt", weights_only=True)
+            key = next(key for key in state if key.startswith("decoder") and key.endswith("bias"))
+            state[key] += 0.1
+            torch.save(state, directory / "actor.pt")
+        else:
+            assert sha256(path) != previous_hash
+    assert sorted(p.relative_to(directory).as_posix() for p in directory.rglob("sim2real.yaml")) == [
+        "params/sim2real.yaml"
+    ]
+
+
+def test_play_can_skip_export(synthetic_bundles, monkeypatch):
+    from source.tasks.supermimic import play, export
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    monkeypatch.setattr(export, "export_play_policies", lambda *args: pytest.fail("export called"))
+    class BeforeSimulator(Exception):
+        pass
+
+    def stop_before_simulator(_):
+        raise BeforeSimulator
+
+    monkeypatch.setattr(play, "setup_device", stop_before_simulator)
+    with pytest.raises(BeforeSimulator):
+        play.play(task, play.PlayConfig(
+            motion_file="unused.npz", checkpoint_dir=directory, export_policy=False,
+        ))
+
+
+@pytest.mark.parametrize("representation", ["gencoord", "maxcoord"])
+def test_exported_history_matches_native_observation_functions(synthetic_bundles, representation):
+    from unittest.mock import Mock
+    from mjlab.sensor import BuiltinSensor
+    from source.tasks.supermimic.export import policy_contract
+    from supermimic.representations import term_major_to_temporal
+
+    directory, task, _ = synthetic_bundles[representation, "proprio"]
+    bundle = load_policy_bundle(directory, task)
+    torch.manual_seed(121)
+    h = bundle.runner_cfg.history_length
+    n = h * 2
+    q, qd, bias = (torch.randn(n, 23) for _ in range(3))
+    q0, qd0 = torch.randn(1, 23), torch.randn(1, 23)
+    gravity, gyro, action = torch.randn(n, 3), torch.randn(n, 3), torch.randn(n, 23)
+    env = SimpleNamespace(
+        scene={
+            "robot": SimpleNamespace(data=SimpleNamespace(
+                projected_gravity_b=gravity, joint_pos=q, joint_pos_biased=q + bias,
+                default_joint_pos=q0, joint_vel=qd, default_joint_vel=qd0,
+            )),
+            "robot/imu_ang_vel": Mock(spec=BuiltinSensor, data=gyro),
+        },
+        action_manager=SimpleNamespace(action=action),
+    )
+    # Exercise the native clip-then-scale pipeline as well as distinct joint biases.
+    bundle.env_cfg.observations["actor"].terms["base_ang_vel"].clip = (-0.4, 0.4)
+    bundle.env_cfg.observations["actor"].terms["base_ang_vel"].scale = (0.1, 0.2, 0.3)
+    native = []
+    for term in bundle.env_cfg.observations["actor"].terms.values():
+        value = term.func(env, **term.params)
+        if term.clip is not None:
+            value = value.clamp(*term.clip)
+        if term.scale is not None:
+            value = value * torch.tensor(term.scale)
+        native.append(value)
+    expected = torch.cat(native, dim=-1).reshape(2, h, -1)
+
+    group = policy_contract(bundle, "motion")["observation_config"]["history"]
+    values = dict(projected_gravity=gravity, base_ang_vel=gyro, joint_pos_rel=q + bias - q0,
+                  joint_vel_rel=qd - qd0, last_action=action)
+    packed = []
+    for name, cfg in group["terms"].items():
+        value = values[name]
+        if cfg["clip"] is not None:
+            value = value.clamp(*cfg["clip"])
+        value = value * torch.tensor(cfg["scale"])
+        packed.append(value.reshape(2, h, -1).flatten(1))
+    actual = term_major_to_temporal(torch.cat(packed, -1), bundle.term_widths, h)
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("representation", ["gencoord", "maxcoord"])
+def test_exported_goal_groups_match_native_extractor(synthetic_bundles, representation):
+    from mjlab.utils.lab_api.math import matrix_from_quat
+    from source.tasks.supermimic.export import policy_contract
+
+    directory, task, _ = synthetic_bundles[representation, "proprio"]
+    bundle = load_policy_bundle(directory, task)
+    torch.manual_seed(492)
+    quaternions = torch.nn.functional.normalize(torch.randn(80, 4), dim=-1)
+    motion = SimpleNamespace(
+        joint_pos=torch.randn(80, 23), joint_vel=torch.randn(80, 23) * 4,
+        root_pos_w=torch.randn(80, 3), root_quat_w=quaternions,
+        motion_ends=torch.tensor([12, 80]),
+    )
+    # The physical cursor is one frame before native command.time_steps.
+    current = torch.tensor([0, 9, 10, 12, 77, 78])
+    root_pose = torch.cat([torch.randn(6, 3),
+                          torch.nn.functional.normalize(torch.randn(6, 4), dim=-1)], -1)
+    cfg = policy_contract(bundle, "motion")["observation_config"]["motion_goal"]
+    selected = current[:, None] + cfg["start_offset"] + torch.arange(cfg["frames"]) * cfg["stride"]
+    end = torch.where(current < 12, 11, 79)
+    selected = selected.minimum(end[:, None])
+    relative = matrix_from_quat(root_pose[:, 3:]).transpose(-1, -2)[:, None] @ matrix_from_quat(quaternions[selected])
+    values = dict(future_joint_pos=motion.joint_pos[selected],
+                  future_joint_vel=motion.joint_vel[selected],
+                  future_root_orientation=relative[..., :2].reshape(6, cfg["frames"], 6))
+    groups = []
+    for group in cfg["groups"]:
+        parts = [values[name] * torch.tensor(term["scale"]) for name, term in group["terms"].items()]
+        groups.append(torch.cat(parts, -1).flatten(1))
+    actual = torch.cat(groups, -1)
+    expected = motion_goal(bundle, motion, current + 1, root_pose)
+    torch.testing.assert_close(actual, expected, rtol=1e-6, atol=1e-6)
+
+
+def test_export_rejects_changed_observation_calculation(synthetic_bundles):
+    from source.tasks.supermimic.export import policy_contract
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    bundle = load_policy_bundle(directory, task)
+    bundle.env_cfg.observations["actor"].terms["joint_pos"].params["biased"] = False
+    with pytest.raises(ValueError, match="calculation differs"):
+        policy_contract(bundle, "motion")

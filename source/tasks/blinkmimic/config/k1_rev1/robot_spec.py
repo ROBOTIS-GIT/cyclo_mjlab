@@ -2,15 +2,6 @@
 
 import re
 
-import mujoco
-from blinkmimic.robot import RobotSpec
-
-from source.assets.robots.robotis_k1.k1_rev1 import (
-    K1_REV1_ACTION_SCALE,
-    K1_REV1_XML_PATH,
-    get_k1_rev1_cfg,
-)
-
 TRACKED_BODIES = (
     "pelvis",
     "left_hip_roll_link",
@@ -30,6 +21,8 @@ TRACKED_BODIES = (
 
 
 def robot_cfg():
+    from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+
     cfg = get_k1_rev1_cfg()
     # Task-local nominal elbow. Independent deepcopy; shared defaults stay intact.
     cfg.init_state.joint_pos[".*_elbow_joint"] = 0.6
@@ -37,6 +30,14 @@ def robot_cfg():
 
 
 def make_robot():
+    # Task registration does not need the simulator or upstream robot module.
+    import mujoco
+    from blinkmimic.robot import RobotSpec
+    from source.assets.robots.robotis_k1.k1_rev1 import (
+        K1_REV1_ACTION_SCALE,
+        K1_REV1_XML_PATH,
+    )
+
     model = mujoco.MjModel.from_xml_path(str(K1_REV1_XML_PATH))
     names = tuple(
         model.joint(i).name

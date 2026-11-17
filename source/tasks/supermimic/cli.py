@@ -4,16 +4,17 @@ import argparse
 import sys
 
 
-def main():
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(description=__doc__, add_help=False)
     parser.add_argument("command", choices=("train", "play", "convert", "smoke"))
-    if len(sys.argv) == 1 or sys.argv[1] in ("-h", "--help"):
+    if not argv or argv[0] in ("-h", "--help"):
         parser.print_help()
         return
-    args, remaining = parser.parse_known_args()
+    args, remaining = parser.parse_known_args(argv)
     if args.command == "convert":
         from .motion import convert_motion, model_joint_names
-        from .tasks import get_k1_rev1_cfg
+        from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
 
         p = argparse.ArgumentParser()
         p.add_argument("input")
@@ -31,10 +32,11 @@ def main():
 
         smoke_main(remaining)
         return
-    from .tasks import TASKS, register_tasks
+    from .config import TASKS, register_tasks
 
     if not remaining or remaining[0] not in TASKS:
         parser.error("Pass a Cyclo task ID: " + ", ".join(TASKS))
+    register_tasks()
     # Tyro accepts both hyphen and underscore spellings and uses the last
     # repeated scalar option. Reject duplicates before rewriting any path so
     # an unvalidated trailing option cannot bypass the adapter.
@@ -44,14 +46,27 @@ def main():
             for i, value in enumerate(remaining)
             if value.split("=", 1)[0].replace("_", "-") == "--motion-file"
         ]
-        if len(motion_options) != 1:
+        if len(motion_options) > 1:
             parser.error(
-                "K1 train/play requires exactly one --motion-file option pointing to a 50 Hz K1 reference; use a comma list or glob for multiple clips"
+                "Use at most one --motion-file option; use a comma list or glob for multiple clips"
             )
         from . import REPO_ROOT
         from .motion import prepare_motion_files
-        from .robot import get_k1_rev1_cfg
+        from source.utils.motion_paths import resolve_motion_files
 
+        from mjlab.tasks.registry import load_env_cfg
+
+        env_cfg = load_env_cfg(remaining[0])
+        if not motion_options:
+            try:
+                motion_paths = env_cfg.commands["motion"].motion_file
+                if isinstance(motion_paths, str):
+                    motion_paths = (motion_paths,)
+                source = ",".join(str(path) for path in resolve_motion_files(motion_paths))
+            except ValueError as error:
+                parser.error(str(error))
+            motion_options = [len(remaining)]
+            remaining.extend(["--motion-file", source])
         motion_index = motion_options[0]
         inline = "=" in remaining[motion_index]
         if not inline and motion_index + 1 >= len(remaining):
@@ -64,7 +79,7 @@ def main():
         try:
             prepared = prepare_motion_files(
                 source,
-                get_k1_rev1_cfg().spec_fn().compile(),
+                env_cfg.scene.entities["robot"].spec_fn().compile(),
                 REPO_ROOT / ".supermimic-data" / "adapter",
             )
         except ValueError as error:
@@ -77,13 +92,11 @@ def main():
         print(
             f"[INFO] Validated 50 Hz reference {source}; internal SuperMimic loader data: {prepared}"
         )
-    register_tasks()
-    sys.argv = [sys.argv[0], *remaining]
     if args.command == "train":
         from .train import main as upstream_main
     else:
         from .play import main as upstream_main
-    upstream_main()
+    upstream_main(remaining)
 
 
 if __name__ == "__main__":
