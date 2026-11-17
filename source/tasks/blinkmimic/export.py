@@ -8,7 +8,9 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from .runtime import VENDOR, prepare
+from source.learning.export_notices import write_software_notices
+
+from .runtime import ROOT, VENDOR, prepare
 
 
 def sha256(path):
@@ -215,6 +217,22 @@ def export_policy(checkpoint_path, output_dir, robot):
     metadata = contract(wrapper, checkpoint, robot)
     metadata["checkpoint_sha256"] = sha256(checkpoint_path)
     output_dir.mkdir(parents=True, exist_ok=False)
+    metadata["software_notices"] = write_software_notices(
+        output_dir,
+        "Cyclo MJLab policy-only ONNX export\n"
+        "Cyclo shape adapter: Copyright 2026 ROBOTIS CO., LTD. (Apache-2.0).\n"
+        "https://github.com/ROBOTIS-GIT/cyclo_mjlab\n"
+        "Original Policy: Fuyi Chen's BlinkMimic (MIT), https://github.com/fuyichen0725/blinkmimic\n"
+        "Original MIT text and InstantTrack/supermimic_vibed notices are retained in licenses/.\n"
+        "Only the input shape is adapted; Policy math and frozen normalization are retained.\n"
+        "Keep this notice and licenses/ with the exported graph when redistributing the bundle.\n"
+        "These software notices do not establish redistribution rights for learned weights or training data.\n",
+        {
+            "Apache-2.0.txt": ROOT / "LICENSE",
+            "BlinkMimic-MIT.txt": VENDOR / "LICENSE",
+            "BlinkMimic-THIRD_PARTY_NOTICES.md": VENDOR / "THIRD_PARTY_NOTICES.md",
+        },
+    )
     path = output_dir / "policy.onnx"
     with torch.no_grad():
         torch.onnx.export(

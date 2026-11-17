@@ -23,6 +23,8 @@ from supermimic.runners.exporter import _export_module, _SingleEncoderOnnx
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 from supermimic.tasks.task_spec import resolve_task_specs
 
+from source.learning.export_notices import distribution_license, write_software_notices
+
 from . import REPO_ROOT
 from .checkpoint import json_value, read_bundle
 from .tasks import TASKS, k1_env_cfg, register_tasks
@@ -332,6 +334,25 @@ def export_policy(directory, task, output_dir, *, encoder="motion"):
         REPO_ROOT / "third_party/supermimic/src/supermimic/runners/exporter.py"
     )
     output_dir.mkdir(parents=True, exist_ok=False)
+    metadata["software_notices"] = write_software_notices(
+        output_dir,
+        "Cyclo MJLab policy-only ONNX export\n"
+        "Cyclo adapter: Copyright 2026 ROBOTIS CO., LTD. (Apache-2.0).\n"
+        "https://github.com/ROBOTIS-GIT/cyclo_mjlab\n"
+        "SuperMimic policy/encoder slice: Copyright 2026 The SuperMimic Authors (Apache-2.0).\n"
+        "Official source: https://github.com/HybridRobotics/supermimic\n"
+        "Shared source: https://github.com/ROBOTIS-GIT/supermimic\n"
+        "The graph retains the selected encoder, frozen normalizers and decoder; motion tables are omitted.\n"
+        "RSL-RL EmpiricalNormalization (BSD-3-Clause):\n"
+        "Copyright (c) 2021-2026, ETH Zurich and NVIDIA CORPORATION\n"
+        "Copyright (c) 2020 Preferred Networks, Inc.\n"
+        "Keep this notice and licenses/ with the exported graph when redistributing the bundle.\n"
+        "These software notices do not establish redistribution rights for learned weights or training data.\n",
+        {
+            "Apache-2.0.txt": REPO_ROOT / "third_party/supermimic/LICENSE",
+            "RSL-RL-BSD-3-Clause.txt": distribution_license("rsl-rl-lib"),
+        },
+    )
     path = _export_module(
         wrapper,
         (torch.zeros(1, wrapper.input_size),),

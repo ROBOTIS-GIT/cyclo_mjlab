@@ -227,7 +227,10 @@ python -m source.tasks.blinkmimic.export --checkpoint /path/to/ckpt_003500.pt \
   --output-dir /path/to/another-new-export
 ```
 
-The output directory must be new. It receives `policy.onnx` and `metadata.json`.
+The output directory must be new. It receives `policy.onnx`, `metadata.json`,
+`NOTICE.txt` and `licenses/`. The original BlinkMimic MIT text and upstream
+third-party notices are copied unchanged, alongside the Cyclo Apache-2.0 text.
+Keep these files with redistributed export bundles; metadata records their hashes.
 The graph takes `observations: float32[batch, history*obs_dim + goal_dim]` and
 returns only `actions: float32[batch, num_joints]`, with a dynamic batch axis.
 The released K1 recipe uses 1420 inputs and 23 outputs as detailed above; other
