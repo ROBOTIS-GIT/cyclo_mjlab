@@ -8,7 +8,10 @@ import torch
 
 from source.tasks.blinkmimic import cli
 from source.tasks.blinkmimic.runtime import prepare
-from source.tasks.blinkmimic.resume import allow_model_only_resume
+from source.tasks.blinkmimic.resume import (
+    allow_model_only_resume,
+    initialize_world_model,
+)
 
 
 def library(path, clips):
@@ -71,6 +74,45 @@ def test_sampler_follows_clip_identity_on_native_load(tmp_path):
             torch.load(path, weights_only=True)
 
 
+def test_world_model_only_initialization(tmp_path):
+    prepare()
+    from blinkmimic.networks import WorldModel
+
+    torch.manual_seed(87)
+    original = WorldModel(2, 3, hidden=(8,), structured=True)
+    original.in_norm.mean.fill_(4)
+    path = tmp_path / "model_1000.pt"
+    torch.save(
+        dict(
+            args=dict(robot="k1", wm_structured=True), wm=original.state_dict()
+        ),
+        path,
+    )
+
+    def fresh_models():
+        torch.manual_seed(13)
+        return WorldModel(2, 3, hidden=(8,), structured=True), torch.nn.Linear(
+            2, 2
+        )
+
+    _, expected_actor = fresh_models()
+    with initialize_world_model(path, "k1"):
+        model, actor = fresh_models()
+        assert callable(WorldModel.increments)
+        assert not torch.optim.Adam(model.parameters()).state
+    for key, value in original.state_dict().items():
+        assert torch.equal(value, model.state_dict()[key])
+    assert torch.equal(actor.weight, expected_actor.weight)
+    fresh, _ = fresh_models()
+    assert not torch.equal(fresh.net[0].weight, model.net[0].weight)
+    with pytest.raises(ValueError, match="representation"):
+        with initialize_world_model(path, "k1"):
+            WorldModel(2, 3, hidden=(8,), structured=False)
+    with pytest.raises(ValueError, match="robot"):
+        with initialize_world_model(path, "other"):
+            pass
+
+
 @pytest.mark.parametrize("cross_task", [False, True])
 def test_resume_prepares_target_registered_motions(
     tmp_path, monkeypatch, cross_task
@@ -128,3 +170,15 @@ def test_resume_prepares_target_registered_motions(
     assert args.motion_dir == tmp_path / "out" / "motions"
     assert flags[flags.index("--resume-source-library") + 1] == str(motions)
     assert ("--allow-removed-clips" in flags) == cross_task
+    with pytest.raises(SystemExit):
+        cli.parse_arguments(
+            cli.create_parser(),
+            "train",
+            [
+                dst,
+                "--agent.resume",
+                "True",
+                "--world-model-checkpoint",
+                str(path),
+            ],
+        )
