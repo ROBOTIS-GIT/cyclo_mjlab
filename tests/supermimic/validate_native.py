@@ -272,7 +272,7 @@ def main():
         )
         assert any(not torch.equal(p, old) for p, old in wm_muon)
         assert any(not torch.equal(p, old) for p, old in actor_muon)
-        bundle = max((output / "logs" / task).iterdir(), key=lambda p: p.name)
+        bundle = max((output / "logs" / "supermimic" / task).iterdir(), key=lambda p: p.name)
         equal_tree(
             torch.load(bundle / "world_model.pt", weights_only=True),
             runner._wm.bundle(),

@@ -227,7 +227,7 @@ def test_training_launcher_forwards_resume_and_saved_arguments(
     from source.tasks.blinkmimic import cli, runtime
 
     task = "Cyclo-BlinkMimic-K1-Rev1-001"
-    run = tmp_path / "logs" / task / "old"
+    run = tmp_path / "logs" / "blinkmimic" / task / "old"
     motions = run / "motions"
     motions.mkdir(parents=True)
     (motions / "manifest.json").write_text("{}")

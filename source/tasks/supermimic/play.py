@@ -18,6 +18,7 @@ from supermimic.runners.supermimic_runner import build_actor, build_world_model
 from supermimic.scripts.train_utils import create_env, setup_device
 from supermimic.tasks.task_spec import build_actor_obs_td
 
+from . import LOG_ROOT
 from .checkpoint_config import read_bundle
 from .checkpoint_archive import load_checkpoint
 
@@ -133,7 +134,7 @@ def resolve_playback_checkpoint(task, cfg):
         and cfg.checkpoint_dir is None
         and cfg.wandb_path is None
     ):
-        directory = latest_checkpoint_directory(Path("logs"), task)
+        directory = latest_checkpoint_directory(LOG_ROOT, task)
         cfg = replace(cfg, checkpoint_dir=directory)
         print(f"[INFO] Selected checkpoint directory: {directory}")
     if cfg.num_steps_rollout < 1:

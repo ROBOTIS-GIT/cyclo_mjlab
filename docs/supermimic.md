@@ -133,7 +133,7 @@ such as timestep 0.0025 with decimation 8, are accepted; references are not resa
 Swap `GenCoord` for `MaxCoord` to use body-space dynamics. The native launcher
 defaults the representation from the task ID and rejects conflicting explicit
 representation overrides before device/environment setup. It exposes nested runner/WM/
-policy settings through tyro, and writes `logs/<task>/<timestamp>/` relative
+policy settings through tyro, and writes `logs/supermimic/<task>/<timestamp>/` relative
 to the working directory. Training defaults to `--runner.actor-obs proprio
 --runner.history-length 10` (sensor inputs, newest frame last). For privileged
 state training, explicitly pass `--runner.actor-obs rep_state
@@ -154,13 +154,13 @@ Play directly from that directory, without syncing or uploading:
 python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
-  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> \
+  --checkpoint-dir logs/supermimic/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> \
   --viewer viser
 ```
 
 For bounded local validation, select `--viewer headless --device cpu
 --num-steps-rollout 4`. Native and Viser viewers remain available. When neither checkpoint option is supplied, play selects the latest saved bundle
-under `logs/<task>/<timestamp>/`, skipping runs without saved weights. Explicit
+under `logs/supermimic/<task>/<timestamp>/`, skipping runs without saved weights. Explicit
 `--checkpoint-dir` or `--wandb-path ENTITY/PROJECT/RUN` overrides this selection;
 W&B access is explicit,
 downloads a bundle, and applies the same validation. Older bundles lacking the

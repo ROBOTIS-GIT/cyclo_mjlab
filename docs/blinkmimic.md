@@ -147,8 +147,8 @@ python scripts/reinforcement_learning/train.py Cyclo-BlinkMimic-K1-Rev1-001
 python scripts/reinforcement_learning/play.py Cyclo-BlinkMimic-K1-Rev1-001
 ```
 
-Training defaults to `logs/<task>/<YYYY-MM-DD_HH-MM-SS>/`; `--run-dir` overrides
-that location. Play searches saved runs under `logs/<task>/` for the selected
+Training defaults to `logs/blinkmimic/<task>/<YYYY-MM-DD_HH-MM-SS>/`; `--run-dir` overrides
+that location. Play searches saved runs under `logs/blinkmimic/<task>/` for the selected
 task. Explicit `--checkpoint` and `--checkpoint-dir` remain available. Use `--viewer headless` for the official all-clip evaluator.
 
 Extra upstream flags use their original underscore spelling. Every explicit
