@@ -14,7 +14,9 @@
 #
 # Author: Kiwoong Park
 
-"""Bridge the upstream trainer's synchronous save calls in its isolated process."""
+"""
+Bridge the upstream trainer's synchronous save calls in its isolated process.
+"""
 
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -31,11 +33,14 @@ class _SavedCritic:
 
 @contextmanager
 def include_critic_in_snapshots():
-    """Bridge last.pt -> snapshot saves in the isolated, synchronous trainer.
+    """
+    Bridge last.pt -> snapshot saves in the isolated, synchronous trainer.
 
-    Upstream has no checkpoint callback. Restrict interception to its save paths;
+    Upstream has no checkpoint callback. Restrict interception to its save
+    paths;
     reject mismatched iterations and restore torch.save even if training fails.
-    The worker rejects asynchronous --ckpt_light saves before entering this scope.
+    The worker rejects asynchronous --ckpt_light saves before entering this
+    scope.
     """
     import torch
 
@@ -45,14 +50,23 @@ def include_critic_in_snapshots():
     def save(value, file, *args, **kwargs):
         nonlocal latest
         path = Path(file) if isinstance(file, (str, Path)) else None
-        if path is not None and re.fullmatch(r"ckpt_[0-9]+\.pt\.tmp", path.name):
-            if (latest is None or latest.directory != path.parent
-                    or latest.iteration != value.get("iteration")):
-                raise RuntimeError("BlinkMimic snapshot has no matching latest critic")
+        if path is not None and re.fullmatch(
+            r"ckpt_[0-9]+\.pt\.tmp", path.name
+        ):
+            if (
+                latest is None
+                or latest.directory != path.parent
+                or latest.iteration != value.get("iteration")
+            ):
+                raise RuntimeError(
+                    "BlinkMimic snapshot has no matching latest critic"
+                )
             value = dict(value, critic=latest.state)
         result = original_save(value, file, *args, **kwargs)
         if path is not None and path.name == "last.pt.tmp":
-            latest = _SavedCritic(path.parent, value["iteration"], value["critic"])
+            latest = _SavedCritic(
+                path.parent, value["iteration"], value["critic"]
+            )
         return result
 
     torch.save = save

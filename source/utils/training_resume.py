@@ -36,12 +36,26 @@ def _boolean(value):
 
 
 def add_resume_arguments(parser):
-    parser.add_argument("--agent.resume", dest="resume", type=_boolean, default=False, metavar="{True,False}",
-                        help="Resume saved models and available optimizer state in a new run")
-    parser.add_argument("--agent.load-run", dest="load_run", default=".*",
-                        help="Run directory or regex under logs/<task>")
-    parser.add_argument("--agent.load-checkpoint", dest="load_checkpoint", default="last.pt",
-                        help="Checkpoint path or filename regex (default: last.pt)")
+    parser.add_argument(
+        "--agent.resume",
+        dest="resume",
+        type=_boolean,
+        default=False,
+        metavar="{True,False}",
+        help="Resume saved models and available optimizer state in a new run",
+    )
+    parser.add_argument(
+        "--agent.load-run",
+        dest="load_run",
+        default=".*",
+        help="Run directory or regex under logs/<task>",
+    )
+    parser.add_argument(
+        "--agent.load-checkpoint",
+        dest="load_checkpoint",
+        default="last.pt",
+        help="Checkpoint path or filename regex (default: last.pt)",
+    )
 
 
 def parse_resume_options(arguments):
@@ -70,17 +84,31 @@ def select_resume_checkpoint(log_root, options):
         runs = [explicit]
     else:
         pattern = re.compile(options.load_run)
-        runs = sorted((p for p in root.glob("*")
-                       if p.is_dir() and pattern.match(p.name)), reverse=True)
+        runs = sorted(
+            (
+                p
+                for p in root.glob("*")
+                if p.is_dir() and pattern.match(p.name)
+            ),
+            reverse=True,
+        )
     pattern = re.compile(options.load_checkpoint)
     for run in runs:
         exact = run / checkpoint
         if exact.is_file():
             return exact.resolve()
-        candidates = [p for directory in (run, run / "checkpoints")
-                      for p in directory.glob("*.pt") if pattern.fullmatch(p.name)]
+        candidates = [
+            p
+            for directory in (run, run / "checkpoints")
+            for p in directory.glob("*.pt")
+            if pattern.fullmatch(p.name)
+        ]
         if candidates:
             # model_10000.pt must sort after model_9000.pt.
-            return max(candidates, key=lambda p: (len(p.stem), p.name)).resolve()
-    raise ValueError(f"No resume checkpoint {options.load_checkpoint!r} in "
-                     f"{root} (run={options.load_run!r})")
+            return max(
+                candidates, key=lambda p: (len(p.stem), p.name)
+            ).resolve()
+    raise ValueError(
+        f"No resume checkpoint {options.load_checkpoint!r} in "
+        f"{root} (run={options.load_run!r})"
+    )

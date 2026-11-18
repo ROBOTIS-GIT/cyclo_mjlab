@@ -14,7 +14,9 @@
 #
 # Author: Kiwoong Park
 
-"""Versioned local inference bundles; never deserialize Python configuration code."""
+"""
+Versioned local inference bundles; never deserialize Python configuration code.
+"""
 
 import copy
 import dataclasses
@@ -47,9 +49,10 @@ def validate_control_rate(env_cfg):
         or not math.isclose(step_dt, 0.02, rel_tol=0, abs_tol=1e-12)
     ):
         raise ValueError(
-            "50 Hz K1 references require env.sim.mujoco.timestep * env.decimation "
-            f"== 0.02 seconds; got {timestep} * {decimation} = {step_dt}. "
-            "Use compensating overrides that keep the control rate at 50 Hz."
+            "50 Hz K1 references require env.sim.mujoco.timestep *"
+            f" env.decimation == 0.02 seconds; got {timestep} * {decimation} ="
+            f" {step_dt}. Use compensating overrides that keep the control"
+            " rate at 50 Hz."
         )
 
 
@@ -85,7 +88,9 @@ def json_value(value):
         return str(value)
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
-    raise ValueError(f"Unsupported configuration value: {type(value).__name__}")
+    raise ValueError(
+        f"Unsupported configuration value: {type(value).__name__}"
+    )
 
 
 def environment_options(arguments):
@@ -122,16 +127,20 @@ def robot_contract(cfg):
     action = cfg.actions["joint_pos"]
     if action.entity_name != "robot" or action.clip is not None:
         raise ValueError(
-            "SuperMimic requires robot joint-position actions without target clipping"
+            "SuperMimic requires robot joint-position actions without target"
+            " clipping"
         )
     entity = Entity(cfg.scene.entities["robot"])
     model = entity.spec.compile()
-    _, action_names = entity.find_joints_by_actuator_names(action.actuator_names)
+    _, action_names = entity.find_joints_by_actuator_names(
+        action.actuator_names
+    )
     names = list(model_joint_names(model))
     if action_names != names:
         raise ValueError(
-            "SuperMimic action joint order must exactly match all native representation "
-            "joints; reordering and subselection are unsupported"
+            "SuperMimic action joint order must exactly match all native"
+            " representation joints; reordering and subselection are"
+            " unsupported"
         )
     physical = hashlib.sha256()
     for attribute in (
@@ -160,7 +169,9 @@ def robot_contract(cfg):
         physical.update(np.asarray(getattr(model, attribute)).tobytes())
     return {
         "name": "K1-Rev1",
-        "xml_sha256": hashlib.sha256(K1_REV1_XML_PATH.read_bytes()).hexdigest(),
+        "xml_sha256": (
+            hashlib.sha256(K1_REV1_XML_PATH.read_bytes()).hexdigest()
+        ),
         "joint_order": names,
         "action_joint_order": action_names,
         "physical_model_sha256": physical.hexdigest(),
@@ -187,7 +198,9 @@ def validate_manifest(manifest, task):
     if manifest.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported local checkpoint manifest version")
     if task not in TASKS or manifest.get("task_id") != task:
-        raise ValueError("Checkpoint task identity does not match the selected K1 task")
+        raise ValueError(
+            "Checkpoint task identity does not match the selected K1 task"
+        )
     rcfg = load_runner_cfg(manifest)
     check_representation_matches(task, rcfg.representation)
     if (
@@ -196,18 +209,29 @@ def validate_manifest(manifest, task):
         or rcfg.actor_obs not in ("rep_state", "proprio")
     ):
         raise ValueError(
-            "Checkpoint representation/actor observation contract is inconsistent"
+            "Checkpoint representation/actor observation contract is"
+            " inconsistent"
         )
     options = manifest.get("environment_options")
-    if not isinstance(options, list) or not all(isinstance(v, str) for v in options):
+    if not isinstance(options, list) or not all(
+        isinstance(v, str) for v in options
+    ):
         raise ValueError("Invalid environment override list")
     if environment_options(options) != options:
-        raise ValueError("Checkpoint permits only declarative --env.* overrides")
+        raise ValueError(
+            "Checkpoint permits only declarative --env.* overrides"
+        )
     defaults = load_env_cfg(task)
     cfg = tyro.cli(
         type(defaults),
-        args=["--" + token[len("--env."):] if token.startswith("--env.") else token
-              for token in options],
+        args=[
+            (
+                "--" + token[len("--env."):]
+                if token.startswith("--env.")
+                else token
+            )
+            for token in options
+        ],
         default=defaults,
         config=mjlab.TYRO_FLAGS,
     )
@@ -217,11 +241,13 @@ def validate_manifest(manifest, task):
     validate_control_rate(cfg)
     if environment_contract(cfg) != manifest.get("environment"):
         raise ValueError(
-            "Checkpoint environment differs from this checkout or saved overrides"
+            "Checkpoint environment differs from this checkout or saved"
+            " overrides"
         )
     if robot_contract(cfg) != manifest.get("robot"):
         raise ValueError(
-            "Checkpoint robot/action/joint-order contract differs from this checkout"
+            "Checkpoint robot/action/joint-order contract differs from this"
+            " checkout"
         )
     cfg.scene.num_envs = 1
     return cfg, rcfg

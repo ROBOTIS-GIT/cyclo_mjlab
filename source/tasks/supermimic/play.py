@@ -1,7 +1,9 @@
 # Copyright 2026 The SuperMimic Authors.
 # SPDX-License-Identifier: Apache-2.0
 # Adapted for Cyclo: local validated bundles and bounded headless playback.
-"""Local K1 bundle playback with the official actor and optional W&B playback."""
+"""
+Local K1 bundle playback with the official actor and optional W&B playback.
+"""
 
 import copy
 import json
@@ -45,7 +47,9 @@ def load_models(directory, rcfg, env, device):
 
 
 def headless_play(env, wm, actor, steps, task="motion"):
-    """Actual native simulator playback, including actor-history reset boundaries."""
+    """
+    Actual native simulator playback, including actor-history reset boundaries.
+    """
     actor.set_slot_mix({task: 1.0})
     obs, _ = env.reset()
     history = None
@@ -58,9 +62,11 @@ def headless_play(env, wm, actor, steps, task="motion"):
                 rep,
                 wm.sim_context.read(env.unwrapped),
                 aux_state=aux,
-                sim_actor_obs=obs["actor"]
-                if wm.representation.actor_obs_mode == "proprio"
-                else None,
+                sim_actor_obs=(
+                    obs["actor"]
+                    if wm.representation.actor_obs_mode == "proprio"
+                    else None
+                ),
             )
             history = (
                 sensor.unsqueeze(1).repeat(1, actor.history_length, 1)
@@ -79,16 +85,24 @@ def headless_play(env, wm, actor, steps, task="motion"):
                 raise ValueError("Checkpoint produced nonfinite actions")
             obs, _, dones, _ = env.step(action)
             if dones.any():
-                # Playback is single-environment; reset padding matches collection.
+                # Playback is single-environment; reset padding matches
+                # collection.
                 history = None
-    print(f"PASS local playback: {steps} native simulator steps, finite actions")
+    print(
+        f"PASS local playback: {steps} native simulator steps, finite actions"
+    )
 
 
 def latest_checkpoint_directory(log_root, task):
-    """Find the latest saved run, skipping runs that have no complete bundle yet."""
+    """
+    Find the latest saved run, skipping runs that have no complete bundle yet.
+    """
     for directory in sorted((log_root / task).glob("*"), reverse=True):
-        required_files = (("manifest.json", "last.pt") if (directory / "last.pt").is_file()
-                          else ("manifest.json", "actor.pt", "world_model.pt"))
+        required_files = (
+            ("manifest.json", "last.pt")
+            if (directory / "last.pt").is_file()
+            else ("manifest.json", "actor.pt", "world_model.pt")
+        )
         if not all((directory / name).is_file() for name in required_files):
             continue
         try:
@@ -104,9 +118,21 @@ def latest_checkpoint_directory(log_root, task):
 
 
 def resolve_playback_checkpoint(task, cfg):
-    if sum(value is not None for value in (cfg.checkpoint, cfg.checkpoint_dir, cfg.wandb_path)) > 1:
-        raise ValueError("Choose only one --checkpoint, --checkpoint-dir or --wandb-path")
-    if cfg.checkpoint is None and cfg.checkpoint_dir is None and cfg.wandb_path is None:
+    if (
+        sum(
+            value is not None
+            for value in (cfg.checkpoint, cfg.checkpoint_dir, cfg.wandb_path)
+        )
+        > 1
+    ):
+        raise ValueError(
+            "Choose only one --checkpoint, --checkpoint-dir or --wandb-path"
+        )
+    if (
+        cfg.checkpoint is None
+        and cfg.checkpoint_dir is None
+        and cfg.wandb_path is None
+    ):
         directory = latest_checkpoint_directory(Path("logs"), task)
         cfg = replace(cfg, checkpoint_dir=directory)
         print(f"[INFO] Selected checkpoint directory: {directory}")
@@ -118,7 +144,9 @@ def resolve_playback_checkpoint(task, cfg):
 
         directory = download_model_dir(wandb.Api().run(cfg.wandb_path))
         return load_checkpoint(directory)
-    return load_checkpoint(cfg.checkpoint if cfg.checkpoint is not None else cfg.checkpoint_dir)
+    return load_checkpoint(
+        cfg.checkpoint if cfg.checkpoint is not None else cfg.checkpoint_dir
+    )
 
 
 def run_interactive_playback(env, wm, actor, cfg):
@@ -163,7 +191,9 @@ def run_interactive_playback(env, wm, actor, cfg):
 
 
 def playback_environment(training_cfg, task, motion_file):
-    """Apply play reset/timing settings after validating the saved training setup."""
+    """
+    Apply play reset/timing settings after validating the saved training setup.
+    """
     from mjlab.tasks.registry import load_env_cfg
 
     defaults = load_env_cfg(task, play=True)
@@ -193,7 +223,9 @@ def play(task, cfg):
     try:
         wm, actor = load_models(checkpoint, rcfg, env, device)
         if cfg.viewer == "headless":
-            headless_play(env, wm, actor, cfg.num_steps_rollout, cfg.initial_task)
+            headless_play(
+                env, wm, actor, cfg.num_steps_rollout, cfg.initial_task
+            )
         else:
             run_interactive_playback(env, wm, actor, cfg)
     finally:

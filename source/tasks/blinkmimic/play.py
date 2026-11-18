@@ -14,7 +14,9 @@
 #
 # Author: Kiwoong Park
 
-"""Interactive playback using the original Blink policy and tracking simulator."""
+"""
+Interactive playback using the original Blink policy and tracking simulator.
+"""
 
 import argparse
 from pathlib import Path
@@ -36,18 +38,36 @@ class BlinkMimicPlayback:
         from blinkmimic.mdp import MDP
         from .export import load_policy
         from .motion import ExactMotionLib
-        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+
+        checkpoint = torch.load(
+            checkpoint_path, map_location="cpu", weights_only=True
+        )
         self.policy = load_policy(checkpoint, robot).policy.to(device).eval()
         networks.AMP_DTYPE = (
-            torch.bfloat16 if checkpoint["args"].get("amp", "none") == "bf16" else None
+            torch.bfloat16
+            if checkpoint["args"].get("amp", "none") == "bf16"
+            else None
         )
         self.future_frames = checkpoint["args"]["goal_frames"]
         kin = Kinematics(robot, device)
         self.motion = ExactMotionLib.from_dir(motion_dir, robot, kin, device)
-        mdp = MDP(kin, self.motion, torch.tensor(robot.default_joint_pos_list(), device=device),
-                  XiLayout(robot, device).dim, robot.sensing)
-        self.env = TrackingSim(make_sim(robot), 1, robot, self.motion, mdp, device,
-                               eval_mode=True, randomize=False)
+        mdp = MDP(
+            kin,
+            self.motion,
+            torch.tensor(robot.default_joint_pos_list(), device=device),
+            XiLayout(robot, device).dim,
+            robot.sensing,
+        )
+        self.env = TrackingSim(
+            make_sim(robot),
+            1,
+            robot,
+            self.motion,
+            mdp,
+            device,
+            eval_mode=True,
+            randomize=False,
+        )
         self.clip_index = 0
         self.history = None
         self.is_finished = False
@@ -79,10 +99,13 @@ class BlinkMimicPlayback:
             self.select_motion(self.clip_index)
         observation = self.env.observe().unsqueeze(1)
         self.history = (
-            observation.repeat(1, self.policy.hist, 1) if self.history is None
+            observation.repeat(1, self.policy.hist, 1)
+            if self.history is None
             else torch.cat((self.history[:, 1:], observation), dim=1)
         )
-        action = self.policy(self.history, self.motion.goal(self.env.f, self.future_frames))
+        action = self.policy(
+            self.history, self.motion.goal(self.env.f, self.future_frames)
+        )
         if not torch.isfinite(action).all():
             raise ValueError("Checkpoint produced nonfinite actions")
         self.env.step(action)
@@ -107,14 +130,21 @@ def main(argv=None, *, robot=None):
         prepare()
         robot = TASKS[args.task].robot_factory()
 
-    path = export_policy(args.checkpoint, args.checkpoint.parent, robot, overwrite=True)
+    path = export_policy(
+        args.checkpoint, args.checkpoint.parent, robot, overwrite=True
+    )
     print(f"[INFO] Exported policy: {path}", flush=True)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.manual_seed(0)
     playback = BlinkMimicPlayback(args.checkpoint, args.motion_dir, robot)
     from .viewer import run_viewer
 
-    run_viewer(playback, args.checkpoint.name, port=args.port, num_steps=args.num_steps)
+    run_viewer(
+        playback,
+        args.checkpoint.name,
+        port=args.port,
+        num_steps=args.num_steps,
+    )
 
 
 if __name__ == "__main__":

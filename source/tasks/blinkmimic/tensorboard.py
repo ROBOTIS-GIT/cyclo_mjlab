@@ -24,7 +24,6 @@ from pathlib import Path
 
 from torch.utils.tensorboard import SummaryWriter
 
-
 SCALAR_TAGS = {
     "sim_rew": "Train/mean_reward",
     "ep_len": "Train/mean_episode_length",
@@ -51,12 +50,17 @@ class BlinkMimicTensorBoard:
     def __init__(self, run_dir):
         self.run_dir = Path(run_dir)
         self.writer = SummaryWriter(log_dir=str(self.run_dir), flush_secs=10)
-        self.writer.add_text("Metrics/reward_definition",
-            "Train/mean_reward is BlinkMimic's normalized mean reward per simulation step "
-            "(sim_rew), not BeyondMimic's mean episode return. "
-            "Episode return cannot be reconstructed exactly from the aggregated CSV.")
+        self.writer.add_text(
+            "Metrics/reward_definition",
+            "Train/mean_reward is BlinkMimic's normalized mean reward per"
+            " simulation step (sim_rew), not BeyondMimic's mean episode"
+            " return. Episode return cannot be reconstructed exactly from the"
+            " aggregated CSV.",
+        )
         record = json.loads((self.run_dir / "run-record.json").read_text())
-        self.started_at = datetime.datetime.fromisoformat(record["started_at"]).timestamp()
+        self.started_at = datetime.datetime.fromisoformat(
+            record["started_at"]
+        ).timestamp()
         self.offset = 0
         self.fields = None
         self.last_iteration = -1
@@ -82,8 +86,12 @@ class BlinkMimicTensorBoard:
                     continue
                 walltime = self.started_at + float(row["wall_h"]) * 3600
                 for column, tag in SCALAR_TAGS.items():
-                    if column in row and math.isfinite(value := float(row[column])):
-                        self.writer.add_scalar(tag, value, iteration, walltime=walltime)
+                    if column in row and math.isfinite(
+                        value := float(row[column])
+                    ):
+                        self.writer.add_scalar(
+                            tag, value, iteration, walltime=walltime
+                        )
                 self.last_iteration = iteration
         self.writer.flush()
 
