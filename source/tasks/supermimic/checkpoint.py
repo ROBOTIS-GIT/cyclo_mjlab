@@ -83,7 +83,7 @@ class LocalBundleRunner(SuperMimicRunner):
         validate_policy_config(cfg, self.cfg, self.manifest["task_id"])
         names = self.manifest["robot"]["joint_order"]
         self._deployment_files = []
-        for spec in self.policy_learner.actor.task_specs:
+        for spec in self._active_task_specs:
             path = export_sim2real_cfg(
                 directory,
                 cfg,
