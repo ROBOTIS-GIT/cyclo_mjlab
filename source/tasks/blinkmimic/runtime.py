@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 VENDOR = ROOT / "third_party/blinkmimic"
+UPSTREAM_REVISION = "d264658d6c9ce61fb52f9f0f8985a369f3ccc409"
 
 
 def prepare():

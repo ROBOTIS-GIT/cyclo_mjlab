@@ -14,16 +14,18 @@ task configurations, asset defaults and shared-core revision remain unchanged.
   this task always starts with the released BlinkMimic preset.
 
 The algorithm follows the SuperMimic collection → learned dynamics → BPTT
-training pattern. The code provenance is separate: this task vendors Fuyi Chen’s
+training pattern. The code provenance is separate: this task uses Fuyi Chen’s
 MIT BlinkMimic implementation, derived from the MIT InstantTrack and
 `supermimic_vibed` implementations. Cyclo’s existing SuperMimic task uses the
 Apache-licensed HybridRobotics/ROBOTIS shared core with its own BSD math notices.
 They belong to the same algorithm family, but are not the same codebase or
 license lineage. This task does not import the shared SuperMimic learner.
 
-The official implementation is vendored with MIT LICENSE, all inherited notices,
-original source hashes and one explicit change in `UPSTREAM.json`: contact feet
-are recognized by body names, allowing K1 to use the same contact reward.
+The [ROBOTIS BlinkMimic fork](https://github.com/ROBOTIS-GIT/blinkmimic) is pinned
+as a submodule with its original MIT license and inherited notices. Its sole
+source change recognizes contact feet by body name
+so K1 can use the same reward. Initialize the dependency with
+`git submodule update --init third_party/blinkmimic`.
 The remaining upstream Python source files retain their original bytes.
 
 ## Applied recipe
