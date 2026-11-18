@@ -38,6 +38,7 @@ class ModelCheckpoint:
     critic: dict | None = None
     step: int | None = None
     optimizers: dict | None = None
+    sampler: dict | None = None
 
     @property
     def export_directory(self):
@@ -108,6 +109,7 @@ def _load_archive_checkpoint(source):
         critic=saved.get("critic"),
         step=step,
         optimizers=saved.get("optimizers"),
+        sampler=saved.get("sampler"),
     )
 
 
@@ -120,6 +122,7 @@ def save_checkpoint(
     world_model,
     critic=None,
     optimizers=None,
+    sampler=None,
 ):
     """Save model history and latest optimizer state, then apply retention."""
     directory = Path(directory)
@@ -132,6 +135,8 @@ def save_checkpoint(
         world_model=world_model,
         critic=critic,
     )
+    if sampler is not None:
+        saved["sampler"] = sampler
     _save_atomic(target, saved)
     _save_atomic(directory / "last.pt", dict(saved, optimizers=optimizers))
     prune_model_checkpoints(target.parent)

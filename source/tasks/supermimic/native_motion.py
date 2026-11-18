@@ -11,6 +11,7 @@ that the official SuperMimic runner requires. Learning stays in the submodule.
 """
 
 import glob
+import hashlib
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,7 @@ class NativeMotionLoader:
                 raise ValueError(f"No native reference files match {pattern!r}")
             files.extend(matches)
         clips = []
+        self.clip_layout = []
         for path in files:
             with np.load(path, allow_pickle=False) as data:
                 if data["joint_names"].tolist() != fk.joint_names:
@@ -76,6 +78,11 @@ class NativeMotionLoader:
                     raise ValueError(
                         "Native reference root quaternions must be normalized wxyz"
                     )
+                # Stable across adapter cache paths and ordering in the new run.
+                digest = hashlib.sha256()
+                for values in clip.values():
+                    digest.update(np.ascontiguousarray(values, dtype="<f4"))
+                self.clip_layout.append((digest.hexdigest(), frames))
                 clips.append(clip)
         if not clips or any(len(c["joint_pos"]) < 2 for c in clips):
             raise ValueError("Each native reference clip needs at least two frames")

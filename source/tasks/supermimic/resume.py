@@ -25,7 +25,7 @@ def validate_resume_configuration(checkpoint, manifest):
             "Training resume requires last.pt or a numbered combined"
             " checkpoint"
         )
-    for name in ("task_id", "environment", "robot"):
+    for name in ("environment", "robot"):
         if checkpoint.manifest[name] != manifest[name]:
             raise ValueError(f"Resume {name} differs from the checkpoint")
     # Logging cadence and the total iteration target may change. Architecture,
@@ -35,6 +35,7 @@ def validate_resume_configuration(checkpoint, manifest):
     )
     for name in (
         "max_iterations",
+        "run_name",
         "log_interval",
         "save_interval",
         "wandb_run_path",
@@ -89,11 +90,14 @@ def restore_training_state(runner, checkpoint):
                 optimizers, checkpoint.optimizers[name], strict=True
             ):
                 restore_optimizer(optimizer, saved)
+    from .sampler_checkpoint import restore_sampler
+
+    restore_sampler(runner, checkpoint.sampler)
     runner._checkpoint_step = checkpoint.step
     print(
         f"[INFO] Resumed {checkpoint.source}; next"
-        f" iteration={checkpoint.step + 1}. Simulation, replay buffer and"
-        " reset sampler restart."
+        f" iteration={checkpoint.step + 1}. Replay buffer and"
+        " simulation state restart."
     )
 
 

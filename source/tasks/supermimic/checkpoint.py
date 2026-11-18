@@ -8,6 +8,7 @@ from supermimic.runners.supermimic_runner import SuperMimicRunner
 from . import LOG_ROOT
 from .checkpoint_archive import save_checkpoint
 from .resume import optimizer_groups
+from .sampler_checkpoint import sampler_snapshot
 from .training_loop import run_training_loop
 
 
@@ -48,6 +49,7 @@ class LocalBundleRunner(SuperMimicRunner):
             actor=self.policy_learner.actor.state_dict(),
             world_model=self._wm.bundle(),
             critic=critic.state_dict() if critic is not None else None,
+            sampler=sampler_snapshot(self),
             optimizers={
                 name: [optimizer.state_dict() for optimizer in group]
                 for name, group in optimizers.items()
