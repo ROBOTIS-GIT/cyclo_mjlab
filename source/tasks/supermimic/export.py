@@ -23,7 +23,8 @@ from supermimic.tasks.task_spec import resolve_task_specs
 from source.utils.export_notices import distribution_license, write_software_notices
 
 from . import REPO_ROOT
-from .checkpoint import json_value, read_bundle
+from .checkpoint_config import json_value, read_bundle
+from .checkpoint_archive import load_checkpoint
 from .config import TASKS, register_tasks
 from .export_sim2real_cfg import (
     observation_config, observation_terms, resolve_action_settings, validate_policy_config,
@@ -63,23 +64,8 @@ def nominal_action_contract(cfg, joint_names):
     )
 
 
-def load_policy_bundle(directory, task):
-    """Load saved settings, actor and affine buffers; never convert observation mode."""
-    from mjlab.tasks.registry import list_tasks
-
-    if not set(TASKS).issubset(list_tasks()):
-        register_tasks()
-    directory = Path(directory).expanduser()
-    manifest = json.loads((directory / "manifest.json").read_text())
-    cfg, rcfg = read_bundle(directory, task)
-    # The generic loader supports old partial configs; export must not guess them.
-    if json_value(rcfg) != manifest.get("runner_cfg"):
-        raise ValueError("Export requires a complete, recognized saved runner_cfg")
-    validate_policy_config(cfg, rcfg, task)
-    names = manifest["robot"]["joint_order"]
-    action = nominal_action_contract(cfg, names)
+def validate_saved_action(wm, action):
     # These are the actual affine buffers used by the trained dynamics model.
-    wm = torch.load(directory / "world_model.pt", map_location="cpu", weights_only=True)
     if not isinstance(wm, dict) or not isinstance(wm.get("dynamics"), dict):
         raise ValueError("Expected a native world_model.pt dynamics dictionary")
     for key, expected in (
@@ -89,7 +75,7 @@ def load_policy_bundle(directory, task):
         saved = wm.get("dynamics", {}).get(key)
         if (
             not isinstance(saved, torch.Tensor)
-            or saved.numel() != len(names)
+            or saved.numel() != len(action["scale"])
             or not torch.equal(
                 saved.reshape(-1), torch.tensor(expected, dtype=torch.float32)
             )
@@ -97,6 +83,39 @@ def load_policy_bundle(directory, task):
             raise ValueError(
                 f"Saved dynamics {key} differs from the native action contract"
             )
+
+
+def validate_actor_state(state):
+    if not isinstance(state, dict):
+        raise ValueError("Expected an actor.pt state dictionary")
+    for name, value in state.items():
+        if not isinstance(value, torch.Tensor) or not torch.isfinite(value).all():
+            raise ValueError(f"Invalid policy tensor: {name}")
+        if name.endswith("count"):
+            if value.dtype != torch.int64 or (value < 0).any():
+                raise ValueError(f"Invalid normalizer count: {name}")
+        elif value.dtype != torch.float32:
+            raise ValueError(f"Expected FP32 policy tensor: {name}")
+        if name.endswith(("._var", "._std")) and (value < 0).any():
+            raise ValueError(f"Negative normalizer buffer: {name}")
+
+
+def load_policy_bundle(directory, task):
+    """Load saved settings, actor and affine buffers; never convert observation mode."""
+    from mjlab.tasks.registry import list_tasks
+
+    if not set(TASKS).issubset(list_tasks()):
+        register_tasks()
+    checkpoint = load_checkpoint(directory)
+    manifest = checkpoint.manifest
+    cfg, rcfg = read_bundle(checkpoint, task)
+    # The generic loader supports old partial configs; export must not guess them.
+    if json_value(rcfg) != manifest.get("runner_cfg"):
+        raise ValueError("Export requires a complete, recognized saved runner_cfg")
+    validate_policy_config(cfg, rcfg, task)
+    names = manifest["robot"]["joint_order"]
+    action = nominal_action_contract(cfg, names)
+    validate_saved_action(checkpoint.world_model, action)
     j = len(names)
     bodies = len(cfg.commands["motion"].body_names)
     rep = create_representation(
@@ -122,19 +141,8 @@ def load_policy_bundle(directory, task):
         latent_bc_weight=rcfg.latent_bc_weight,
         history_length=rcfg.history_length,
     )
-    state = torch.load(directory / "actor.pt", map_location="cpu", weights_only=True)
-    if not isinstance(state, dict):
-        raise ValueError("Expected an actor.pt state dictionary")
-    for name, value in state.items():
-        if not isinstance(value, torch.Tensor) or not torch.isfinite(value).all():
-            raise ValueError(f"Invalid policy tensor: {name}")
-        if name.endswith("count"):
-            if value.dtype != torch.int64 or (value < 0).any():
-                raise ValueError(f"Invalid normalizer count: {name}")
-        elif value.dtype != torch.float32:
-            raise ValueError(f"Expected FP32 policy tensor: {name}")
-        if name.endswith(("._var", "._std")) and (value < 0).any():
-            raise ValueError(f"Negative normalizer buffer: {name}")
+    state = checkpoint.actor
+    validate_actor_state(state)
     actor.load_state_dict(state, strict=True)
     widths = (
         rep.proprio_term_widths(j)
@@ -279,16 +287,25 @@ def policy_contract(bundle, encoder):
 
 
 def export_policy(directory, task, output_dir, *, encoder="motion", overwrite=False):
+    checkpoint = load_checkpoint(directory)
+    bundle = load_policy_bundle(checkpoint, task)
+    return export_encoder(checkpoint, bundle, output_dir, encoder=encoder, overwrite=overwrite)
+
+
+def export_encoder(checkpoint, bundle, output_dir, *, encoder, overwrite=False):
+    """Export one encoder from an already loaded and validated actor."""
     import onnx
 
-    directory, output_dir = Path(directory).expanduser(), Path(output_dir).expanduser()
-    bundle = load_policy_bundle(directory, task)
+    output_dir = Path(output_dir).expanduser()
     metadata = policy_contract(bundle, encoder)
     wrapper = _SingleEncoderOnnx(bundle.actor, encoder, bundle.term_widths).eval()
-    metadata["source_sha256"] = {
-        name: sha256(directory / name)
-        for name in ("manifest.json", "actor.pt", "world_model.pt")
-    }
+    source = checkpoint.source
+    metadata["source_sha256"] = (
+        {name: sha256(source / name) for name in ("manifest.json", "actor.pt", "world_model.pt")}
+        if source.is_dir() else {source.name: sha256(source)}
+    )
+    if checkpoint.step is not None:
+        metadata["checkpoint_step"] = checkpoint.step
     metadata["shared_core_commit"] = subprocess.check_output(
         ["git", "-C", str(REPO_ROOT / "third_party/supermimic"), "rev-parse", "HEAD"],
         text=True,
@@ -335,13 +352,15 @@ def export_policy(directory, task, output_dir, *, encoder="motion", overwrite=Fa
 
 def export_play_policies(directory, task):
     """Refresh deployment graphs on play; training owns the YAML files."""
-    directory = Path(directory).expanduser()
+    checkpoint = load_checkpoint(directory)
+    bundle = load_policy_bundle(checkpoint, task)
     paths = []
-    for encoder in ("motion", "velocity"):
-        output_dir = directory / "exported"
+    for spec in bundle.actor.task_specs:
+        encoder = spec.name
+        output_dir = checkpoint.export_directory
         if encoder != "motion":
             output_dir /= encoder
-        path = export_policy(directory, task, output_dir, encoder=encoder, overwrite=True)
+        path = export_encoder(checkpoint, bundle, output_dir, encoder=encoder, overwrite=True)
         print(f"[INFO] Exported {encoder} policy: {path}")
         paths.append(path)
     return paths
@@ -350,15 +369,26 @@ def export_play_policies(directory, task):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("task", choices=TASKS)
-    parser.add_argument("--checkpoint-dir", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--checkpoint-dir", type=Path)
+    source.add_argument("--checkpoint", type=Path)
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--encoder", choices=("motion", "velocity"), default="motion")
     args = parser.parse_args(argv)
+    selected = args.checkpoint if args.checkpoint is not None else args.checkpoint_dir
+    if selected is None:
+        from .play import latest_checkpoint_directory
+
+        selected = latest_checkpoint_directory(Path("logs"), args.task)
+    checkpoint = load_checkpoint(selected)
+    output = args.output_dir or checkpoint.export_directory
+    if args.output_dir is None and args.encoder != "motion":
+        output /= args.encoder
     print(
         export_policy(
-            args.checkpoint_dir,
+            checkpoint,
             args.task,
-            args.output_dir,
+            output,
             encoder=args.encoder,
         )
     )
