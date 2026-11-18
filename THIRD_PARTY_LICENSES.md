@@ -136,13 +136,13 @@ rights have been independently cleared.
 
 ## BlinkMimic
 
-`third_party/blinkmimic` vendors Fuyi Chen's official BlinkMimic at
-`d264658d6c9ce61fb52f9f0f8985a369f3ccc409` from
-https://github.com/fuyichen0725/blinkmimic under MIT. Its LICENSE and
+`third_party/blinkmimic` pins the [ROBOTIS BlinkMimic fork](https://github.com/ROBOTIS-GIT/blinkmimic),
+based on Fuyi Chen's [MIT BlinkMimic revision d264658](https://github.com/fuyichen0725/blinkmimic/tree/d264658d6c9ce61fb52f9f0f8985a369f3ccc409).
+Its LICENSE and
 THIRD_PARTY_NOTICES.md retain the Fuyi Chen, InstantTrack / Huy-Quang-Dao,
 and supermimic_vibed / ETH Zurich, Chong Zhang notices.
-`UPSTREAM.json` records original source hashes, vendoring scope and the one contact-foot adaptation.
-The K1 exact-state motion adapter follows the vendored MotionLib indexing API.
+The fork diff records the contact-foot adaptation.
+The K1 exact-state motion adapter follows the upstream MotionLib indexing API.
 The existing HybridRobotics SuperMimic core has separate Apache/BSD code provenance;
 algorithmic lineage does not make these codebases or licenses identical.
 No new motion library, private dataset, trained weight or exported model is

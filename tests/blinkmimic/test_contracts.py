@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import torch
 
-from source.tasks.blinkmimic.runtime import VENDOR, prepare
+from source.tasks.blinkmimic.runtime import prepare
 
 prepare()
 from blinkmimic.dr import XiLayout  # noqa: E402
@@ -23,7 +23,7 @@ from blinkmimic.networks import (  # noqa: E402
 from blinkmimic.rotations import quat_to_mat  # noqa: E402
 
 from source.tasks.blinkmimic.cli import execution_recipe, recipe  # noqa: E402
-from source.tasks.blinkmimic.motion import digest, load_exact  # noqa: E402
+from source.tasks.blinkmimic.motion import load_exact  # noqa: E402
 from source.tasks.blinkmimic.config.k1_rev1.robot_spec import (  # noqa: E402
     make_robot,
 )
@@ -31,7 +31,7 @@ from source.tasks.blinkmimic.config.k1_rev1.robot_spec import (  # noqa: E402
 TEST_TASK = "Cyclo-BlinkMimic-K1-Rev1-001"
 
 
-def test_recipe_and_vendor_identity():
+def test_released_recipe():
     flags = recipe()
     for flag, value in {
         "--pi_batch": "2048",
@@ -40,10 +40,6 @@ def test_recipe_and_vendor_identity():
         "--wm_only_iters": "0",
     }.items():
         assert flags[flags.index(flag) + 1] == value
-    upstream = json.loads((VENDOR / "UPSTREAM.json").read_text())
-    for name, sha in upstream["original_sha256"].items():
-        if name not in upstream["modifications"]:
-            assert digest(VENDOR / name) == sha
     assert "--enc_hidden" not in flags  # upstream full-size default
     assert "--dec_hidden" not in flags
 

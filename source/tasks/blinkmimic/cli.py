@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-from .runtime import ROOT, VENDOR
+from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
 from .checkpoint import (
@@ -541,7 +541,7 @@ def build_run_record(
         repository_commit=subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip(),
-        upstream=json.loads((VENDOR / "UPSTREAM.json").read_text())["commit"],
+        upstream=UPSTREAM_REVISION,
         manifest=str(args.motion_dir.resolve() / "manifest.json"),
         checkpoint=str(args.checkpoint.resolve()) if args.checkpoint else None,
         manifest_sha256=hashlib.sha256(

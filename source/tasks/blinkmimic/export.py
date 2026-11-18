@@ -12,7 +12,7 @@ from torch import nn
 
 from source.utils.export_notices import write_software_notices
 
-from .runtime import ROOT, VENDOR, prepare
+from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
 from .export_sim2real_cfg import (
     goal_fields,
     native_dimensions,
@@ -199,7 +199,7 @@ def contract(wrapper, checkpoint, robot):
             wrapper.hist, checkpoint["args"]["goal_frames"], j
         ),
         schema="cyclo.blinkmimic.external_goal.v1",
-        upstream=json.loads((VENDOR / "UPSTREAM.json").read_text())["commit"],
+        upstream=UPSTREAM_REVISION,
         weights_key="pi",
         pi_ema=checkpoint["args"].get("pi_ema", 0.0),
         source_amp=checkpoint["args"].get("amp", "none"),
