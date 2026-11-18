@@ -1,4 +1,6 @@
-"""Motion-independent SuperMimic policy export using the shared encoder slice."""
+"""
+Motion-independent SuperMimic policy export using the shared encoder slice.
+"""
 
 import argparse
 import hashlib
@@ -20,14 +22,20 @@ from supermimic.runners.exporter import _export_module, _SingleEncoderOnnx
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 from supermimic.tasks.task_spec import resolve_task_specs
 
-from source.utils.export_notices import distribution_license, write_software_notices
+from source.utils.export_notices import (
+    distribution_license,
+    write_software_notices,
+)
 
 from . import REPO_ROOT
 from .checkpoint_config import json_value, read_bundle
 from .checkpoint_archive import load_checkpoint
 from .config import TASKS, register_tasks
 from .export_sim2real_cfg import (
-    observation_config, observation_terms, resolve_action_settings, validate_policy_config,
+    observation_config,
+    observation_terms,
+    resolve_action_settings,
+    validate_policy_config,
 )
 
 
@@ -67,7 +75,9 @@ def nominal_action_contract(cfg, joint_names):
 def validate_saved_action(wm, action):
     # These are the actual affine buffers used by the trained dynamics model.
     if not isinstance(wm, dict) or not isinstance(wm.get("dynamics"), dict):
-        raise ValueError("Expected a native world_model.pt dynamics dictionary")
+        raise ValueError(
+            "Expected a native world_model.pt dynamics dictionary"
+        )
     for key, expected in (
         ("action_scale", action["scale"]),
         ("action_offset", action["offset"]),
@@ -89,7 +99,10 @@ def validate_actor_state(state):
     if not isinstance(state, dict):
         raise ValueError("Expected an actor.pt state dictionary")
     for name, value in state.items():
-        if not isinstance(value, torch.Tensor) or not torch.isfinite(value).all():
+        if (
+            not isinstance(value, torch.Tensor)
+            or not torch.isfinite(value).all()
+        ):
             raise ValueError(f"Invalid policy tensor: {name}")
         if name.endswith("count"):
             if value.dtype != torch.int64 or (value < 0).any():
@@ -101,7 +114,10 @@ def validate_actor_state(state):
 
 
 def load_policy_bundle(directory, task):
-    """Load saved settings, actor and affine buffers; never convert observation mode."""
+    """
+    Load saved settings, actor and affine buffers; never convert observation
+    mode.
+    """
     from mjlab.tasks.registry import list_tasks
 
     if not set(TASKS).issubset(list_tasks()):
@@ -109,9 +125,12 @@ def load_policy_bundle(directory, task):
     checkpoint = load_checkpoint(directory)
     manifest = checkpoint.manifest
     cfg, rcfg = read_bundle(checkpoint, task)
-    # The generic loader supports old partial configs; export must not guess them.
+    # The generic loader supports old partial configs; export must not guess
+    # them.
     if json_value(rcfg) != manifest.get("runner_cfg"):
-        raise ValueError("Export requires a complete, recognized saved runner_cfg")
+        raise ValueError(
+            "Export requires a complete, recognized saved runner_cfg"
+        )
     validate_policy_config(cfg, rcfg, task)
     names = manifest["robot"]["joint_order"]
     action = nominal_action_contract(cfg, names)
@@ -128,9 +147,11 @@ def load_policy_bundle(directory, task):
         actor_obs_mode=rcfg.actor_obs,
     )
     actor = MultiEncoderAE(
-        obs_dim=rep.rep_state_dim
-        if rcfg.actor_obs == "rep_state"
-        else rep.proprio_obs_dim(j),
+        obs_dim=(
+            rep.rep_state_dim
+            if rcfg.actor_obs == "rep_state"
+            else rep.proprio_obs_dim(j)
+        ),
         action_dim=j,
         task_specs=resolve_task_specs(
             rcfg.tasks, rep, NUM_GOAL_FRAMES * (2 * j + 9), "cpu"
@@ -153,23 +174,36 @@ def load_policy_bundle(directory, task):
 
 
 def pack_input(history, goal, term_widths):
-    """External temporal [B,H,D] history -> upstream term-major flat input + goal."""
-    if history.ndim != 3 or goal.ndim != 2 or history.shape[0] != goal.shape[0]:
+    """
+    External temporal [B,H,D] history -> upstream term-major flat input + goal.
+    """
+    if (
+        history.ndim != 3
+        or goal.ndim != 2
+        or history.shape[0] != goal.shape[0]
+    ):
         raise ValueError("Expected history[B,H,D] and goal[B,G]")
-    if sum(term_widths) != history.shape[-1] or any(w < 1 for w in term_widths):
+    if sum(term_widths) != history.shape[-1] or any(
+        w < 1 for w in term_widths
+    ):
         raise ValueError("Observation term widths do not match history")
     return torch.cat(
-        [part.flatten(1) for part in history.split(term_widths, dim=-1)] + [goal],
+        [part.flatten(1) for part in history.split(term_widths, dim=-1)]
+        + [goal],
         dim=-1,
     )
 
 
 def motion_goal(bundle, motion, frames, root_pose_w):
-    """Use the original training goal extractor with external arrays and root pose.
+    """
+    Use the original training goal extractor with external arrays and root
+    pose.
 
-    motion supplies joint_pos, joint_vel, root_pos_w, root_quat_w and motion_ends
+    motion supplies joint_pos, joint_vel, root_pos_w, root_quat_w and
+    motion_ends
     (exclusive clip ends), exactly as the native MotionLoader does. root_pose_w
-    is the CURRENT ACTUAL root [position(3), quaternion wxyz(4)], not the reference.
+    is the CURRENT ACTUAL root [position(3), quaternion wxyz(4)], not the
+    reference.
     """
     spec = next(ts for ts in bundle.actor.task_specs if ts.name == "motion")
     return spec.extract_training_goal(motion, frames, root_pose_w)
@@ -194,14 +228,25 @@ def policy_contract(bundle, encoder):
         formulas = [native_formulas[term["name"]] for term in terms]
     else:
         formulas = [
-            "[root_z(1), gravity_body(3), root_v_body(3), root_omega_body(3), absolute_q(J), qdot(J)]"
-            if rcfg.representation == "gencoord" else
-            "[root_relative_body_pos(3B), root_relative_body_rot6d(6B), body_linear_vel_in_root(3B), body_angular_vel_in_root(3B), root_z(1), gravity_body(3)]"
+            (
+                "[root_z(1), gravity_body(3), root_v_body(3),"
+                " root_omega_body(3), absolute_q(J), qdot(J)]"
+                if rcfg.representation == "gencoord"
+                else (
+                    "[root_relative_body_pos(3B),"
+                    " root_relative_body_rot6d(6B),"
+                    " body_linear_vel_in_root(3B),"
+                    " body_angular_vel_in_root(3B), root_z(1),"
+                    " gravity_body(3)]"
+                )
+            )
         ]
     for term, formula in zip(terms, formulas, strict=True):
         term["formula"] = formula
     if sum(term["width"] for term in terms) != actor.obs_dim:
-        raise ValueError("Observation term dimensions differ from the trained actor input")
+        raise ValueError(
+            "Observation term dimensions differ from the trained actor input"
+        )
     offset = 0
     for term in terms:
         term["flat_offset"] = offset
@@ -218,7 +263,10 @@ def policy_contract(bundle, encoder):
             name="obs",
             dtype="float32",
             shape=[1, h * actor.obs_dim + spec.goal_dim],
-            layout="term-major history oldest first within each term, then external raw goal",
+            layout=(
+                "term-major history oldest first within each term, then"
+                " external raw goal"
+            ),
             observation_terms=terms,
             goal_offset=offset,
             goal_dim=spec.goal_dim,
@@ -233,10 +281,14 @@ def policy_contract(bundle, encoder):
             formula="(x-saved_mean)/(saved_std+eps)",
             observation_eps=actor.obs_normalizer.eps,
             goal_eps=actor.goal_normalizers[encoder].eps,
-            scope="inside graph, frozen saved _mean/_std, no variance recomputation or clipping",
+            scope=(
+                "inside graph, frozen saved _mean/_std, no variance"
+                " recomputation or clipping"
+            ),
         ),
         latent=dict(
-            width=rcfg.latent_dim, formula="tanh(selected_encoder(normalized_goal))"
+            width=rcfg.latent_dim,
+            formula="tanh(selected_encoder(normalized_goal))",
         ),
         action=dict(
             **bundle.action,
@@ -244,35 +296,58 @@ def policy_contract(bundle, encoder):
             nominal_formula="target=offset+scale*actions",
             clipping="none",
         ),
-        control_dt=bundle.env_cfg.sim.mujoco.timestep * bundle.env_cfg.decimation,
+        control_dt=bundle.env_cfg.sim.mujoco.timestep
+        * bundle.env_cfg.decimation,
         body_order=list(bundle.env_cfg.commands["motion"].body_names),
         robot=bundle.manifest["robot"],
-        motion_goal=dict(
-            frames=NUM_GOAL_FRAMES,
-            stride=GOAL_FRAME_STRIDE,
-            indices="min(t+k*stride, current_clip_exclusive_end-1), k=0..frames-1; t is native command.time_steps (reset at physical frame f seeds t=f+1)",
-            layout=f"all {NUM_GOAL_FRAMES} [absolute_joint_pos({j}), raw_joint_vel({j})] blocks, then all {NUM_GOAL_FRAMES} relative_orientation_6d blocks",
-            content_offset=0,
-            orientation_offset=NUM_GOAL_FRAMES * 2 * j,
-            orientation="sixd(R_actual_current_root.T @ R_reference_future_root)",
-            sixd="[R00,R01,R10,R11,R20,R21]",
-            quaternion="wxyz",
-            translation="excluded from actor goal; present only in world-model goal",
-            scale="no qdot/gyro prescale; no relative q0 subtraction in motion goal",
-        )
-        if encoder == "motion"
-        else dict(
-            layout="[vx_body, vy_body, wz_body]",
-            ranges=[
-                list(rcfg.tasks.velocity.lin_vel_x_range),
-                list(rcfg.tasks.velocity.lin_vel_y_range),
-                list(rcfg.tasks.velocity.ang_vel_z_range),
-            ],
+        motion_goal=(
+            dict(
+                frames=NUM_GOAL_FRAMES,
+                stride=GOAL_FRAME_STRIDE,
+                indices=(
+                    "min(t+k*stride, current_clip_exclusive_end-1),"
+                    " k=0..frames-1; t is native command.time_steps (reset at"
+                    " physical frame f seeds t=f+1)"
+                ),
+                layout=(
+                    f"all {NUM_GOAL_FRAMES} [absolute_joint_pos({j}),"
+                    f" raw_joint_vel({j})] blocks, then all {NUM_GOAL_FRAMES}"
+                    " relative_orientation_6d blocks"
+                ),
+                content_offset=0,
+                orientation_offset=NUM_GOAL_FRAMES * 2 * j,
+                orientation=(
+                    "sixd(R_actual_current_root.T @ R_reference_future_root)"
+                ),
+                sixd="[R00,R01,R10,R11,R20,R21]",
+                quaternion="wxyz",
+                translation=(
+                    "excluded from actor goal; present only in world-model"
+                    " goal"
+                ),
+                scale=(
+                    "no qdot/gyro prescale; no relative q0 subtraction in"
+                    " motion goal"
+                ),
+            )
+            if encoder == "motion"
+            else dict(
+                layout="[vx_body, vy_body, wz_body]",
+                ranges=[
+                    list(rcfg.tasks.velocity.lin_vel_x_range),
+                    list(rcfg.tasks.velocity.lin_vel_y_range),
+                    list(rcfg.tasks.velocity.ang_vel_z_range),
+                ],
+            )
         ),
-        history_reset="zero previous action, repeat current observation H times; shift oldest out each control step",
+        history_reset=(
+            "zero previous action, repeat current observation H times; shift"
+            " oldest out each control step"
+        ),
         trained_slot_fraction=rcfg.slot_mix.get(encoder, 0.0),
         architecture=dict(
-            hidden_dims=list(rcfg.actor_hidden_dims), latent_dim=rcfg.latent_dim
+            hidden_dims=list(rcfg.actor_hidden_dims),
+            latent_dim=rcfg.latent_dim,
         ),
         weights="actor.pt, no EMA substitution",
         precision="float32",
@@ -281,33 +356,55 @@ def policy_contract(bundle, encoder):
         physical_robot_validation="not performed by export",
     )
     contract["observation_config"] = observation_config(
-        bundle.env_cfg, rcfg, bundle.representation, j, encoder,
+        bundle.env_cfg,
+        rcfg,
+        bundle.representation,
+        j,
+        encoder,
     )
     return contract
 
 
-def export_policy(directory, task, output_dir, *, encoder="motion", overwrite=False):
+def export_policy(
+    directory, task, output_dir, *, encoder="motion", overwrite=False
+):
     checkpoint = load_checkpoint(directory)
     bundle = load_policy_bundle(checkpoint, task)
-    return export_encoder(checkpoint, bundle, output_dir, encoder=encoder, overwrite=overwrite)
+    return export_encoder(
+        checkpoint, bundle, output_dir, encoder=encoder, overwrite=overwrite
+    )
 
 
-def export_encoder(checkpoint, bundle, output_dir, *, encoder, overwrite=False):
+def export_encoder(
+    checkpoint, bundle, output_dir, *, encoder, overwrite=False
+):
     """Export one encoder from an already loaded and validated actor."""
     import onnx
 
     output_dir = Path(output_dir).expanduser()
     metadata = policy_contract(bundle, encoder)
-    wrapper = _SingleEncoderOnnx(bundle.actor, encoder, bundle.term_widths).eval()
+    wrapper = _SingleEncoderOnnx(
+        bundle.actor, encoder, bundle.term_widths
+    ).eval()
     source = checkpoint.source
     metadata["source_sha256"] = (
-        {name: sha256(source / name) for name in ("manifest.json", "actor.pt", "world_model.pt")}
-        if source.is_dir() else {source.name: sha256(source)}
+        {
+            name: sha256(source / name)
+            for name in ("manifest.json", "actor.pt", "world_model.pt")
+        }
+        if source.is_dir()
+        else {source.name: sha256(source)}
     )
     if checkpoint.step is not None:
         metadata["checkpoint_step"] = checkpoint.step
     metadata["shared_core_commit"] = subprocess.check_output(
-        ["git", "-C", str(REPO_ROOT / "third_party/supermimic"), "rev-parse", "HEAD"],
+        [
+            "git",
+            "-C",
+            str(REPO_ROOT / "third_party/supermimic"),
+            "rev-parse",
+            "HEAD",
+        ],
         text=True,
     ).strip()
     metadata["shared_exporter_sha256"] = sha256(
@@ -316,18 +413,21 @@ def export_encoder(checkpoint, bundle, output_dir, *, encoder, overwrite=False):
     output_dir.mkdir(parents=True, exist_ok=overwrite)
     metadata["software_notices"] = write_software_notices(
         output_dir,
-        "Cyclo MJLab policy-only ONNX export\n"
-        "Cyclo adapter: Copyright 2026 ROBOTIS CO., LTD. (Apache-2.0).\n"
-        "https://github.com/ROBOTIS-GIT/cyclo_mjlab\n"
-        "SuperMimic policy/encoder slice: Copyright 2026 The SuperMimic Authors (Apache-2.0).\n"
-        "Official source: https://github.com/HybridRobotics/supermimic\n"
-        "Shared source: https://github.com/ROBOTIS-GIT/supermimic\n"
-        "The graph retains the selected encoder, frozen normalizers and decoder; motion tables are omitted.\n"
-        "RSL-RL EmpiricalNormalization (BSD-3-Clause):\n"
-        "Copyright (c) 2021-2026, ETH Zurich and NVIDIA CORPORATION\n"
-        "Copyright (c) 2020 Preferred Networks, Inc.\n"
-        "Keep this notice and licenses/ with the exported graph when redistributing the bundle.\n"
-        "These software notices do not establish redistribution rights for learned weights or training data.\n",
+        "Cyclo MJLab policy-only ONNX export\nCyclo adapter: Copyright 2026"
+        " ROBOTIS CO., LTD."
+        " (Apache-2.0).\n"
+        "https://github.com/ROBOTIS-GIT/cyclo_mjlab\nSuperMimic"
+        " policy/encoder slice: Copyright 2026 The SuperMimic Authors"
+        " (Apache-2.0).\nOfficial source:"
+        " https://github.com/HybridRobotics/supermimic\nShared source:"
+        " https://github.com/ROBOTIS-GIT/supermimic\nThe graph retains the"
+        " selected encoder, frozen normalizers and decoder; motion tables are"
+        " omitted.\nRSL-RL EmpiricalNormalization (BSD-3-Clause):\nCopyright"
+        " (c) 2021-2026, ETH Zurich and NVIDIA CORPORATION\nCopyright (c) 2020"
+        " Preferred Networks, Inc.\nKeep this notice and licenses/ with the"
+        " exported graph when redistributing the bundle.\nThese software"
+        " notices do not establish redistribution rights for learned weights"
+        " or training data.\n",
         {
             "Apache-2.0.txt": REPO_ROOT / "third_party/supermimic/LICENSE",
             "RSL-RL-BSD-3-Clause.txt": distribution_license("rsl-rl-lib"),
@@ -342,11 +442,15 @@ def export_encoder(checkpoint, bundle, output_dir, *, encoder, overwrite=False):
         "policy.onnx",
     )
     model = onnx.load(path)
-    onnx.helper.set_model_props(model, {"cyclo.policy_contract": json.dumps(metadata)})
+    onnx.helper.set_model_props(
+        model, {"cyclo.policy_contract": json.dumps(metadata)}
+    )
     onnx.checker.check_model(model, full_check=True)
     onnx.save(model, path)
     metadata["onnx_sha256"] = sha256(path)
-    (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    (output_dir / "metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n"
+    )
     return Path(path)
 
 
@@ -360,7 +464,9 @@ def export_play_policies(directory, task):
         output_dir = checkpoint.export_directory
         if encoder != "motion":
             output_dir /= encoder
-        path = export_encoder(checkpoint, bundle, output_dir, encoder=encoder, overwrite=True)
+        path = export_encoder(
+            checkpoint, bundle, output_dir, encoder=encoder, overwrite=True
+        )
         print(f"[INFO] Exported {encoder} policy: {path}")
         paths.append(path)
     return paths
@@ -373,9 +479,13 @@ def main(argv=None):
     source.add_argument("--checkpoint-dir", type=Path)
     source.add_argument("--checkpoint", type=Path)
     parser.add_argument("--output-dir", type=Path)
-    parser.add_argument("--encoder", choices=("motion", "velocity"), default="motion")
+    parser.add_argument(
+        "--encoder", choices=("motion", "velocity"), default="motion"
+    )
     args = parser.parse_args(argv)
-    selected = args.checkpoint if args.checkpoint is not None else args.checkpoint_dir
+    selected = (
+        args.checkpoint if args.checkpoint is not None else args.checkpoint_dir
+    )
     if selected is None:
         from .play import latest_checkpoint_directory
 

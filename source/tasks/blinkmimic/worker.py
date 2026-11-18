@@ -12,8 +12,10 @@ from .config import TASKS
 
 
 def record_training_failure(error):
-    # Read only Python bookkeeping from the failing frame; do not touch a failed
-    # CUDA context or restart. Preserve the exact loop index absent from sparse logs.
+    # Read only Python bookkeeping from the failing frame; do not touch a
+    # failed
+    # CUDA context or restart. Preserve the exact loop index absent from sparse
+    # logs.
     tb = error.__traceback__
     state = {}
     while tb:
@@ -27,7 +29,9 @@ def record_training_failure(error):
             state = {
                 "loop_index_zero_based": it,
                 "last_completed_iterations": it,
-                "wm_update_calls": getattr(g.get("wm_update_g"), "calls", None),
+                "wm_update_calls": getattr(
+                    g.get("wm_update_g"), "calls", None
+                ),
                 "policy_update_calls": getattr(
                     g.get("policy_update_g"), "calls", None
                 ),
@@ -62,10 +66,15 @@ def main():
             from .checkpoint_adapter import include_critic_in_snapshots
 
             if "--ckpt_light" in remaining:
-                raise ValueError("--ckpt_light is incompatible with critic snapshots")
+                raise ValueError(
+                    "--ckpt_light is incompatible with critic snapshots"
+                )
             from .resume import allow_model_only_resume
 
-            with include_critic_in_snapshots(), allow_model_only_resume(args.resume):
+            with (
+                include_critic_in_snapshots(),
+                allow_model_only_resume(args.resume),
+            ):
                 runpy.run_module("blinkmimic.train", run_name="__main__")
         else:
             runpy.run_module(f"blinkmimic.{args.mode}", run_name="__main__")

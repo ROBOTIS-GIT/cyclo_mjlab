@@ -33,14 +33,18 @@ class LocalBundleRunner(SuperMimicRunner):
         return collected
 
     def checkpoint_extra_files(self, log_dir):
-        # Upstream calls this after saving actor/world model, before saving critic.
+        # Upstream calls this after saving actor/world model, before saving
+        # critic.
         # Read live models and optimizers from the same completed step.
         critic = getattr(self.policy_learner, "critic", None)
         optimizers = optimizer_groups(self)
 
         save_checkpoint(
-            log_dir, step=self._checkpoint_step, manifest=self.manifest,
-            actor=self.policy_learner.actor.state_dict(), world_model=self._wm.bundle(),
+            log_dir,
+            step=self._checkpoint_step,
+            manifest=self.manifest,
+            actor=self.policy_learner.actor.state_dict(),
+            world_model=self._wm.bundle(),
             critic=critic.state_dict() if critic is not None else None,
             optimizers={
                 name: [optimizer.state_dict() for optimizer in group]
@@ -51,8 +55,12 @@ class LocalBundleRunner(SuperMimicRunner):
 
     def _create_log_dir(self, *parts):
         directory = super()._create_log_dir(*parts)
-        if (directory / "manifest.json").exists() or (directory / "last.pt").exists():
-            raise FileExistsError(f"Refusing to overwrite an existing training run: {directory}")
+        if (directory / "manifest.json").exists() or (
+            directory / "last.pt"
+        ).exists():
+            raise FileExistsError(
+                f"Refusing to overwrite an existing training run: {directory}"
+            )
         temporary = directory / "manifest.json.tmp"
         temporary.write_text(
             json.dumps(self.manifest, indent=2, allow_nan=False) + "\n"
@@ -61,11 +69,16 @@ class LocalBundleRunner(SuperMimicRunner):
         self._export_deployment_configs(directory)
         from .tensorboard import SuperMimicTensorBoardLogger
 
-        self.logger = SuperMimicTensorBoardLogger(self.logger, directory, self.cfg.log_interval)
+        self.logger = SuperMimicTensorBoardLogger(
+            self.logger, directory, self.cfg.log_interval
+        )
         return directory
 
     def _export_deployment_configs(self, directory):
-        from .export_sim2real_cfg import export_sim2real_cfg, validate_policy_config
+        from .export_sim2real_cfg import (
+            export_sim2real_cfg,
+            validate_policy_config,
+        )
 
         cfg = self.env.unwrapped.cfg
         validate_policy_config(cfg, self.cfg, self.manifest["task_id"])
@@ -73,7 +86,14 @@ class LocalBundleRunner(SuperMimicRunner):
         self._deployment_files = []
         for spec in self.policy_learner.actor.task_specs:
             path = export_sim2real_cfg(
-                directory, cfg, self.cfg, self._representation, names, encoder=spec.name,
+                directory,
+                cfg,
+                self.cfg,
+                self._representation,
+                names,
+                encoder=spec.name,
             )
             self._deployment_files.append(str(path))
-            print(f"[INFO] Exported {spec.name} deployment configuration: {path}")
+            print(
+                f"[INFO] Exported {spec.name} deployment configuration: {path}"
+            )

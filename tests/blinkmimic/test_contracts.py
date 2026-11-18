@@ -12,16 +12,21 @@ import torch
 from source.tasks.blinkmimic.runtime import VENDOR, prepare
 
 prepare()
-from blinkmimic.dr import XiLayout
-from blinkmimic.kinematics import Kinematics
-from blinkmimic.mirror import Mirror
-from blinkmimic.networks import Policy, RunningNorm, policy_kwargs
-from blinkmimic.rotations import quat_to_mat
+from blinkmimic.dr import XiLayout  # noqa: E402
+from blinkmimic.kinematics import Kinematics  # noqa: E402
+from blinkmimic.mirror import Mirror  # noqa: E402
+from blinkmimic.networks import (  # noqa: E402
+    Policy,
+    RunningNorm,
+    policy_kwargs,
+)
+from blinkmimic.rotations import quat_to_mat  # noqa: E402
 
-from source.tasks.blinkmimic.cli import execution_recipe, recipe
-from source.tasks.blinkmimic.motion import digest, load_exact
-from source.tasks.blinkmimic.config.k1_rev1.robot_spec import make_robot
-
+from source.tasks.blinkmimic.cli import execution_recipe, recipe  # noqa: E402
+from source.tasks.blinkmimic.motion import digest, load_exact  # noqa: E402
+from source.tasks.blinkmimic.config.k1_rev1.robot_spec import (  # noqa: E402
+    make_robot,
+)
 
 TEST_TASK = "Cyclo-BlinkMimic-K1-Rev1-001"
 
@@ -107,7 +112,9 @@ def test_fk_and_twists_match_mujoco():
         for i, name in enumerate(r.tracked_bodies):
             bid = m.body(name).id
             vel = np.zeros(6)
-            mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, bid, vel, 0)
+            mujoco.mj_objectVelocity(
+                m, d, mujoco.mjtObj.mjOBJ_BODY, bid, vel, 0
+            )
             # MuJoCo body velocity is at COM; transform to body origin.
             origin_v = vel[3:] - np.cross(vel[:3], d.xipos[bid] - d.xpos[bid])
             for actual, expected in zip(
@@ -138,14 +145,20 @@ def test_mirror_is_physical_and_involutive():
     names = r.tracked_bodies
     perm = [
         names.index(
-            n.replace("left_", "@").replace("right_", "left_").replace("@", "right_")
+            n.replace("left_", "@")
+            .replace("right_", "left_")
+            .replace("@", "right_")
         )
         for n in names
     ]
     torch.testing.assert_close(mp, bp[:, perm] @ mirror.M, atol=2e-6, rtol=0)
     torch.testing.assert_close(mv, bv[:, perm] @ mirror.M, atol=2e-6, rtol=0)
-    torch.testing.assert_close(mw, -(bw[:, perm] @ mirror.M), atol=2e-6, rtol=0)
-    torch.testing.assert_close(mR, mirror.M @ bR[:, perm] @ mirror.M, atol=2e-6, rtol=0)
+    torch.testing.assert_close(
+        mw, -(bw[:, perm] @ mirror.M), atol=2e-6, rtol=0
+    )
+    torch.testing.assert_close(
+        mR, mirror.M @ bR[:, perm] @ mirror.M, atol=2e-6, rtol=0
+    )
 
 
 def test_invalid_motion_rejected(tmp_path):
@@ -161,7 +174,9 @@ def test_normalization_and_raw_goal_reference_skip_contract():
     norm.mean.copy_(torch.tensor([2.0, -3.0]))
     norm.var.copy_(torch.tensor([0.0, 4.0]))
     x = torch.tensor([[2.01, 1.0]])
-    torch.testing.assert_close(norm(x), (x - norm.mean) / torch.sqrt(norm.var + 0.0001))
+    torch.testing.assert_close(
+        norm(x), (x - norm.mean) / torch.sqrt(norm.var + 0.0001)
+    )
     robot = make_robot()
     policy = Policy(81, 610, 23, **policy_kwargs({"pi_ref_skip": True}, robot))
     with torch.no_grad():
@@ -176,19 +191,28 @@ def test_normalization_and_raw_goal_reference_skip_contract():
     expected = 0.25 + (goal[:, 15:38] - policy.ref_q0) / policy.ref_alpha
     torch.testing.assert_close(action, expected)
     target = policy.ref_q0 + policy.ref_alpha * action
-    torch.testing.assert_close(target, goal[:, 15:38] + policy.ref_alpha * 0.25)
+    torch.testing.assert_close(
+        target, goal[:, 15:38] + policy.ref_alpha * 0.25
+    )
 
 
-def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypatch):
+def test_task_launcher_keeps_training_and_evaluation_isolated(
+    tmp_path, monkeypatch
+):
     from types import SimpleNamespace
     from source.tasks.blinkmimic import cli
 
     from dataclasses import replace
 
     selected_robot = SimpleNamespace(name="task_selected_robot")
-    monkeypatch.setitem(cli.TASKS, TEST_TASK, replace(
-        cli.TASKS[TEST_TASK], robot_factory=lambda: selected_robot,
-    ))
+    monkeypatch.setitem(
+        cli.TASKS,
+        TEST_TASK,
+        replace(
+            cli.TASKS[TEST_TASK],
+            robot_factory=lambda: selected_robot,
+        ),
+    )
     commands = []
     config_exports = []
 
@@ -211,9 +235,13 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
         def wait(self):
             return 0
 
-    monkeypatch.setattr(cli.subprocess, "check_output", lambda *a, **k: "test-source")
+    monkeypatch.setattr(
+        cli.subprocess, "check_output", lambda *a, **k: "test-source"
+    )
     monkeypatch.setattr(cli.subprocess, "Popen", Child)
-    monkeypatch.setattr(cli, "export_training_config_when_ready", export_config)
+    monkeypatch.setattr(
+        cli, "export_training_config_when_ready", export_config
+    )
     data = tmp_path / "data"
     data.mkdir()
     (data / "manifest.json").write_text("{}")
@@ -234,13 +262,18 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
     assert result.value.code == 0
     assert commands[-1][4] == "train"
     assert commands[-1][commands[-1].index("--task") + 1] == TEST_TASK
-    assert commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    assert (
+        commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    )
     assert config_exports == [train]
     assert commands[-1][commands[-1].index("--num_envs") + 1] == "2048"
     assert commands[-1][commands[-1].index("--ckpt_every") + 1] == "1000"
     assert commands[-1][commands[-1].index("--ckpt_minutes") + 1] == "0"
     assert "--ckpt_light" not in commands[-1]
-    assert "--enc_hidden" not in commands[-1] and "--dec_hidden" not in commands[-1]
+    assert (
+        "--enc_hidden" not in commands[-1]
+        and "--dec_hidden" not in commands[-1]
+    )
     ckpt = train / "model_100.pt"
     ckpt.write_bytes(b"test-only; subprocess mocked")
     evaluation = tmp_path / "eval"
@@ -261,13 +294,16 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
         )
     assert result.value.code == 0
     assert commands[-1][4] == "evaluate"
-    assert commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    assert (
+        commands[-1][commands[-1].index("--robot") + 1] == selected_robot.name
+    )
     assert config_exports == [train]
     assert "--ckpt" not in commands[-1]  # directory mode writes per-clip JSON
     assert (evaluation / "ckpt_000100.pt").resolve() == ckpt
     assert ckpt.read_bytes() == b"test-only; subprocess mocked"
 
     monkeypatch.setattr(cli, "ROOT", tmp_path)
+
     def run_gui(command, **kwargs):
         commands.append(command)
         assert "stdout" not in kwargs and "stderr" not in kwargs
@@ -289,6 +325,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
     assert (train / "run-record.json").read_bytes() == record
 
     prepared = []
+
     def prepare_task(task, output):
         assert task in cli.TASKS
         prepared.append((task, output))
@@ -302,7 +339,9 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
         cli.main("train", [TEST_TASK, "--run-dir", str(default_run)])
     assert result.value.code == 0
     assert prepared == [(TEST_TASK, default_run / "motions")]
-    assert commands[-1][commands[-1].index("--motion_dir") + 1] == str(default_run / "motions")
+    assert commands[-1][commands[-1].index("--motion_dir") + 1] == str(
+        default_run / "motions"
+    )
     saved = json.loads((default_run / "run-record.json").read_text())
     assert saved["task"] == TEST_TASK
     assert saved["manifest"] == str(default_run / "motions/manifest.json")
@@ -317,8 +356,9 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(tmp_path, monkeypa
     with pytest.raises(SystemExit) as result:
         cli.main("play", [TEST_TASK])
     assert result.value.code == 0
-    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(automatic / "model_200.pt")
-
+    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(
+        automatic / "model_200.pt"
+    )
 
 
 def test_task_motion_paths_support_files_directories_and_globs(tmp_path):
@@ -340,18 +380,27 @@ def test_task_motion_paths_support_files_directories_and_globs(tmp_path):
 def test_latest_training_run_uses_task_and_start_time(tmp_path):
     from source.tasks.blinkmimic.cli import latest_training_checkpoint
 
-    def run(name, started_at, *, task=TEST_TASK, action="train", iteration=100):
+    def run(
+        name, started_at, *, task=TEST_TASK, action="train", iteration=100
+    ):
         directory = tmp_path / TEST_TASK / name
         directory.mkdir(parents=True)
-        (directory / "run-record.json").write_text(json.dumps(dict(
-            task=task, action=action, started_at=started_at,
-        )))
+        (directory / "run-record.json").write_text(
+            json.dumps(
+                dict(
+                    task=task,
+                    action=action,
+                    started_at=started_at,
+                )
+            )
+        )
         checkpoint = directory / f"model_{iteration}.pt"
         if iteration:
             checkpoint.touch()
         return checkpoint
 
-    # Run names, modification times, and iteration counts do not define run recency.
+    # Run names, modification times, and iteration counts do not define run
+    # recency.
     expected = run("a_new", "2026-11-17T07:00:00+00:00")
     run("z_old", "2026-11-17T06:00:00+00:00", iteration=900)
     run("starting", "2026-11-17T08:00:00+00:00", iteration=0)
@@ -366,7 +415,9 @@ def test_latest_training_run_uses_task_and_start_time(tmp_path):
         latest_training_checkpoint(tmp_path / "missing", TEST_TASK)
 
 
-def test_training_motion_directory_supports_host_and_container_paths(tmp_path, monkeypatch):
+def test_training_motion_directory_supports_host_and_container_paths(
+    tmp_path, monkeypatch
+):
     from source.tasks.blinkmimic import cli
 
     checkpoint = tmp_path / "model_100.pt"
@@ -375,9 +426,14 @@ def test_training_motion_directory_supports_host_and_container_paths(tmp_path, m
     data.mkdir(parents=True)
     monkeypatch.setattr(cli, "ROOT", tmp_path)
     for root in (str(tmp_path), "/different/container/checkout"):
-        record_path.write_text(json.dumps(dict(
-            cwd=root, manifest=f"{root}/.blinkmimic-data/dances/manifest.json",
-        )))
+        record_path.write_text(
+            json.dumps(
+                dict(
+                    cwd=root,
+                    manifest=f"{root}/.blinkmimic-data/dances/manifest.json",
+                )
+            )
+        )
         assert cli.training_motion_directory(checkpoint) == data
     record_path.unlink()
     with pytest.raises(ValueError, match="use --motion-dir"):
@@ -428,16 +484,29 @@ def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode):
 
     robot = replace(make_robot(), name="task_robot")
     task = "Cyclo-BlinkMimic-Test"
-    monkeypatch.setitem(worker.TASKS, task, BlinkMimicTaskCfg(
-        robot_factory=lambda: robot, motion_paths=(),
-    ))
+    monkeypatch.setitem(
+        worker.TASKS,
+        task,
+        BlinkMimicTaskCfg(
+            robot_factory=lambda: robot,
+            motion_paths=(),
+        ),
+    )
     # Restore the process-local upstream registration after this test.
     monkeypatch.setitem(sys.modules, "blinkmimic.task_robot", None)
-    monkeypatch.setitem(sys.modules, "blinkmimic.task_robot.task_robot_constants", None)
-    monkeypatch.setattr(blinkmimic.motion, "MotionLib", blinkmimic.motion.MotionLib)
-    monkeypatch.setattr(sys, "argv", ["worker", mode, "--task", task, "--test-option"])
+    monkeypatch.setitem(
+        sys.modules, "blinkmimic.task_robot.task_robot_constants", None
+    )
+    monkeypatch.setattr(
+        blinkmimic.motion, "MotionLib", blinkmimic.motion.MotionLib
+    )
+    monkeypatch.setattr(
+        sys, "argv", ["worker", mode, "--task", task, "--test-option"]
+    )
     calls = []
-    monkeypatch.setattr(worker.runpy, "run_module", lambda module, **kw: calls.append(module))
+    monkeypatch.setattr(
+        worker.runpy, "run_module", lambda module, **kw: calls.append(module)
+    )
     monkeypatch.setattr(play, "main", lambda **kw: calls.append(kw["robot"]))
 
     worker.main()
@@ -463,9 +532,13 @@ def test_worker_environment_preserves_explicit_resources(monkeypatch):
     assert worker_environment()["OMP_NUM_THREADS"] == "4"
 
 
-@pytest.mark.parametrize("stage", ["startup_record", "yaml", "monitor", "evaluation"])
+@pytest.mark.parametrize(
+    "stage", ["startup_record", "yaml", "monitor", "evaluation"]
+)
 @pytest.mark.parametrize("interrupt", [False, True])
-def test_worker_failure_stops_child_and_records_exit(tmp_path, monkeypatch, stage, interrupt):
+def test_worker_failure_stops_child_and_records_exit(
+    tmp_path, monkeypatch, stage, interrupt
+):
     from types import SimpleNamespace
     from unittest.mock import Mock
     from source.tasks.blinkmimic import cli
@@ -481,7 +554,9 @@ def test_worker_failure_stops_child_and_records_exit(tmp_path, monkeypatch, stag
     child.wait.side_effect = lambda **kw: child.returncode
     monkeypatch.setattr(cli.subprocess, "Popen", lambda *a, **kw: child)
     monkeypatch.setattr(cli, "build_run_record", lambda *a: {})
-    monkeypatch.setattr(cli, "export_training_config_when_ready", lambda *a: "sim2real.yaml")
+    monkeypatch.setattr(
+        cli, "export_training_config_when_ready", lambda *a: "sim2real.yaml"
+    )
     monkeypatch.setattr(cli, "wait_for_training", lambda *a: 0)
 
     def fail(*a, **kw):
@@ -489,22 +564,32 @@ def test_worker_failure_stops_child_and_records_exit(tmp_path, monkeypatch, stag
 
     if stage == "startup_record":
         original = cli.update_run_record
+
         def write(path, record, **fields):
             if fields.get("status") == "running":
                 raise failure
             original(path, record, **fields)
+
         monkeypatch.setattr(cli, "update_run_record", write)
     elif stage == "yaml":
         monkeypatch.setattr(cli, "export_training_config_when_ready", fail)
     elif stage == "monitor":
         monkeypatch.setattr(cli, "wait_for_training", fail)
     else:
-        child.wait.side_effect = lambda **kw: child.returncode if kw else fail()
+        child.wait.side_effect = lambda **kw: (
+            child.returncode if kw else fail()
+        )
 
     args = SimpleNamespace(task=TEST_TASK, run_dir=tmp_path, cache_dir=None)
     with pytest.raises(type(failure)) as caught:
-        cli.run_worker(args, action="play" if stage == "evaluation" else "train",
-                       flags=[], extra=[], robot=None, removed_systems_flags=[])
+        cli.run_worker(
+            args,
+            action="play" if stage == "evaluation" else "train",
+            flags=[],
+            extra=[],
+            robot=None,
+            removed_systems_flags=[],
+        )
     assert caught.value is failure
     child.terminate.assert_called_once()
     record = json.loads((tmp_path / "run-record.json").read_text())
@@ -519,10 +604,15 @@ def test_playback_motion_selection_resets_environment_and_history():
     from source.tasks.blinkmimic.play import BlinkMimicPlayback
 
     playback = object.__new__(BlinkMimicPlayback)
-    playback.motion = SimpleNamespace(names=["first", "second"], clip_start=torch.tensor([0, 50]))
+    playback.motion = SimpleNamespace(
+        names=["first", "second"], clip_start=torch.tensor([0, 50])
+    )
     playback.env = SimpleNamespace(
-        f=torch.tensor([7]), device="cpu", reset=Mock(),
-        done_eval=torch.ones(1), failed_eval=torch.ones(1),
+        f=torch.tensor([7]),
+        device="cpu",
+        reset=Mock(),
+        done_eval=torch.ones(1),
+        failed_eval=torch.ones(1),
     )
     playback.history = torch.ones(1, 10, 81)
     playback.is_finished = playback.has_failed = True
@@ -531,7 +621,9 @@ def test_playback_motion_selection_resets_environment_and_history():
     assert ids.tolist() == [0] and frames.tolist() == [50]
     assert playback.clip_index == 1 and playback.history is None
     assert not playback.is_finished and not playback.has_failed
-    assert not playback.env.done_eval.any() and not playback.env.failed_eval.any()
+    assert (
+        not playback.env.done_eval.any() and not playback.env.failed_eval.any()
+    )
     with pytest.raises(ValueError):
         playback.select_motion(2)
     assert playback.env.reset.call_count == 1

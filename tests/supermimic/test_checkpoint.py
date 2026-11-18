@@ -6,7 +6,10 @@ import pytest
 import torch
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 
-from source.tasks.supermimic.checkpoint_config import make_manifest, validate_manifest
+from source.tasks.supermimic.checkpoint_config import (
+    make_manifest,
+    validate_manifest,
+)
 from source.tasks.supermimic.config import TASKS, register_tasks
 from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
@@ -57,7 +60,9 @@ def test_manifest_rejects_incompatible_contract(manifest, field, value):
 @pytest.mark.parametrize(
     "rep,override", [("GenCoord", "maxcoord"), ("MaxCoord", "gencoord")]
 )
-def test_train_mismatch_fails_before_device(monkeypatch, manifest, rep, override):
+def test_train_mismatch_fails_before_device(
+    monkeypatch, manifest, rep, override
+):
     from source.tasks.supermimic import train
 
     monkeypatch.setattr(
@@ -88,7 +93,9 @@ def test_offline_artifacts_never_call_remote_api(monkeypatch, mode):
         artifacts.wandb,
         "run",
         SimpleNamespace(
-            id="local", settings=SimpleNamespace(mode=mode), log_artifact=logged.append
+            id="local",
+            settings=SimpleNamespace(mode=mode),
+            log_artifact=logged.append,
         ),
     )
     monkeypatch.setattr(
@@ -110,7 +117,13 @@ def test_offline_artifacts_never_call_remote_api(monkeypatch, mode):
 @pytest.mark.parametrize("local_archive", [False, True])
 @pytest.mark.parametrize("local_loop", [False, True])
 def test_real_runner_loop_saves_final_parameters(
-    monkeypatch, tmp_path, iterations, interval, upload_failure, local_archive, local_loop
+    monkeypatch,
+    tmp_path,
+    iterations,
+    interval,
+    upload_failure,
+    local_archive,
+    local_loop,
 ):
     from supermimic.runners import supermimic_runner as module
 
@@ -121,7 +134,11 @@ def test_real_runner_loop_saves_final_parameters(
         model.weight.data.zero_()
     optimizers = {
         name: torch.optim.Adam(model.parameters(), lr=0.0)
-        for name, model in (("actor", actor), ("critic", critic), ("world_model", dynamics))
+        for name, model in (
+            ("actor", actor),
+            ("critic", critic),
+            ("world_model", dynamics),
+        )
     }
 
     def update_optimizer(name, model):
@@ -168,12 +185,19 @@ def test_real_runner_loop_saves_final_parameters(
         checkpoint_extra_files=lambda _: [],
         step=step,
         replay_buffer=buffer,
-        world_model_learner=SimpleNamespace(update=update_wm, optimizers=[optimizers["world_model"]]),
-        policy_learner=SimpleNamespace(
-            update=update_policy, actor=actor, critic=critic,
-            actor_optimizers=[optimizers["actor"]], critic_optimizers=[optimizers["critic"]],
+        world_model_learner=SimpleNamespace(
+            update=update_wm, optimizers=[optimizers["world_model"]]
         ),
-        _wm=SimpleNamespace(bundle=lambda: copy.deepcopy(dynamics.state_dict())),
+        policy_learner=SimpleNamespace(
+            update=update_policy,
+            actor=actor,
+            critic=critic,
+            actor_optimizers=[optimizers["actor"]],
+            critic_optimizers=[optimizers["critic"]],
+        ),
+        _wm=SimpleNamespace(
+            bundle=lambda: copy.deepcopy(dynamics.state_dict())
+        ),
         _representation=SimpleNamespace(actor_obs_mode="rep_state"),
         logger=SimpleNamespace(log=lambda **kw: None),
     )
@@ -187,7 +211,9 @@ def test_real_runner_loop_saves_final_parameters(
         local._checkpoint_step = -1
         local.manifest = {"task_id": "test"}
         local._deployment_files = []
-        monkeypatch.setattr(module.SuperMimicRunner, "step", lambda self: step())
+        monkeypatch.setattr(
+            module.SuperMimicRunner, "step", lambda self: step()
+        )
         runner = local
     logged = []
     monkeypatch.setattr(module.wandb, "run", SimpleNamespace(name="local"))
@@ -199,8 +225,13 @@ def test_real_runner_loop_saves_final_parameters(
 
     monkeypatch.setattr(module, "log_model_artifact", log)
     from source.tasks.supermimic import training_loop
+
     monkeypatch.setattr(training_loop, "log_model_artifact", log)
-    run = training_loop.run_training_loop if local_loop else module.SuperMimicRunner.run
+    run = (
+        training_loop.run_training_loop
+        if local_loop
+        else module.SuperMimicRunner.run
+    )
     if upload_failure:
         with pytest.raises(RuntimeError, match="final artifact failed"):
             run(runner)
@@ -217,12 +248,18 @@ def test_real_runner_loop_saves_final_parameters(
     if local_archive:
         from source.tasks.supermimic.checkpoint_archive import load_checkpoint
 
-        snapshot = load_checkpoint(tmp_path / "checkpoints" / f"model_{iterations - 1}.pt")
+        snapshot = load_checkpoint(
+            tmp_path / "checkpoints" / f"model_{iterations - 1}.pt"
+        )
         assert snapshot.optimizers is None
         last = load_checkpoint(tmp_path)
         assert last.source == tmp_path / "last.pt"
         assert last.step == iterations - 1
-        for state, model in [(last.actor, actor), (last.critic, critic), (last.world_model, dynamics)]:
+        for state, model in [
+            (last.actor, actor),
+            (last.critic, critic),
+            (last.world_model, dynamics),
+        ]:
             assert torch.equal(state["weight"], model.weight)
         first = load_checkpoint(tmp_path / "checkpoints/model_0.pt")
         assert first.actor["weight"].item() == 0
@@ -244,16 +281,25 @@ def test_real_runner_loop_saves_final_parameters(
         assert len(logged) == 2  # final iteration also lies on an interval
 
 
-@pytest.mark.parametrize("optimizer_type", [torch.optim.Adam, torch.optim.Muon])
+@pytest.mark.parametrize(
+    "optimizer_type", [torch.optim.Adam, torch.optim.Muon]
+)
 def test_optimizer_snapshot_restores_next_update(tmp_path, optimizer_type):
-    from source.tasks.supermimic.checkpoint_archive import load_checkpoint, save_checkpoint
+    from source.tasks.supermimic.checkpoint_archive import (
+        load_checkpoint,
+        save_checkpoint,
+    )
 
     model = torch.nn.Linear(3, 3, bias=False)
     optimizer = optimizer_type(model.parameters(), lr=0.001)
     model.weight.grad = torch.full_like(model.weight, 0.5)
     optimizer.step()
     path = save_checkpoint(
-        tmp_path, step=1000, manifest={}, actor=model.state_dict(), world_model={},
+        tmp_path,
+        step=1000,
+        manifest={},
+        actor=model.state_dict(),
+        world_model={},
         optimizers={"actor": [optimizer.state_dict()]},
     )
     assert load_checkpoint(path).optimizers is None
@@ -271,7 +317,9 @@ def test_optimizer_snapshot_restores_next_update(tmp_path, optimizer_type):
     torch.testing.assert_close(model.weight, restored.weight, rtol=0, atol=0)
 
 
-@pytest.mark.parametrize("variant", ["clipping", "subset", "reordered", "entity"])
+@pytest.mark.parametrize(
+    "variant", ["clipping", "subset", "reordered", "entity"]
+)
 def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
     from mjlab.entity import Entity
 
@@ -306,7 +354,9 @@ def test_latest_saved_bundle_skips_incomplete_and_other_tasks(tmp_path):
     def run(task_dir, timestamp, saved_task, *, complete=True):
         directory = tmp_path / task_dir / timestamp
         directory.mkdir(parents=True)
-        (directory / "manifest.json").write_text(json.dumps({"task_id": saved_task}))
+        (directory / "manifest.json").write_text(
+            json.dumps({"task_id": saved_task})
+        )
         (directory / "actor.pt").touch()
         if complete:
             (directory / "world_model.pt").touch()
@@ -320,13 +370,17 @@ def test_latest_saved_bundle_skips_incomplete_and_other_tasks(tmp_path):
         latest_checkpoint_directory(tmp_path, "missing-task")
 
 
-def test_play_resolves_latest_only_without_explicit_checkpoint(tmp_path, monkeypatch):
+def test_play_resolves_latest_only_without_explicit_checkpoint(
+    tmp_path, monkeypatch
+):
     from source.tasks.supermimic import play
 
     task = "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"
     directory = tmp_path / "saved"
     selected = []
-    monkeypatch.setattr(play, "latest_checkpoint_directory", lambda root, name: directory)
+    monkeypatch.setattr(
+        play, "latest_checkpoint_directory", lambda root, name: directory
+    )
 
     class BeforeLoading(Exception):
         pass
@@ -340,22 +394,43 @@ def test_play_resolves_latest_only_without_explicit_checkpoint(tmp_path, monkeyp
         play.play(task, play.PlayConfig(motion_file="reference.npz"))
     assert selected == [(directory, task)]
     explicit = tmp_path / "explicit"
-    monkeypatch.setattr(play, "latest_checkpoint_directory", lambda *args: pytest.fail("unexpected search"))
+    monkeypatch.setattr(
+        play,
+        "latest_checkpoint_directory",
+        lambda *args: pytest.fail("unexpected search"),
+    )
     with pytest.raises(BeforeLoading):
-        play.play(task, play.PlayConfig(motion_file="reference.npz", checkpoint_dir=explicit))
+        play.play(
+            task,
+            play.PlayConfig(
+                motion_file="reference.npz", checkpoint_dir=explicit
+            ),
+        )
     assert selected[-1] == (explicit, task)
     with pytest.raises(ValueError, match="Choose only one"):
-        play.play(task, play.PlayConfig(motion_file="reference.npz", checkpoint_dir=explicit, wandb_path="run"))
+        play.play(
+            task,
+            play.PlayConfig(
+                motion_file="reference.npz",
+                checkpoint_dir=explicit,
+                wandb_path="run",
+            ),
+        )
 
 
-def test_archive_retention_and_preserves_existing_file_on_failure(tmp_path, monkeypatch):
+def test_archive_retention_and_preserves_existing_file_on_failure(
+    tmp_path, monkeypatch
+):
     from source.tasks.supermimic.checkpoint_archive import save_checkpoint
 
     for step in range(0, 16000, 1000):
-        save_checkpoint(tmp_path, step=step, manifest={}, actor={}, world_model={})
+        save_checkpoint(
+            tmp_path, step=step, manifest={}, actor={}, world_model={}
+        )
     directory = tmp_path / "checkpoints"
     assert {p.name for p in directory.glob("*.pt")} == {
-        f"model_{step}.pt" for step in (0, 10000, 11000, 12000, 13000, 14000, 15000)
+        f"model_{step}.pt"
+        for step in (0, 10000, 11000, 12000, 13000, 14000, 15000)
     }
     original = (directory / "model_15000.pt").read_bytes()
     latest = (tmp_path / "last.pt").read_bytes()
@@ -366,34 +441,54 @@ def test_archive_retention_and_preserves_existing_file_on_failure(tmp_path, monk
 
     monkeypatch.setattr(torch, "save", fail)
     with pytest.raises(OSError, match="disk full"):
-        save_checkpoint(tmp_path, step=15000, manifest={}, actor={}, world_model={})
+        save_checkpoint(
+            tmp_path, step=15000, manifest={}, actor={}, world_model={}
+        )
     assert (directory / "model_15000.pt").read_bytes() == original
     assert (tmp_path / "last.pt").read_bytes() == latest
     assert not list(directory.glob("*.tmp"))
     assert not list(tmp_path.glob("*.tmp"))
 
 
-def test_play_accepts_archive_and_rejects_conflicting_sources(tmp_path, monkeypatch):
+def test_play_accepts_archive_and_rejects_conflicting_sources(
+    tmp_path, monkeypatch
+):
     from source.tasks.supermimic import play
 
     selected = []
+
     class Selected(Exception):
         pass
+
     def load(source):
         selected.append(source)
         raise Selected
+
     monkeypatch.setattr(play, "load_checkpoint", load)
-    monkeypatch.setattr(play, "latest_checkpoint_directory", lambda *a: pytest.fail("searched latest"))
+    monkeypatch.setattr(
+        play,
+        "latest_checkpoint_directory",
+        lambda *a: pytest.fail("searched latest"),
+    )
     path = tmp_path / "model_1000.pt"
     with pytest.raises(Selected):
-        play.play("task", play.PlayConfig(motion_file="unused", checkpoint=path))
+        play.play(
+            "task", play.PlayConfig(motion_file="unused", checkpoint=path)
+        )
     assert selected == [path]
     for other in ({"checkpoint_dir": tmp_path}, {"wandb_path": "run"}):
         with pytest.raises(ValueError, match="Choose only one"):
-            play.play("task", play.PlayConfig(motion_file="unused", checkpoint=path, **other))
+            play.play(
+                "task",
+                play.PlayConfig(
+                    motion_file="unused", checkpoint=path, **other
+                ),
+            )
 
 
-def test_playback_uses_play_resets_without_changing_training_contract(manifest):
+def test_playback_uses_play_resets_without_changing_training_contract(
+    manifest,
+):
     from mjlab.tasks.registry import load_env_cfg
     from source.tasks.supermimic.checkpoint_config import json_value
     from source.tasks.supermimic.play import playback_environment
@@ -413,40 +508,101 @@ def test_playback_uses_play_resets_without_changing_training_contract(manifest):
     expected = copy.deepcopy(before)
     expected["episode_length_s"] = defaults.episode_length_s
     expected["scene"]["num_envs"] = 1
-    for name in ("pose_range", "velocity_range", "sampling_mode", "joint_position_range"):
-        expected["commands"]["motion"][name] = json_value(getattr(defaults.commands["motion"], name))
+    for name in (
+        "pose_range",
+        "velocity_range",
+        "sampling_mode",
+        "joint_position_range",
+    ):
+        expected["commands"]["motion"][name] = json_value(
+            getattr(defaults.commands["motion"], name)
+        )
     expected["commands"]["motion"]["motion_file"] = "selected.npz"
     assert json_value(playback) == expected
 
 
-def test_resume_cli_uses_saved_settings_and_restores_before_run(monkeypatch, tmp_path, manifest):
+def test_resume_cli_uses_saved_settings_and_restores_before_run(
+    monkeypatch, tmp_path, manifest
+):
     from source.tasks.supermimic import train
     from source.tasks.supermimic.checkpoint_archive import save_checkpoint
-    save_checkpoint(tmp_path, step=1000, manifest=manifest, actor={}, critic={}, world_model={})
+
+    save_checkpoint(
+        tmp_path,
+        step=1000,
+        manifest=manifest,
+        actor={},
+        critic={},
+        world_model={},
+    )
     task = manifest["task_id"]
     calls = []
     monkeypatch.setattr(train, "setup_device", lambda _: "cpu")
     env = SimpleNamespace(close=lambda: calls.append("close"))
     monkeypatch.setattr(train, "create_env", lambda cfg, count, device: env)
+
     def build(**kwargs):
-        assert kwargs["cfg"].actor_obs == "rep_state"  # current default is proprio
-        assert kwargs["manifest"]["environment_options"] == manifest["environment_options"]
+        assert (
+            kwargs["cfg"].actor_obs == "rep_state"
+        )  # current default is proprio
+        assert (
+            kwargs["manifest"]["environment_options"]
+            == manifest["environment_options"]
+        )
         assert kwargs["manifest"]["num_envs"] == 8
         assert kwargs["cfg"].max_iterations == 2000
         return SimpleNamespace(run=lambda: calls.append("run"))
+
     monkeypatch.setattr(train, "SuperMimicRunner", build)
-    monkeypatch.setattr(train, "restore_training_state", lambda *a: calls.append("restore"))
-    train.main([task, "--agent.resume", "True", "--agent.load-checkpoint", str(tmp_path / "last.pt"),
-                "--motion-file", "unused.npz", "--runner.max-iterations", "2000", "--num-envs", "8"])
+    monkeypatch.setattr(
+        train, "restore_training_state", lambda *a: calls.append("restore")
+    )
+    train.main(
+        [
+            task,
+            "--agent.resume",
+            "True",
+            "--agent.load-checkpoint",
+            str(tmp_path / "last.pt"),
+            "--motion-file",
+            "unused.npz",
+            "--runner.max-iterations",
+            "2000",
+            "--num-envs",
+            "8",
+        ]
+    )
     assert calls == ["restore", "run", "close"]
 
 
-def test_resume_configuration_failure_precedes_gpu(monkeypatch, tmp_path, manifest):
+def test_resume_configuration_failure_precedes_gpu(
+    monkeypatch, tmp_path, manifest
+):
     from source.tasks.supermimic import train
     from source.tasks.supermimic.checkpoint_archive import save_checkpoint
-    save_checkpoint(tmp_path, step=1000, manifest=manifest, actor={}, critic={}, world_model={})
-    monkeypatch.setattr(train, "setup_device", lambda _: pytest.fail("GPU setup reached"))
+
+    save_checkpoint(
+        tmp_path,
+        step=1000,
+        manifest=manifest,
+        actor={},
+        critic={},
+        world_model={},
+    )
+    monkeypatch.setattr(
+        train, "setup_device", lambda _: pytest.fail("GPU setup reached")
+    )
     with pytest.raises(ValueError, match="configuration differs"):
-        train.main([manifest["task_id"], "--agent.resume", "True",
-                    "--agent.load-checkpoint", str(tmp_path / "last.pt"), "--motion-file", "unused.npz",
-                    "--runner.history-length", "6"])
+        train.main(
+            [
+                manifest["task_id"],
+                "--agent.resume",
+                "True",
+                "--agent.load-checkpoint",
+                str(tmp_path / "last.pt"),
+                "--motion-file",
+                "unused.npz",
+                "--runner.history-length",
+                "6",
+            ]
+        )

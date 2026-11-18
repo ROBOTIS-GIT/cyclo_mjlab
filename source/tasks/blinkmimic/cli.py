@@ -1,4 +1,7 @@
-"""Task-specific isolated entry point for the released recipe (never bare defaults)."""
+"""
+Task-specific isolated entry point for the released recipe (never bare
+defaults).
+"""
 
 import argparse
 import datetime
@@ -31,16 +34,20 @@ def latest_training_checkpoint(log_root, task):
             record = json.loads(record_path.read_text())
             if record["task"] != task or record["action"] != "train":
                 continue
-            started_at = datetime.datetime.fromisoformat(record["started_at"]).timestamp()
+            started_at = datetime.datetime.fromisoformat(
+                record["started_at"]
+            ).timestamp()
             checkpoint = select_checkpoint(None, record_path.parent)
         except (OSError, ValueError, KeyError, TypeError):
-            # In-progress records and runs without a checkpoint are not playable yet.
+            # In-progress records and runs without a checkpoint are not
+            # playable yet.
             continue
         candidates.append((started_at, checkpoint))
     if not candidates:
         raise ValueError(
-            f"No saved training checkpoints for {task} in {log_root}; "
-            "use --checkpoint-dir or --checkpoint for a run outside this directory"
+            f"No saved training checkpoints for {task} in {log_root}; use"
+            " --checkpoint-dir or --checkpoint for a run outside this"
+            " directory"
         )
     return max(candidates)[1]
 
@@ -51,17 +58,21 @@ def training_motion_directory(checkpoint):
         record = json.loads(record_path.read_text())
         motion_dir = Path(record["manifest"]).parent
         if not motion_dir.is_dir():
-            # Host and container share the checkout but mount it at different paths.
+            # Host and container share the checkout but mount it at different
+            # paths.
             motion_dir = ROOT / motion_dir.relative_to(record["cwd"])
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise ValueError(
-            f"Cannot recover training motion directory from {record_path}; use --motion-dir"
+            f"Cannot recover training motion directory from {record_path}; use"
+            " --motion-dir"
         ) from error
     return motion_dir
 
 
 def export_training_config_when_ready(child, run_dir, robot):
-    """Use the trainer's saved arguments without modifying its parser or runtime."""
+    """
+    Use the trainer's saved arguments without modifying its parser or runtime.
+    """
     from .runtime import prepare
 
     while True:
@@ -69,9 +80,12 @@ def export_training_config_when_ready(child, run_dir, robot):
             settings = json.loads((run_dir / "args.json").read_text())
             break
         except (FileNotFoundError, json.JSONDecodeError):
-            # args.json is written in place; retry while the trainer starts or writes.
+            # args.json is written in place; retry while the trainer starts or
+            # writes.
             if child.poll() is not None:
-                raise RuntimeError("Trainer exited before saving complete args.json")
+                raise RuntimeError(
+                    "Trainer exited before saving complete args.json"
+                )
             try:
                 child.wait(timeout=0.1)
             except subprocess.TimeoutExpired:
@@ -81,7 +95,9 @@ def export_training_config_when_ready(child, run_dir, robot):
     from .export_sim2real_cfg import export_sim2real_cfg
 
     if settings["robot"] != robot.name:
-        raise ValueError("Training robot does not match the deployment configuration")
+        raise ValueError(
+            "Training robot does not match the deployment configuration"
+        )
     return export_sim2real_cfg(run_dir, SimpleNamespace(**settings), robot)
 
 
@@ -91,7 +107,10 @@ def recipe():
 
 
 def execution_recipe(mode, flags=None):
-    """An explicit systems-only alternative; model and learning settings are intact."""
+    """
+    An explicit systems-only alternative; model and learning settings are
+    intact.
+    """
     flags = recipe() if flags is None else flags
     removed = []
     if mode == "compiled_no_torch_graphs":
@@ -109,7 +128,7 @@ def execution_recipe(mode, flags=None):
             if flag in switches:
                 removed.append(flag)
             elif flag == "--eprobe_async":
-                removed.extend(flags[i : i + 2])
+                removed.extend(flags[i: i + 2])
                 i += 1
             else:
                 result.append(flag)
@@ -131,9 +150,12 @@ def prepare_task_motions(task, output):
 
 def worker_environment(cache=None):
     env = os.environ.copy()
-    env["PYTHONPATH"] = os.pathsep.join(filter(None, (str(ROOT), env.get("PYTHONPATH"))))
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(ROOT), env.get("PYTHONPATH")))
+    )
     for name, default in (
-        ("WANDB_MODE", "disabled"), ("CUDA_VISIBLE_DEVICES", "0"),
+        ("WANDB_MODE", "disabled"),
+        ("CUDA_VISIBLE_DEVICES", "0"),
         ("OMP_NUM_THREADS", "4"),
     ):
         env.setdefault(name, default)
@@ -148,18 +170,33 @@ def worker_environment(cache=None):
 
 
 def run_gui(args):
-    command = [sys.executable, "-u", "-m", "source.tasks.blinkmimic.worker", "play",
-               "--task", args.task,
-               "--checkpoint", str(args.checkpoint), "--motion-dir",
-               str(args.motion_dir.resolve()), "--port", str(args.port)]
+    command = [
+        sys.executable,
+        "-u",
+        "-m",
+        "source.tasks.blinkmimic.worker",
+        "play",
+        "--task",
+        args.task,
+        "--checkpoint",
+        str(args.checkpoint),
+        "--motion-dir",
+        str(args.motion_dir.resolve()),
+        "--port",
+        str(args.port),
+    ]
     if args.num_steps is not None:
         command.extend(["--num-steps", str(args.num_steps)])
     cache = args.cache_dir.resolve() if args.cache_dir else None
-    return subprocess.run(command, cwd=ROOT, env=worker_environment(cache)).returncode
+    return subprocess.run(
+        command, cwd=ROOT, env=worker_environment(cache)
+    ).returncode
 
 
 def wait_for_training(child, run_dir):
-    """Collect training outputs while the child runs, including its final writes."""
+    """
+    Collect training outputs while the child runs, including its final writes.
+    """
     from .tensorboard import BlinkMimicTensorBoard
 
     metrics = BlinkMimicTensorBoard(run_dir)
@@ -183,21 +220,47 @@ def create_parser():
         description="K1 Rev.1 motion-only official BlinkMimic"
     )
     parser.add_argument("task", choices=tuple(TASKS))
-    parser.add_argument("--motion-dir", type=Path,
-                        help="Override the task motions with a prepared library; play defaults to recorded motions")
-    parser.add_argument("--run-dir", type=Path,
-                        help="Output directory; training defaults to logs/<task>/<timestamp>")
+    parser.add_argument(
+        "--motion-dir",
+        type=Path,
+        help=(
+            "Override the task motions with a prepared library; play defaults"
+            " to recorded motions"
+        ),
+    )
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        help="Output directory; training defaults to logs/<task>/<timestamp>",
+    )
     parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--checkpoint-dir", type=Path,
-                        help="Training directory; defaults to the latest saved run for this task")
-    parser.add_argument("--viewer", choices=("viser", "headless"), default="viser")
-    parser.add_argument("--port", type=int, default=8080, help="Browser viewer port")
-    parser.add_argument("--num-steps", type=int, help="Stop GUI playback after this many policy steps")
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        help=(
+            "Training directory; defaults to the latest saved run for this"
+            " task"
+        ),
+    )
+    parser.add_argument(
+        "--viewer", choices=("viser", "headless"), default="viser"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8080, help="Browser viewer port"
+    )
+    parser.add_argument(
+        "--num-steps",
+        type=int,
+        help="Stop GUI playback after this many policy steps",
+    )
     parser.add_argument(
         "--execution",
         choices=("official", "compiled_no_torch_graphs"),
         default="official",
-        help="Explicit systems-only memory alternative; preserves models/batches/horizons. Native MuJoCo physics graphs remain.",
+        help=(
+            "Explicit systems-only memory alternative; preserves"
+            " models/batches/horizons. Native MuJoCo physics graphs remain."
+        ),
     )
     parser.add_argument(
         "--cache-dir",
@@ -214,7 +277,9 @@ def resolve_playback_inputs(args):
     if args.checkpoint is None and args.checkpoint_dir is None:
         args.checkpoint = latest_training_checkpoint(ROOT / "logs", args.task)
     else:
-        args.checkpoint = select_checkpoint(args.checkpoint, args.checkpoint_dir)
+        args.checkpoint = select_checkpoint(
+            args.checkpoint, args.checkpoint_dir
+        )
     if args.motion_dir is None:
         args.motion_dir = training_motion_directory(args.checkpoint)
     if args.num_steps is not None and args.num_steps < 1:
@@ -228,11 +293,22 @@ def resolve_playback_inputs(args):
 def parse_arguments(parser, action, argv):
     args, extra = parser.parse_known_args(argv)
     if action == "train" and "--ckpt_light" in extra:
-        parser.error("--ckpt_light omits world model and critic; full checkpoints are required")
+        parser.error(
+            "--ckpt_light omits world model and critic; full checkpoints are"
+            " required"
+        )
     if action not in ("train", "play"):
         parser.error("Supported actions are train and play")
-    # Recipe overrides remain explicit and recorded, with no implicit resource reduction.
-    forbidden = {"--robot", "--motion_dir", "--log_dir", "--run_dir", "--ckpt", "--resume"}
+    # Recipe overrides remain explicit and recorded, with no implicit resource
+    # reduction.
+    forbidden = {
+        "--robot",
+        "--motion_dir",
+        "--log_dir",
+        "--run_dir",
+        "--ckpt",
+        "--resume",
+    }
     if any(x.split("=", 1)[0] in forbidden for x in extra):
         parser.error("Use task-specific motion/run/checkpoint options")
     return args, extra
@@ -240,18 +316,30 @@ def parse_arguments(parser, action, argv):
 
 def prepare_run_inputs(action, args, extra):
     if action == "play":
-        if args.resume or args.load_run != ".*" or args.load_checkpoint != "last.pt":
+        if (
+            args.resume
+            or args.load_run != ".*"
+            or args.load_checkpoint != "last.pt"
+        ):
             raise ValueError("--agent.* resume options are only for training")
         resolve_playback_inputs(args)
 
-    if args.motion_dir is not None and not (args.motion_dir / "manifest.json").is_file():
-        raise ValueError("Motion directory requires its provenance manifest.json; use --motion-dir")
+    if (
+        args.motion_dir is not None
+        and not (args.motion_dir / "manifest.json").is_file()
+    ):
+        raise ValueError(
+            "Motion directory requires its provenance manifest.json; use"
+            " --motion-dir"
+        )
 
     if action == "play" and args.viewer == "viser":
         if extra:
             raise ValueError(f"Unsupported GUI options: {' '.join(extra)}")
         if args.run_dir is not None:
-            raise ValueError("--run-dir is only used for training or headless evaluation")
+            raise ValueError(
+                "--run-dir is only used for training or headless evaluation"
+            )
 
 
 def resolve_training_resume(args, extra, robot, resume_path):
@@ -262,10 +350,14 @@ def resolve_training_resume(args, extra, robot, resume_path):
         args.execution, training_arguments(saved, robot.name)
     )
     iterations_parser = argparse.ArgumentParser(add_help=False)
-    iterations_parser.add_argument("--iterations", type=int, default=saved["args"]["iterations"])
+    iterations_parser.add_argument(
+        "--iterations", type=int, default=saved["args"]["iterations"]
+    )
     iterations, _ = iterations_parser.parse_known_args(extra)
     if iterations.iterations <= saved["iteration"]:
-        raise ValueError("--iterations must exceed the saved completed iterations")
+        raise ValueError(
+            "--iterations must exceed the saved completed iterations"
+        )
     record = json.loads((resume_path.parent / "run-record.json").read_text())
     if record["task"] != args.task:
         raise ValueError("Resume checkpoint belongs to a different task")
@@ -274,11 +366,16 @@ def resolve_training_resume(args, extra, robot, resume_path):
         (args.motion_dir / "manifest.json").read_bytes()
         != (original_motion_dir / "manifest.json").read_bytes()
     ):
-        raise ValueError("Resume requires the original motion library and ordering")
+        raise ValueError(
+            "Resume requires the original motion library and ordering"
+        )
     args.motion_dir = args.motion_dir or original_motion_dir
     extra = [*extra, "--resume", str(resume_path)]
-    print(f"[INFO] Resuming {resume_path} at iteration {saved['iteration']}; "
-          "simulation and replay buffer restart", flush=True)
+    print(
+        f"[INFO] Resuming {resume_path} at iteration {saved['iteration']}; "
+        "simulation and replay buffer restart",
+        flush=True,
+    )
     args.resume_checkpoint = resume_path
     return effective_recipe, removed_systems_flags, extra
 
@@ -297,20 +394,30 @@ def run_training(args, extra):
 
     resume_path = select_resume_checkpoint(ROOT / "logs" / args.task, args)
     if resume_path is not None:
-        effective_recipe, removed_systems_flags, extra = resolve_training_resume(
-            args, extra, robot, resume_path
+        effective_recipe, removed_systems_flags, extra = (
+            resolve_training_resume(args, extra, robot, resume_path)
         )
     out.mkdir(parents=True, exist_ok=False)
     if args.motion_dir is None:
         args.motion_dir = prepare_task_motions(args.task, out / "motions")
     flags = [
-        *checkpoint_recipe(effective_recipe), *extra,
-        "--robot", robot.name,
-        "--motion_dir", str(args.motion_dir.resolve()),
-        "--log_dir", str(out),
+        *checkpoint_recipe(effective_recipe),
+        *extra,
+        "--robot",
+        robot.name,
+        "--motion_dir",
+        str(args.motion_dir.resolve()),
+        "--log_dir",
+        str(out),
     ]
-    return run_worker(args, action="train", flags=flags, extra=extra, robot=robot,
-                      removed_systems_flags=removed_systems_flags)
+    return run_worker(
+        args,
+        action="train",
+        flags=flags,
+        extra=extra,
+        robot=robot,
+        removed_systems_flags=removed_systems_flags,
+    )
 
 
 def run_playback(args, extra):
@@ -329,20 +436,36 @@ def run_playback(args, extra):
     out.mkdir(parents=True, exist_ok=False)
     link_evaluation_checkpoint(args.checkpoint, out)
     flags = [
-        *extra, "--robot", robot.name,
-        "--motion_dir", str(args.motion_dir.resolve()),
-        "--run_dir", str(out),
+        *extra,
+        "--robot",
+        robot.name,
+        "--motion_dir",
+        str(args.motion_dir.resolve()),
+        "--run_dir",
+        str(out),
     ]
     print(f"[INFO] Playback log: {out / 'console.log'}", flush=True)
-    return run_worker(args, action="play", flags=flags, extra=extra, robot=robot,
-                      removed_systems_flags=removed_systems_flags)
+    return run_worker(
+        args,
+        action="play",
+        flags=flags,
+        extra=extra,
+        robot=robot,
+        removed_systems_flags=removed_systems_flags,
+    )
 
 
-def build_run_record(args, action, command, cache, removed_systems_flags, extra):
+def build_run_record(
+    args, action, command, cache, removed_systems_flags, extra
+):
     return dict(
         task=args.task,
         action=action,
-        resumed_from=str(args.resume_checkpoint) if getattr(args, "resume_checkpoint", None) else None,
+        resumed_from=(
+            str(args.resume_checkpoint)
+            if getattr(args, "resume_checkpoint", None)
+            else None
+        ),
         command=command,
         cwd=str(ROOT),
         started_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -357,7 +480,13 @@ def build_run_record(args, action, command, cache, removed_systems_flags, extra)
         ).hexdigest(),
         runtime={
             name: importlib.metadata.version(name)
-            for name in ("torch", "mjlab", "mujoco", "mujoco-warp", "warp-lang")
+            for name in (
+                "torch",
+                "mjlab",
+                "mujoco",
+                "mujoco-warp",
+                "warp-lang",
+            )
         },
         python=sys.version,
         compiler_cache=str(cache),
@@ -369,7 +498,10 @@ def build_run_record(args, action, command, cache, removed_systems_flags, extra)
         removed_systems_flags=removed_systems_flags,
         explicit_overrides=extra,
         status="starting",
-        stop="Verify child PID and command, then SIGINT that PID only. No automatic restart.",
+        stop=(
+            "Verify child PID and command, then SIGINT that PID only. No"
+            " automatic restart."
+        ),
     )
 
 
@@ -391,24 +523,45 @@ def stop_worker(child):
 
 def run_worker(args, *, action, flags, extra, robot, removed_systems_flags):
     mode = "train" if action == "train" else "evaluate"
-    command = [sys.executable, "-u", "-m", "source.tasks.blinkmimic.worker",
-               mode, "--task", args.task, *flags]
+    command = [
+        sys.executable,
+        "-u",
+        "-m",
+        "source.tasks.blinkmimic.worker",
+        mode,
+        "--task",
+        args.task,
+        *flags,
+    ]
     out = args.run_dir.resolve()
     cache = args.cache_dir.resolve() if args.cache_dir else out / "cache"
     env = worker_environment(cache)
-    record = build_run_record(args, action, command, cache, removed_systems_flags,
-                              extra)
+    record = build_run_record(
+        args, action, command, cache, removed_systems_flags, extra
+    )
     record_path = out / "run-record.json"
     update_run_record(record_path, record)
     with (out / "console.log").open("x") as log:
         child = subprocess.Popen(
-            command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
+            command,
+            cwd=ROOT,
+            env=env,
+            stdout=log,
+            stderr=subprocess.STDOUT,
         )
         try:
-            update_run_record(record_path, record, pid=child.pid, status="running")
+            update_run_record(
+                record_path, record, pid=child.pid, status="running"
+            )
             if action == "train":
-                config_path = export_training_config_when_ready(child, out, robot)
-                print(f"[INFO] Exported sim2real config: {config_path}", file=log, flush=True)
+                config_path = export_training_config_when_ready(
+                    child, out, robot
+                )
+                print(
+                    f"[INFO] Exported sim2real config: {config_path}",
+                    file=log,
+                    flush=True,
+                )
                 code = wait_for_training(child, out)
             else:
                 code = child.wait()
@@ -418,16 +571,32 @@ def run_worker(args, *, action, flags, extra, robot, removed_systems_flags):
             except Exception as cleanup_error:
                 error.add_note(f"Worker cleanup failed: {cleanup_error}")
             try:
-                update_run_record(record_path, record,
-                                  status="interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
-                                  returncode=child.returncode,
-                                  finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
+                update_run_record(
+                    record_path,
+                    record,
+                    status=(
+                        "interrupted"
+                        if isinstance(error, KeyboardInterrupt)
+                        else "failed"
+                    ),
+                    returncode=child.returncode,
+                    finished_at=datetime.datetime.now(
+                        datetime.timezone.utc
+                    ).isoformat(),
+                )
             except Exception as record_error:
-                error.add_note(f"Could not record worker failure: {record_error}")
+                error.add_note(
+                    f"Could not record worker failure: {record_error}"
+                )
             raise
     update_run_record(
-        record_path, record,
-        status="completed" if code == 0 else "interrupted" if code == -2 else "failed",
+        record_path,
+        record,
+        status=(
+            "completed"
+            if code == 0
+            else "interrupted" if code == -2 else "failed"
+        ),
         returncode=code,
         finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
     )

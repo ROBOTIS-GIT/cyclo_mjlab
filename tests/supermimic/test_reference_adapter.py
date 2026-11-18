@@ -12,7 +12,9 @@ from source.tasks.supermimic.motion import (
     model_joint_names,
     prepare_motion_files,
 )
-from source.tasks.supermimic.native_motion import NativeMotionLoader as MotionLoader
+from source.tasks.supermimic.native_motion import (
+    NativeMotionLoader as MotionLoader,
+)
 from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
 
 
@@ -28,7 +30,9 @@ def load_clip(dance="dance1"):
 
 
 @pytest.mark.parametrize("dance", ["dance1", "dance2"])
-def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_path):
+def test_real_reference_preserved_and_native_loader_accepts(
+    dance, model, tmp_path
+):
     path, data = load_clip(dance)
     before = hashlib.sha256(path.read_bytes()).hexdigest()
     prepared = prepare_motion_files(str(path), model, tmp_path)
@@ -37,11 +41,15 @@ def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_pa
         assert output["fps"].item() == data["fps"].item() == 50
         assert output["joint_pos"].shape == data["joint_pos"].shape
         root = list(data["body_names"]).index("pelvis")
-        np.testing.assert_array_equal(output["root_pos_w"], data["body_pos_w"][:, root])
+        np.testing.assert_array_equal(
+            output["root_pos_w"], data["body_pos_w"][:, root]
+        )
         np.testing.assert_array_equal(
             output["root_quat_w"], data["body_quat_w"][:, root]
         )
-        assert output["source_velocity_profiles"].tolist() == ["current_k1_com"]
+        assert output["source_velocity_profiles"].tolist() == [
+            "current_k1_com"
+        ]
         assert output["profile_max_errors"].max() < 2e-4
     hinges = np.where(model.jnt_type == mujoco.mjtJoint.mjJNT_HINGE)[0]
     fk = ForwardKinematics(
@@ -54,7 +62,9 @@ def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_pa
     positions, quats, linear, angular = loader.body_state(
         torch.arange(loader.time_step_total)
     )
-    assert all(torch.isfinite(t).all() for t in (positions, quats, linear, angular))
+    assert all(
+        torch.isfinite(t).all() for t in (positions, quats, linear, angular)
+    )
     body_order = [
         list(data["body_names"]).index(model.body(i).name)
         for i in range(1, model.nbody)
@@ -71,8 +81,12 @@ def test_real_reference_preserved_and_native_loader_accepts(dance, model, tmp_pa
         model.body_ipos[1:].copy(),
         dtype=linear.dtype,
     )
-    world_com = (matrix_from_quat(quats) @ local_com[None, :, :, None]).squeeze(-1)
-    reconstructed_com_velocity = linear + torch.linalg.cross(angular, world_com)
+    world_com = (
+        matrix_from_quat(quats) @ local_com[None, :, :, None]
+    ).squeeze(-1)
+    reconstructed_com_velocity = linear + torch.linalg.cross(
+        angular, world_com
+    )
     np.testing.assert_allclose(
         reconstructed_com_velocity.numpy(),
         data["body_lin_vel_w"][:, body_order],
@@ -88,7 +102,12 @@ def test_permuted_joint_and_body_order(model):
     data["body_names"] = data["body_names"][body_order]
     for key in ("joint_pos", "joint_vel"):
         data[key] = data[key][:, joint_order]
-    for key in ("body_pos_w", "body_quat_w", "body_lin_vel_w", "body_ang_vel_w"):
+    for key in (
+        "body_pos_w",
+        "body_quat_w",
+        "body_lin_vel_w",
+        "body_ang_vel_w",
+    ):
         data[key] = data[key][:, body_order]
     permuted = adapt_motion(data, model_joint_names(model), model)
     for key in (
@@ -104,7 +123,15 @@ def test_permuted_joint_and_body_order(model):
 
 @pytest.mark.parametrize(
     "failure",
-    ["xyzw", "backend", "body_name", "unknown_point", "velocity", "frame", "fps"],
+    [
+        "xyzw",
+        "backend",
+        "body_name",
+        "unknown_point",
+        "velocity",
+        "frame",
+        "fps",
+    ],
 )
 def test_incompatible_inputs_rejected(failure, model):
     _, data = load_clip()
@@ -204,17 +231,26 @@ def test_multiple_references_keep_clip_boundaries(model, tmp_path):
     ]
 
 
-def test_failed_cache_write_preserves_published_data_and_cleans_temporary(model, tmp_path, monkeypatch):
+def test_failed_cache_write_preserves_published_data_and_cleans_temporary(
+    model, tmp_path, monkeypatch
+):
     from pathlib import Path
     from source.utils import k1_motion_npz_adapter as adapter
 
     names = model_joint_names(model)
     source = tmp_path / "source.npz"
-    np.savez(source, fps=50, joint_names=names,
-             joint_pos=np.zeros((2, len(names))), joint_vel=np.zeros((2, len(names))),
-             root_pos_w=np.zeros((2, 3)), root_quat_w=np.tile([1., 0., 0., 0.], (2, 1)),
-             root_lin_vel_w=np.zeros((2, 3)), root_ang_vel_w=np.zeros((2, 3)),
-             **adapter.ROOT_CONTRACT)
+    np.savez(
+        source,
+        fps=50,
+        joint_names=names,
+        joint_pos=np.zeros((2, len(names))),
+        joint_vel=np.zeros((2, len(names))),
+        root_pos_w=np.zeros((2, 3)),
+        root_quat_w=np.tile([1.0, 0.0, 0.0, 0.0], (2, 1)),
+        root_lin_vel_w=np.zeros((2, 3)),
+        root_ang_vel_w=np.zeros((2, 3)),
+        **adapter.ROOT_CONTRACT,
+    )
     output = Path(prepare_motion_files(str(source), model, tmp_path / "cache"))
     before = output.read_bytes()
     manifest = (output.parent / "manifest.json").read_bytes()

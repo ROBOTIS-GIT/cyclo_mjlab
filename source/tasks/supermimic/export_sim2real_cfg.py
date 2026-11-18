@@ -29,7 +29,9 @@ from source.utils.sim2real_yaml import dump_sim2real_yaml
 
 
 def resolve_action_settings(cfg, joint_names):
-    """Resolve the same native pose and affine action values without a simulator."""
+    """
+    Resolve the same native pose and affine action values without a simulator.
+    """
     entity = Entity(cfg.scene.entities["robot"])
     model = entity.spec.compile()
     qadr = [model.joint(name).qposadr[0] for name in joint_names]
@@ -49,7 +51,11 @@ def resolve_action_settings(cfg, joint_names):
 
     action = cfg.actions["joint_pos"]
     scale = resolve(action.scale, 1.0)
-    offset = q0.clone() if action.use_default_offset else resolve(action.offset, 0.0)
+    offset = (
+        q0.clone()
+        if action.use_default_offset
+        else resolve(action.offset, 0.0)
+    )
     return dict(
         joint_order=joint_names,
         q0=q0.tolist(),
@@ -65,38 +71,64 @@ def joint_properties(env_cfg, action):
 
     articulation = env_cfg.scene.entities["robot"].articulation
     if articulation is None:
-        raise ValueError("SuperMimic export requires articulated position actuators")
+        raise ValueError(
+            "SuperMimic export requires articulated position actuators"
+        )
     properties = {}
     for name, default in zip(action["joint_order"], action["q0"], strict=True):
         matches = [
-            actuator for actuator in articulation.actuators
-            if any(re.fullmatch(pattern, name) for pattern in actuator.target_names_expr)
+            actuator
+            for actuator in articulation.actuators
+            if any(
+                re.fullmatch(pattern, name)
+                for pattern in actuator.target_names_expr
+            )
         ]
         if len(matches) != 1 or not isinstance(
             matches[0], (BuiltinPositionActuatorCfg, IdealPdActuatorCfg)
         ):
             raise ValueError(f"Expected one position actuator for {name}")
         actuator = matches[0]
-        values = [float(default), float(actuator.stiffness), float(actuator.damping)]
-        if not all(math.isfinite(value) for value in values) or min(values[1:]) < 0:
+        values = [
+            float(default),
+            float(actuator.stiffness),
+            float(actuator.damping),
+        ]
+        if (
+            not all(math.isfinite(value) for value in values)
+            or min(values[1:]) < 0
+        ):
             raise ValueError(f"Invalid nominal joint properties: {name}")
         properties[name] = dict(
-            default_position=values[0], stiffness=values[1], damping=values[2],
+            default_position=values[0],
+            stiffness=values[1],
+            damping=values[2],
             position_limit=None,
         )
     return properties
 
 
 def validate_proprio_observations(terms):
-    """Preserve the native sensor order and calculations used by the world model."""
+    """
+    Preserve the native sensor order and calculations used by the world model.
+    """
     from supermimic.tasks.env_cfgs import _sensor_actor_group
 
     native = _sensor_actor_group().terms
     if list(terms) != list(native):
-        raise ValueError("Actor observation order differs from the SuperMimic representation")
+        raise ValueError(
+            "Actor observation order differs from the SuperMimic"
+            " representation"
+        )
     for name, term in terms.items():
-        if term.func is not native[name].func or term.params != native[name].params:
-            raise ValueError(f"Actor observation {name} calculation differs from native proprio")
+        if (
+            term.func is not native[name].func
+            or term.params != native[name].params
+        ):
+            raise ValueError(
+                f"Actor observation {name} calculation differs from native"
+                " proprio"
+            )
 
 
 def validate_policy_config(cfg, rcfg, task):
@@ -111,63 +143,103 @@ def validate_policy_config(cfg, rcfg, task):
             raise ValueError("rep_state export requires history_length=1")
     reference = load_env_cfg(task)
     if json_value(cfg.observations) != json_value(reference.observations):
-        raise ValueError("Custom observation groups are not supported by this exporter")
+        raise ValueError(
+            "Custom observation groups are not supported by this exporter"
+        )
 
 
 def observation_terms(env_cfg, runner_cfg, representation, num_joints):
-    """Resolve ordered actor fields from training configuration and representation."""
+    """
+    Resolve ordered actor fields from training configuration and
+    representation.
+    """
     if runner_cfg.actor_obs == "proprio":
         configured = env_cfg.observations["actor"].terms
         validate_proprio_observations(configured)
         return [
             dict(name=name, width=width, history=runner_cfg.history_length)
             for name, width in zip(
-                configured, representation.proprio_term_widths(num_joints), strict=True,
+                configured,
+                representation.proprio_term_widths(num_joints),
+                strict=True,
             )
         ]
     if runner_cfg.actor_obs != "rep_state" or runner_cfg.history_length != 1:
         raise ValueError("rep_state export requires history_length=1")
-    return [dict(name="rep_state", width=representation.rep_state_dim, history=1)]
+    return [
+        dict(name="rep_state", width=representation.rep_state_dim, history=1)
+    ]
 
 
-def observation_config(env_cfg, runner_cfg, representation, num_joints, encoder):
+def observation_config(
+    env_cfg, runner_cfg, representation, num_joints, encoder
+):
     """Describe native history packing and external goal groups."""
     from supermimic.representations import GOAL_FRAME_STRIDE, NUM_GOAL_FRAMES
 
     if encoder not in ("motion", "velocity"):
         raise ValueError(f"Unsupported SuperMimic encoder: {encoder}")
-    aliases = {"joint_pos": "joint_pos_rel", "joint_vel": "joint_vel_rel", "actions": "last_action"}
+    aliases = {
+        "joint_pos": "joint_pos_rel",
+        "joint_vel": "joint_vel_rel",
+        "actions": "last_action",
+    }
     actor_terms = env_cfg.observations["actor"].terms
-    input_terms = observation_terms(env_cfg, runner_cfg, representation, num_joints)
+    input_terms = observation_terms(
+        env_cfg, runner_cfg, representation, num_joints
+    )
     is_proprio = runner_cfg.actor_obs == "proprio"
 
     terms = {}
     for term in input_terms:
-        # rep_state is assembled by the representation, not the actor observation group.
+        # rep_state is assembled by the representation, not the actor
+        # observation group.
         source = actor_terms[term["name"]] if is_proprio else None
-        scale = source.scale if source is not None and source.scale is not None else 1.0
+        scale = (
+            source.scale
+            if source is not None and source.scale is not None
+            else 1.0
+        )
         if isinstance(scale, torch.Tensor):
             scale = scale.detach().cpu().tolist()
-        scale = [float(scale)] * term["width"] if isinstance(scale, (int, float)) else list(scale)
+        scale = (
+            [float(scale)] * term["width"]
+            if isinstance(scale, (int, float))
+            else list(scale)
+        )
         if len(scale) != term["width"]:
-            raise ValueError(f"Observation {term['name']} scale does not match its width")
+            raise ValueError(
+                f"Observation {term['name']} scale does not match its width"
+            )
         terms[aliases.get(term["name"], term["name"])] = dict(
-            scale=scale, clip=source.clip if source is not None else None,
+            scale=scale,
+            clip=source.clip if source is not None else None,
             history_length=term["history"],
         )
 
     cfg = dict(history=dict(layout="term_major", terms=terms))
 
     def group(*fields):
-        return dict(layout="frame_major", terms={
-            name: dict(scale=[1.0] * width, clip=None) for name, width in fields
-        })
+        return dict(
+            layout="frame_major",
+            terms={
+                name: dict(scale=[1.0] * width, clip=None)
+                for name, width in fields
+            },
+        )
 
     if encoder == "motion":
         cfg["motion_goal"] = dict(
-            frames=NUM_GOAL_FRAMES, stride=GOAL_FRAME_STRIDE, start_offset=1,
-            groups=[group(("future_joint_pos", num_joints), ("future_joint_vel", num_joints)),
-                    group(("future_root_orientation", 6))],
+            frames=NUM_GOAL_FRAMES,
+            stride=GOAL_FRAME_STRIDE,
+            start_offset=1,
+            groups=[
+                group(
+                    ("future_joint_pos", num_joints),
+                    ("future_joint_vel", num_joints),
+                ),
+                group(("future_root_orientation", 6)),
+            ],
         )
     else:
         cfg["velocity_goal"] = group(("velocity_command", 3))
@@ -175,9 +247,17 @@ def observation_config(env_cfg, runner_cfg, representation, num_joints, encoder)
 
 
 def export_sim2real_cfg(
-    output_dir, env_cfg, runner_cfg, representation, joint_names, *, encoder="motion",
+    output_dir,
+    env_cfg,
+    runner_cfg,
+    representation,
+    joint_names,
+    *,
+    encoder="motion",
 ):
-    """Write deployment settings directly from resolved training configuration."""
+    """
+    Write deployment settings directly from resolved training configuration.
+    """
     action = resolve_action_settings(env_cfg, joint_names)
     observation = dict(
         schema="cyclo.supermimic.external_goal.v1",
@@ -187,26 +267,38 @@ def export_sim2real_cfg(
     )
     if any(value != 0 for value in action["qdot0"]):
         observation["default_joint_velocity"] = action["qdot0"]
-    observation.update(observation_config(
-        env_cfg, runner_cfg, representation, len(joint_names), encoder,
-    ))
+    observation.update(
+        observation_config(
+            env_cfg,
+            runner_cfg,
+            representation,
+            len(joint_names),
+            encoder,
+        )
+    )
 
     commands = {}
     if encoder == "velocity":
         velocity = runner_cfg.tasks.velocity
-        commands["base_velocity"] = {"ranges": dict(
-            lin_vel_x=list(velocity.lin_vel_x_range),
-            lin_vel_y=list(velocity.lin_vel_y_range),
-            ang_vel_z=list(velocity.ang_vel_z_range),
-        )}
+        commands["base_velocity"] = {
+            "ranges": dict(
+                lin_vel_x=list(velocity.lin_vel_x_range),
+                lin_vel_y=list(velocity.lin_vel_y_range),
+                ang_vel_z=list(velocity.ang_vel_z_range),
+            )
+        }
     cfg = dict(
         policy_joints=action["joint_order"],
         step_dt=env_cfg.sim.mujoco.timestep * env_cfg.decimation,
         joint_properties=joint_properties(env_cfg, action),
         commands=commands,
-        actions={"joint_pos": dict(
-            clip=None, scale=action["scale"], offset=action["offset"],
-        )},
+        actions={
+            "joint_pos": dict(
+                clip=None,
+                scale=action["scale"],
+                offset=action["offset"],
+            )
+        },
         observations={"supermimic": observation},
     )
     directory = Path(output_dir) / "params"

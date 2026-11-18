@@ -34,7 +34,10 @@ def checkpoint_recipe(flags):
 
 
 def publish_completed_snapshots(run_dir):
-    """Normalize only atomically published upstream snapshots, never partial writes."""
+    """
+    Normalize only atomically published upstream snapshots, never partial
+    writes.
+    """
     for path in run_dir.glob("ckpt_*.pt"):
         match = re.fullmatch(r"ckpt_([0-9]+)\.pt", path.name)
         if match and path.is_file():
@@ -45,16 +48,29 @@ def publish_completed_snapshots(run_dir):
 def select_checkpoint(checkpoint, checkpoint_dir):
     if checkpoint is None:
         if checkpoint_dir is None or not checkpoint_dir.is_dir():
-            raise ValueError("play requires --checkpoint or an existing --checkpoint-dir")
+            raise ValueError(
+                "play requires --checkpoint or an existing --checkpoint-dir"
+            )
         candidates = [
-            path for path in checkpoint_dir.iterdir()
-            if path.is_file() and re.fullmatch(r"(?:model_|ckpt_)[0-9]+\.pt", path.name)
+            path
+            for path in checkpoint_dir.iterdir()
+            if path.is_file()
+            and re.fullmatch(r"(?:model_|ckpt_)[0-9]+\.pt", path.name)
         ]
         if not candidates:
-            raise ValueError(f"No model_<iteration>.pt checkpoints in {checkpoint_dir}")
-        checkpoint = max(candidates, key=lambda path: int(path.stem.split("_", 1)[1]))
-    if not checkpoint.is_file() or not re.fullmatch(r"(?:model_|ckpt_)[0-9]+\.pt", checkpoint.name):
-        raise ValueError(f"Expected an existing model_<iteration>.pt checkpoint: {checkpoint}")
+            raise ValueError(
+                f"No model_<iteration>.pt checkpoints in {checkpoint_dir}"
+            )
+        checkpoint = max(
+            candidates, key=lambda path: int(path.stem.split("_", 1)[1])
+        )
+    if not checkpoint.is_file() or not re.fullmatch(
+        r"(?:model_|ckpt_)[0-9]+\.pt", checkpoint.name
+    ):
+        raise ValueError(
+            "Expected an existing model_<iteration>.pt checkpoint:"
+            f" {checkpoint}"
+        )
     return checkpoint.resolve()
 
 
