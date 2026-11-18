@@ -636,3 +636,33 @@ def test_cross_task_resume_keeps_target_clips_and_checks_contract(
     manifest["robot"]["action_joint_order"].reverse()
     with pytest.raises(ValueError, match="joint-order"):
         validate_manifest(manifest, target, for_resume=True)
+
+
+@pytest.mark.parametrize(
+    "file", ["last.pt", "checkpoints/model_1000.pt", "world_model.pt"]
+)
+def test_local_world_model_accepts_target_policy_changes(
+    manifest, tmp_path, file
+):
+    import json
+    from source.tasks.supermimic.checkpoint_archive import (
+        load_world_model,
+        save_checkpoint,
+    )
+
+    weights = {"dynamics": {"w": torch.arange(3)}, "sim_context": {}}
+    save_checkpoint(
+        tmp_path, step=1000, manifest=manifest, actor={}, world_model=weights
+    )
+    torch.save(weights, tmp_path / "world_model.pt")
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+    target = copy.deepcopy(manifest)
+    target["task_id"] += "-other"
+    target["runner_cfg"]["slot_mix"] = {"velocity": 1.0, "motion": 0.0}
+    assert torch.equal(
+        load_world_model(tmp_path / file, target)["dynamics"]["w"],
+        weights["dynamics"]["w"],
+    )
+    target["environment"]["decimation"] += 1
+    with pytest.raises(ValueError, match="dynamics configuration"):
+        load_world_model(tmp_path / file, target)
