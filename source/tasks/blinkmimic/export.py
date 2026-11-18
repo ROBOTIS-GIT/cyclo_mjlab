@@ -12,13 +12,13 @@ from torch import nn
 
 from source.utils.export_notices import write_software_notices
 
-from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
 from .export_sim2real_cfg import (
     goal_fields,
     native_dimensions,
     observation_config,
     observation_fields,
 )
+from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
 
 
 def sha256(path):
@@ -279,8 +279,6 @@ def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
     """
     Export on CPU without a simulator, dataset, selector or robot connection.
     """
-    import onnx
-
     checkpoint_path, output_dir = Path(checkpoint_path), Path(output_dir)
     checkpoint = torch.load(
         checkpoint_path, map_location="cpu", weights_only=True
@@ -288,9 +286,11 @@ def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
     wrapper = load_policy(checkpoint, robot)
     metadata = contract(wrapper, checkpoint, robot)
     metadata["checkpoint_sha256"] = sha256(checkpoint_path)
-    output_dir.mkdir(parents=True, exist_ok=overwrite)
-    metadata["software_notices"] = write_software_notices(
+    return write_policy_bundle(
+        wrapper,
+        metadata,
         output_dir,
+        robot.num_joints,
         "Cyclo MJLab policy-only ONNX export\nCyclo shape adapter: Copyright"
         " 2026 ROBOTIS CO., LTD."
         " (Apache-2.0).\nhttps://github.com/ROBOTIS-GIT/cyclo_mjlab\nOriginal"
@@ -309,6 +309,20 @@ def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
                 VENDOR / "THIRD_PARTY_NOTICES.md"
             ),
         },
+        overwrite=overwrite,
+    )
+
+
+def write_policy_bundle(
+    wrapper, metadata, output_dir, num_joints, notice, licenses, *, overwrite=False
+):
+    """Serialize the common external-goal ONNX graph and software notices."""
+    import onnx
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=overwrite)
+    metadata["software_notices"] = write_software_notices(
+        output_dir, notice, licenses
     )
     path = output_dir / "exported" / "policy.onnx"
     path.parent.mkdir(exist_ok=overwrite)
@@ -333,7 +347,7 @@ def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
     # Deployment accepts a dynamic batch only; the joint count is known here.
     model.graph.output[0].type.tensor_type.shape.dim[
         1
-    ].dim_value = robot.num_joints
+    ].dim_value = num_joints
     onnx.helper.set_model_props(
         model, {"cyclo.policy_contract": json.dumps(metadata)}
     )

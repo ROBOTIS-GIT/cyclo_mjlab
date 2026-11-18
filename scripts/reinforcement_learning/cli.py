@@ -7,7 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 from scripts.reinforcement_learning.dispatch import task_family
 
-FAMILIES = ("blinkmimic", "beyondmimic", "supermimic")
+FAMILIES = ("blinkmimic", "beyondmimic", "supermimic", "xmimic")
 
 
 def task_names(family):

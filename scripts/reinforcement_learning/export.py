@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 EXPORTERS = {
     "supermimic": "source.tasks.supermimic.export",
+    "xmimic": "source.tasks.xmimic.export",
     "blinkmimic": "source.tasks.blinkmimic.export",
 }
 

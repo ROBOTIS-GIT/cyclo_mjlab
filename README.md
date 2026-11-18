@@ -23,6 +23,8 @@ The repository currently provides:
 - **SuperMimic**: differentiable world-model motion tracking with native MuJoCo/mjlab tasks
 - **BlinkMimic**: isolated released recipe with a K1 Rev.1 exact-state reference adapter;
   see [recipe, commands and validation scope](docs/blinkmimic.md)
+- **X-Mimic**: JAX/MJX motion tracking with the shared BlinkMimic deployment format;
+  see [training, evaluation, and export](docs/xmimic.md)
 
 > [!IMPORTANT]
 > This repository currently uses MJLab 1.6.1, MuJoCo 3.11.0, and Python 3.12.

@@ -148,3 +148,10 @@ algorithmic lineage does not make these codebases or licenses identical.
 No new motion library, private dataset, trained weight or exported model is
 distributed by the BlinkMimic feature. Those materials have separate provenance
 and usage/redistribution conditions; the software license does not clear them.
+
+## X-Mimic
+
+The JAX learner in `third_party/xmimic` comes from
+[nico-bohlinger/xmimic](https://github.com/nico-bohlinger/xmimic) under MIT.
+The pinned revision, original license, notices, and local changes are recorded
+in that directory. The checkout does not include X-Mimic motion data or weights.
