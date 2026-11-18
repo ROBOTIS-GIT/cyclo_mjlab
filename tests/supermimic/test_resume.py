@@ -213,3 +213,56 @@ def test_resumed_loop_continues_global_iteration_and_saves(
     assert (tmp_path / "checkpoints/model_1000.pt").is_file()
     assert (tmp_path / "checkpoints/model_1002.pt").is_file()
     assert not (tmp_path / "checkpoints/model_0.pt").exists()
+
+
+def test_sampler_remaps_concatenated_clip_bins_and_keeps_new_bins_fresh():
+    from source.tasks.supermimic.sampler_checkpoint import remap_bins
+
+    old = dict(bins=2, clips=[("a", 5), ("b", 5)], tensors=dict(
+        count=torch.tensor([10., 20.]), value=torch.tensor([2., 4.]),
+        effort=torch.tensor([5., 10.], dtype=torch.float64),
+        probs=torch.tensor([0.25, 0.75]),
+    ))
+    # New bins span four frames each. The middle bin contains b and new frames.
+    new = dict(bins=3, clips=[("b", 5), ("c", 7)], tensors=dict(
+        count=torch.zeros(3), value=torch.full((3,), 100.),
+        effort=torch.zeros(3, dtype=torch.float64), probs=torch.ones(3) / 3,
+    ))
+    assert remap_bins(old, old) is old["tensors"]
+    state = remap_bins(old, new)
+    assert state["count"].tolist() == [16, 4, 0]
+    assert state["value"].tolist() == [4, 4, 100]
+    assert state["effort"].tolist() == [8, 2, 0]
+    assert state["probs"].sum().item() == pytest.approx(1)
+    assert state["probs"][2] > 0
+    new["clips"] = [("changed-content", 12)]
+    assert remap_bins(old, new) is new["tensors"]
+
+
+def test_sampler_snapshot_round_trip(tmp_path):
+    from source.tasks.supermimic.sampler_checkpoint import (
+        restore_sampler,
+        sampler_snapshot,
+    )
+
+    command = SimpleNamespace(
+        cfg=SimpleNamespace(sampling_mode="adaptive"),
+        bin_count=2,
+        motion=SimpleNamespace(clip_layout=[("a", 10)]),
+        bin_failed_count=torch.tensor([2.0, 3.0]),
+        _current_bin_failed=torch.tensor([4.0, 5.0]),
+    )
+    runner = SimpleNamespace(motion_cmd=command)
+    save_checkpoint(
+        tmp_path,
+        step=1000,
+        manifest={},
+        actor={},
+        world_model={},
+        sampler=sampler_snapshot(runner),
+    )
+    command.bin_failed_count.zero_()
+    command._current_bin_failed.zero_()
+    restore_sampler(runner, load_checkpoint(tmp_path).sampler)
+    assert command.bin_failed_count.tolist() == [2, 3]
+    assert command._current_bin_failed.tolist() == [4, 5]

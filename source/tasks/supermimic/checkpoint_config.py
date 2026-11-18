@@ -192,16 +192,20 @@ def make_manifest(task, cfg, runner_cfg, options):
     }
 
 
-def validate_manifest(manifest, task):
+def validate_manifest(manifest, task, *, for_resume=False):
     from .config import TASKS, check_representation_matches
 
     if manifest.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported local checkpoint manifest version")
-    if task not in TASKS or manifest.get("task_id") != task:
+    source_task = manifest.get("task_id")
+    if source_task not in TASKS or task not in TASKS or (
+        source_task != task and not for_resume
+    ):
         raise ValueError(
             "Checkpoint task identity does not match the selected K1 task"
         )
     rcfg = load_runner_cfg(manifest)
+    check_representation_matches(source_task, rcfg.representation)
     check_representation_matches(task, rcfg.representation)
     if (
         manifest.get("representation") != rcfg.representation

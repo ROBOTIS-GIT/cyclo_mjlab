@@ -83,7 +83,7 @@ def parse_training_configuration(argv):
     saved_environment_options = []
     if checkpoint is not None:
         default.env, default.runner = validate_manifest(
-            checkpoint.manifest, chosen_task
+            checkpoint.manifest, chosen_task, for_resume=True
         )
         default.runner.wandb_run_path = None
         default.num_envs = checkpoint.manifest.get(

@@ -606,3 +606,33 @@ def test_resume_configuration_failure_precedes_gpu(
                 "6",
             ]
         )
+
+
+def test_cross_task_resume_keeps_target_clips_and_checks_contract(
+    manifest, monkeypatch
+):
+    from source.tasks.supermimic import checkpoint_config
+
+    source = manifest["task_id"]
+    target = source + "-new-clips"
+    monkeypatch.setitem(TASKS, target, TASKS[source])
+    load = checkpoint_config.load_env_cfg
+
+    def target_config(task):
+        assert task == target
+        cfg = load(source)
+        cfg.commands["motion"].motion_file = "new-clips.npz"
+        return cfg
+
+    monkeypatch.setattr(checkpoint_config, "load_env_cfg", target_config)
+    cfg, _ = validate_manifest(manifest, target, for_resume=True)
+    assert cfg.commands["motion"].motion_file == "new-clips.npz"
+    with pytest.raises(ValueError, match="identity"):
+        validate_manifest(manifest, target)
+    with pytest.raises(ValueError, match="representation"):
+        validate_manifest(
+            manifest, source.replace("GenCoord", "MaxCoord"), for_resume=True
+        )
+    manifest["robot"]["action_joint_order"].reverse()
+    with pytest.raises(ValueError, match="joint-order"):
+        validate_manifest(manifest, target, for_resume=True)
