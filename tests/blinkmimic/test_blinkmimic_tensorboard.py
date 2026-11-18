@@ -3,7 +3,7 @@ import json
 import pytest
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from source.tasks.blinkmimic.tensorboard import BlinkMimicTensorBoard, wait_with_tensorboard
+from source.tasks.blinkmimic.tensorboard import BlinkMimicTensorBoard
 
 
 def make_run(tmp_path):
@@ -33,11 +33,20 @@ def test_complete_rows_are_mirrored_once_with_common_tags(tmp_path):
 
 
 def test_wait_records_final_row_after_trainer_exit(tmp_path):
+    from source.tasks.blinkmimic.cli import wait_for_training
+
     csv = make_run(tmp_path)
     csv.write_text("iteration,wall_h,sim_rew\n10,0.1,0.5\n")
+    (tmp_path / "ckpt_001000.pt").write_bytes(b"published checkpoint")
+    (tmp_path / "ckpt_002000.pt.tmp").write_bytes(b"partial checkpoint")
+    (tmp_path / "last.pt").write_bytes(b"latest checkpoint")
     class Finished:
         returncode = 0
         def poll(self):
             return self.returncode
-    assert wait_with_tensorboard(Finished(), tmp_path) == 0
+    assert wait_for_training(Finished(), tmp_path) == 0
+    assert (tmp_path / "model_1000.pt").read_bytes() == b"published checkpoint"
+    assert not (tmp_path / "ckpt_001000.pt").exists()
+    assert (tmp_path / "ckpt_002000.pt.tmp").read_bytes() == b"partial checkpoint"
+    assert (tmp_path / "last.pt").read_bytes() == b"latest checkpoint"
     assert EventAccumulator(str(tmp_path)).Reload().Scalars("Train/mean_reward")[0].step == 10

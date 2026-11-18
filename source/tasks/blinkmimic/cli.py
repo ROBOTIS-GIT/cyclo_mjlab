@@ -16,8 +16,12 @@ from types import SimpleNamespace
 from .runtime import ROOT, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
-
-TASK = "Cyclo-BlinkMimic-K1-Rev1-001"
+from .checkpoint import (
+    checkpoint_recipe,
+    link_evaluation_checkpoint,
+    publish_completed_snapshots,
+    select_checkpoint,
+)
 
 
 def latest_training_checkpoint(log_root, task):
@@ -56,22 +60,6 @@ def training_motion_directory(checkpoint):
     return motion_dir
 
 
-def select_checkpoint(checkpoint, checkpoint_dir):
-    if checkpoint is None:
-        if checkpoint_dir is None or not checkpoint_dir.is_dir():
-            raise ValueError("play requires --checkpoint or an existing --checkpoint-dir")
-        candidates = [
-            path for path in checkpoint_dir.iterdir()
-            if path.is_file() and re.fullmatch(r"ckpt_[0-9]{6}\.pt", path.name)
-        ]
-        if not candidates:
-            raise ValueError(f"No ckpt_NNNNNN.pt checkpoints in {checkpoint_dir}")
-        checkpoint = max(candidates, key=lambda path: int(path.stem[5:]))
-    if not checkpoint.is_file() or not re.fullmatch(r"ckpt_[0-9]{6}\.pt", checkpoint.name):
-        raise ValueError(f"Expected an existing ckpt_NNNNNN.pt checkpoint: {checkpoint}")
-    return checkpoint.resolve()
-
-
 def export_training_config_when_ready(child, run_dir, robot):
     """Use the trainer's saved arguments without modifying its parser or runtime."""
     from .runtime import prepare
@@ -102,9 +90,9 @@ def recipe():
     return shlex.split(re.search(r'\[main\]="([^"]+)"', text)[1])
 
 
-def execution_recipe(mode):
+def execution_recipe(mode, flags=None):
     """An explicit systems-only alternative; model and learning settings are intact."""
-    flags = recipe()
+    flags = recipe() if flags is None else flags
     removed = []
     if mode == "compiled_no_torch_graphs":
         switches = {
@@ -143,8 +131,12 @@ def prepare_task_motions(task, output):
 
 def worker_environment(cache=None):
     env = os.environ.copy()
-    env.update(PYTHONPATH=str(ROOT), WANDB_MODE="disabled",
-               CUDA_VISIBLE_DEVICES="0", OMP_NUM_THREADS="4")
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, (str(ROOT), env.get("PYTHONPATH"))))
+    for name, default in (
+        ("WANDB_MODE", "disabled"), ("CUDA_VISIBLE_DEVICES", "0"),
+        ("OMP_NUM_THREADS", "4"),
+    ):
+        env.setdefault(name, default)
     if cache is not None:
         env.update(
             MPLCONFIGDIR=str(cache / "matplotlib"),
@@ -166,7 +158,27 @@ def run_gui(args):
     return subprocess.run(command, cwd=ROOT, env=worker_environment(cache)).returncode
 
 
-def main(action="train", argv=None):
+def wait_for_training(child, run_dir):
+    """Collect training outputs while the child runs, including its final writes."""
+    from .tensorboard import BlinkMimicTensorBoard
+
+    metrics = BlinkMimicTensorBoard(run_dir)
+    try:
+        while child.poll() is None:
+            publish_completed_snapshots(run_dir)
+            metrics.update()
+            try:
+                child.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                pass
+        publish_completed_snapshots(run_dir)
+        metrics.update()
+        return child.returncode
+    finally:
+        metrics.close()
+
+
+def create_parser():
     parser = argparse.ArgumentParser(
         description="K1 Rev.1 motion-only official BlinkMimic"
     )
@@ -192,94 +204,145 @@ def main(action="train", argv=None):
         type=Path,
         help="Task-local compiler cache shared across isolated runs",
     )
+    from source.utils.training_resume import add_resume_arguments
+
+    add_resume_arguments(parser)
+    return parser
+
+
+def resolve_playback_inputs(args):
+    if args.checkpoint is None and args.checkpoint_dir is None:
+        args.checkpoint = latest_training_checkpoint(ROOT / "logs", args.task)
+    else:
+        args.checkpoint = select_checkpoint(args.checkpoint, args.checkpoint_dir)
+    if args.motion_dir is None:
+        args.motion_dir = training_motion_directory(args.checkpoint)
+    if args.num_steps is not None and args.num_steps < 1:
+        raise ValueError("--num-steps must be positive")
+    if not 1 <= args.port <= 65535:
+        raise ValueError("--port must be between 1 and 65535")
+    print(f"[INFO] Selected checkpoint: {args.checkpoint}", flush=True)
+    print(f"[INFO] Motion directory: {args.motion_dir}", flush=True)
+
+
+def parse_arguments(parser, action, argv):
     args, extra = parser.parse_known_args(argv)
+    if action == "train" and "--ckpt_light" in extra:
+        parser.error("--ckpt_light omits world model and critic; full checkpoints are required")
     if action not in ("train", "play"):
         parser.error("Supported actions are train and play")
     # Recipe overrides remain explicit and recorded, with no implicit resource reduction.
-    forbidden = {"--robot", "--motion_dir", "--log_dir", "--run_dir", "--ckpt"}
+    forbidden = {"--robot", "--motion_dir", "--log_dir", "--run_dir", "--ckpt", "--resume"}
     if any(x.split("=", 1)[0] in forbidden for x in extra):
         parser.error("Use task-specific motion/run/checkpoint options")
-    if action == "train" and args.run_dir is None:
-        stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        args.run_dir = ROOT / "logs" / args.task / stamp
+    return args, extra
+
+
+def prepare_run_inputs(action, args, extra):
     if action == "play":
-        try:
-            if args.checkpoint is None and args.checkpoint_dir is None:
-                args.checkpoint = latest_training_checkpoint(ROOT / "logs", args.task)
-            else:
-                args.checkpoint = select_checkpoint(args.checkpoint, args.checkpoint_dir)
-            if args.motion_dir is None:
-                args.motion_dir = training_motion_directory(args.checkpoint)
-        except ValueError as error:
-            parser.error(str(error))
-        if args.num_steps is not None and args.num_steps < 1:
-            parser.error("--num-steps must be positive")
-        if not 1 <= args.port <= 65535:
-            parser.error("--port must be between 1 and 65535")
-        print(f"[INFO] Selected checkpoint: {args.checkpoint}", flush=True)
-        print(f"[INFO] Motion directory: {args.motion_dir}", flush=True)
+        if args.resume or args.load_run != ".*" or args.load_checkpoint != "last.pt":
+            raise ValueError("--agent.* resume options are only for training")
+        resolve_playback_inputs(args)
+
     if args.motion_dir is not None and not (args.motion_dir / "manifest.json").is_file():
-        parser.error("Motion directory requires its provenance manifest.json; use --motion-dir")
+        raise ValueError("Motion directory requires its provenance manifest.json; use --motion-dir")
+
     if action == "play" and args.viewer == "viser":
         if extra:
-            parser.error(f"Unsupported GUI options: {' '.join(extra)}")
+            raise ValueError(f"Unsupported GUI options: {' '.join(extra)}")
         if args.run_dir is not None:
-            parser.error("--run-dir is only used for training or headless evaluation")
-        raise SystemExit(run_gui(args))
-    if args.run_dir is None:
-        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        args.run_dir = args.checkpoint.parent / "play" / stamp
+            raise ValueError("--run-dir is only used for training or headless evaluation")
+
+
+def resolve_training_resume(args, extra, robot, resume_path):
+    from .resume import read_resume_checkpoint, training_arguments
+
+    saved = read_resume_checkpoint(resume_path)
+    effective_recipe, removed_systems_flags = execution_recipe(
+        args.execution, training_arguments(saved, robot.name)
+    )
+    iterations_parser = argparse.ArgumentParser(add_help=False)
+    iterations_parser.add_argument("--iterations", type=int, default=saved["args"]["iterations"])
+    iterations, _ = iterations_parser.parse_known_args(extra)
+    if iterations.iterations <= saved["iteration"]:
+        raise ValueError("--iterations must exceed the saved completed iterations")
+    record = json.loads((resume_path.parent / "run-record.json").read_text())
+    if record["task"] != args.task:
+        raise ValueError("Resume checkpoint belongs to a different task")
+    original_motion_dir = training_motion_directory(resume_path)
+    if args.motion_dir is not None and (
+        (args.motion_dir / "manifest.json").read_bytes()
+        != (original_motion_dir / "manifest.json").read_bytes()
+    ):
+        raise ValueError("Resume requires the original motion library and ordering")
+    args.motion_dir = args.motion_dir or original_motion_dir
+    extra = [*extra, "--resume", str(resume_path)]
+    print(f"[INFO] Resuming {resume_path} at iteration {saved['iteration']}; "
+          "simulation and replay buffer restart", flush=True)
+    args.resume_checkpoint = resume_path
+    return effective_recipe, removed_systems_flags, extra
+
+
+def run_training(args, extra):
     from .runtime import prepare
 
+    if args.run_dir is None:
+        stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        args.run_dir = ROOT / "logs" / args.task / stamp
     prepare()
     robot = TASKS[args.task].robot_factory()
     out = args.run_dir.resolve()
     effective_recipe, removed_systems_flags = execution_recipe(args.execution)
-    if action == "train":
-        out.mkdir(parents=True, exist_ok=False)
-        if args.motion_dir is None:
-            args.motion_dir = prepare_task_motions(args.task, out / "motions")
-        flags = [
-            *effective_recipe,
-            *extra,
-            "--robot",
-            robot.name,
-            "--motion_dir",
-            str(args.motion_dir.resolve()),
-            "--log_dir",
-            str(out),
-        ]
-        mode = "train"
-    else:
-        name = args.checkpoint.name
-        out.mkdir(parents=True, exist_ok=False)
-        # The upstream one-shot directory evaluator retains per-clip JSON and CSV.
-        (out / name).symlink_to(args.checkpoint.resolve())
-        flags = [
-            *extra,
-            "--robot",
-            robot.name,
-            "--motion_dir",
-            str(args.motion_dir.resolve()),
-            "--run_dir",
-            str(out),
-        ]
-        mode = "evaluate"
-        print(f"[INFO] Playback log: {out / 'console.log'}", flush=True)
-    command = [
-        sys.executable,
-        "-u",
-        "-m",
-        "source.tasks.blinkmimic.worker",
-        mode,
-        "--task", args.task,
-        *flags,
+    from source.utils.training_resume import select_resume_checkpoint
+
+    resume_path = select_resume_checkpoint(ROOT / "logs" / args.task, args)
+    if resume_path is not None:
+        effective_recipe, removed_systems_flags, extra = resolve_training_resume(
+            args, extra, robot, resume_path
+        )
+    out.mkdir(parents=True, exist_ok=False)
+    if args.motion_dir is None:
+        args.motion_dir = prepare_task_motions(args.task, out / "motions")
+    flags = [
+        *checkpoint_recipe(effective_recipe), *extra,
+        "--robot", robot.name,
+        "--motion_dir", str(args.motion_dir.resolve()),
+        "--log_dir", str(out),
     ]
-    cache = args.cache_dir.resolve() if args.cache_dir else out / "cache"
-    env = worker_environment(cache)
-    record = dict(
+    return run_worker(args, action="train", flags=flags, extra=extra, robot=robot,
+                      removed_systems_flags=removed_systems_flags)
+
+
+def run_playback(args, extra):
+    if args.viewer == "viser":
+        return run_gui(args)
+
+    from .runtime import prepare
+
+    if args.run_dir is None:
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        args.run_dir = args.checkpoint.parent / "play" / stamp
+    prepare()
+    robot = TASKS[args.task].robot_factory()
+    out = args.run_dir.resolve()
+    _, removed_systems_flags = execution_recipe(args.execution)
+    out.mkdir(parents=True, exist_ok=False)
+    link_evaluation_checkpoint(args.checkpoint, out)
+    flags = [
+        *extra, "--robot", robot.name,
+        "--motion_dir", str(args.motion_dir.resolve()),
+        "--run_dir", str(out),
+    ]
+    print(f"[INFO] Playback log: {out / 'console.log'}", flush=True)
+    return run_worker(args, action="play", flags=flags, extra=extra, robot=robot,
+                      removed_systems_flags=removed_systems_flags)
+
+
+def build_run_record(args, action, command, cache, removed_systems_flags, extra):
+    return dict(
         task=args.task,
         action=action,
+        resumed_from=str(args.resume_checkpoint) if getattr(args, "resume_checkpoint", None) else None,
         command=command,
         cwd=str(ROOT),
         started_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -308,41 +371,81 @@ def main(action="train", argv=None):
         status="starting",
         stop="Verify child PID and command, then SIGINT that PID only. No automatic restart.",
     )
+
+
+def update_run_record(path, record, **fields):
+    record.update(fields)
+    path.write_text(json.dumps(record, indent=2))
+
+
+def stop_worker(child):
+    if child.poll() is not None:
+        return
+    child.terminate()
+    try:
+        child.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
+
+
+def run_worker(args, *, action, flags, extra, robot, removed_systems_flags):
+    mode = "train" if action == "train" else "evaluate"
+    command = [sys.executable, "-u", "-m", "source.tasks.blinkmimic.worker",
+               mode, "--task", args.task, *flags]
+    out = args.run_dir.resolve()
+    cache = args.cache_dir.resolve() if args.cache_dir else out / "cache"
+    env = worker_environment(cache)
+    record = build_run_record(args, action, command, cache, removed_systems_flags,
+                              extra)
     record_path = out / "run-record.json"
-    record_path.write_text(json.dumps(record, indent=2))
+    update_run_record(record_path, record)
     with (out / "console.log").open("x") as log:
         child = subprocess.Popen(
-            command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT
+            command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
         )
-        record.update(pid=child.pid, status="running")
-        record_path.write_text(json.dumps(record, indent=2))
-        if action == "train":
-            try:
+        try:
+            update_run_record(record_path, record, pid=child.pid, status="running")
+            if action == "train":
                 config_path = export_training_config_when_ready(child, out, robot)
                 print(f"[INFO] Exported sim2real config: {config_path}", file=log, flush=True)
-            except BaseException:
-                child.terminate()
-                try:
-                    child.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    child.kill()
-                    child.wait()
-                record.update(status="failed", returncode=child.returncode,
-                              finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
-                record_path.write_text(json.dumps(record, indent=2))
-                raise
-        if action == "train":
-            from .tensorboard import wait_with_tensorboard
-
-            code = wait_with_tensorboard(child, out)
-        else:
-            code = child.wait()
-    record.update(
+                code = wait_for_training(child, out)
+            else:
+                code = child.wait()
+        except BaseException as error:
+            try:
+                stop_worker(child)
+            except Exception as cleanup_error:
+                error.add_note(f"Worker cleanup failed: {cleanup_error}")
+            try:
+                update_run_record(record_path, record,
+                                  status="interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
+                                  returncode=child.returncode,
+                                  finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
+            except Exception as record_error:
+                error.add_note(f"Could not record worker failure: {record_error}")
+            raise
+    update_run_record(
+        record_path, record,
         status="completed" if code == 0 else "interrupted" if code == -2 else "failed",
         returncode=code,
         finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
     )
-    record_path.write_text(json.dumps(record, indent=2))
+    return code
+
+
+def main(action="train", argv=None):
+    parser = create_parser()
+    args, extra = parse_arguments(parser, action, argv)
+    try:
+        prepare_run_inputs(action, args, extra)
+    except ValueError as error:
+        parser.error(str(error))
+
+    if action == "train":
+        code = run_training(args, extra)
+    else:
+        code = run_playback(args, extra)
     raise SystemExit(code)
 
 

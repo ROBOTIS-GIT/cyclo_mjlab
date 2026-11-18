@@ -42,14 +42,7 @@ class FlatPolicy(nn.Module):
         return self.policy(history, observations[:, self.history_size :])
 
 
-def load_policy(checkpoint, robot):
-    """Rebuild the recorded architecture strictly; never substitute live weights."""
-    prepare()
-    from blinkmimic import networks
-    from blinkmimic.networks import Policy, check_pruned, policy_kwargs
-
-    if networks.AMP_DTYPE is not None:
-        raise ValueError("FP32 export requires an isolated process with AMP_DTYPE=None")
+def validated_checkpoint(checkpoint, robot):
     if not isinstance(checkpoint, dict):
         raise ValueError("Expected an official Blink checkpoint dictionary")
     args, state = checkpoint.get("args"), checkpoint.get("pi")
@@ -72,18 +65,10 @@ def load_policy(checkpoint, robot):
             raise ValueError(f"Invalid checkpoint {key}")
     if type(args["pi_ref_skip"]) is not bool:
         raise ValueError("Invalid checkpoint pi_ref_skip")
-    check_pruned(args, nets_only=True)
+    return args, state
 
-    def widths(key):
-        try:
-            result = tuple(int(v) for v in args[key].split(","))
-        except (AttributeError, TypeError, ValueError) as error:
-            raise ValueError(f"Invalid checkpoint {key}") from error
-        if not result or any(v < 1 for v in result):
-            raise ValueError(f"Invalid checkpoint {key}")
-        return result
 
-    joints = robot.num_joints
+def validate_policy_state(state, args, robot):
     q0 = torch.tensor(robot.default_joint_pos_list(), dtype=torch.float32)
     scale = torch.tensor(robot.action_scale_list(), dtype=torch.float32)
     if (
@@ -103,6 +88,30 @@ def load_policy(checkpoint, robot):
             raise ValueError(f"Nonfinite policy tensor: {name}")
         if name.endswith(".var") and (value < 0).any():
             raise ValueError(f"Negative normalizer variance: {name}")
+
+
+def load_policy(checkpoint, robot):
+    """Rebuild the recorded architecture strictly; never substitute live weights."""
+    prepare()
+    from blinkmimic import networks
+    from blinkmimic.networks import Policy, check_pruned, policy_kwargs
+
+    if networks.AMP_DTYPE is not None:
+        raise ValueError("FP32 export requires an isolated process with AMP_DTYPE=None")
+    args, state = validated_checkpoint(checkpoint, robot)
+    check_pruned(args, nets_only=True)
+
+    def widths(key):
+        try:
+            result = tuple(int(v) for v in args[key].split(","))
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValueError(f"Invalid checkpoint {key}") from error
+        if not result or any(v < 1 for v in result):
+            raise ValueError(f"Invalid checkpoint {key}")
+        return result
+
+    validate_policy_state(state, args, robot)
+    joints = robot.num_joints
     obs_width, goal_width = native_dimensions(joints)
     policy = Policy(
         obs_width,
