@@ -13,7 +13,7 @@ from supermimic.tasks.task_spec import build_actor_obs_td
 
 from source.utils.export_notices import distribution_license
 from source.tasks.supermimic import REPO_ROOT
-from source.tasks.supermimic.checkpoint import make_manifest
+from source.tasks.supermimic.checkpoint_config import make_manifest
 from source.tasks.supermimic.export import (
     export_policy,
     load_policy_bundle,
@@ -263,7 +263,12 @@ def test_training_start_writes_deployment_configs(
     runner.manifest = bundle.manifest
     runner.cfg = bundle.runner_cfg
     runner.env = SimpleNamespace(unwrapped=SimpleNamespace(cfg=bundle.env_cfg))
-    runner.policy_learner = SimpleNamespace(actor=bundle.actor)
+    runner.policy_learner = SimpleNamespace(actor=bundle.actor, actor_optimizers=[])
+    runner.world_model_learner = SimpleNamespace(optimizers=[])
+    runner._checkpoint_step = 0
+    runner._wm = SimpleNamespace(bundle=lambda: torch.load(
+        directory / "world_model.pt", map_location="cpu", weights_only=True,
+    ))
     runner._representation = bundle.representation
     runner.logger = SimpleNamespace()
     monkeypatch.setattr(SuperMimicRunner, "_create_log_dir", lambda *args: tmp_path)
@@ -520,3 +525,49 @@ def test_export_rejects_changed_observation_calculation(synthetic_bundles):
     bundle.env_cfg.observations["actor"].terms["joint_pos"].params["biased"] = False
     with pytest.raises(ValueError, match="calculation differs"):
         policy_contract(bundle, "motion")
+
+
+def test_historical_archive_exports_saved_actor_without_split_files(synthetic_bundles, tmp_path):
+    import onnxruntime as ort
+    from source.tasks.supermimic.checkpoint_archive import save_checkpoint, load_checkpoint
+    from source.tasks.supermimic.export import export_play_policies
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    latest = load_checkpoint(directory)
+    path = save_checkpoint(tmp_path, step=1000, manifest=latest.manifest,
+                           actor=latest.actor, world_model=latest.world_model)
+    # The archive remains self-contained even after being moved away from the run.
+    moved = tmp_path / "moved" / path.name
+    moved.parent.mkdir()
+    path.rename(moved)
+    expected = export_policy(directory, task, tmp_path / "expected")
+    outputs = export_play_policies(moved, task)
+    assert outputs[0] == tmp_path / "moved/exported/model_1000/policy.onnx"
+    assert not (tmp_path / "actor.pt").exists()
+    a = ort.InferenceSession(str(expected), providers=["CPUExecutionProvider"])
+    b = ort.InferenceSession(str(outputs[0]), providers=["CPUExecutionProvider"])
+    rng = np.random.default_rng(42)
+    obs = rng.normal(size=a.get_inputs()[0].shape).astype(np.float32)
+    np.testing.assert_array_equal(a.run(None, {"obs": obs})[0], b.run(None, {"obs": obs})[0])
+    metadata = json.loads((outputs[0].parent / "metadata.json").read_text())
+    assert metadata["checkpoint_step"] == 1000
+    assert metadata["source_sha256"] == {moved.name: sha256(moved)}
+
+
+def test_play_export_loads_one_actor_for_all_encoders(synthetic_bundles, monkeypatch):
+    from unittest.mock import Mock
+    from source.tasks.supermimic import export
+
+    directory, task, _ = synthetic_bundles["gencoord", "proprio"]
+    loader = Mock(wraps=export.load_policy_bundle)
+    monkeypatch.setattr(export, "load_policy_bundle", loader)
+    bundles = []
+    def export_encoder(checkpoint, bundle, output, *, encoder, overwrite):
+        bundles.append((bundle, encoder))
+        return output / "policy.onnx"
+    monkeypatch.setattr(export, "export_encoder", export_encoder)
+    paths = export.export_play_policies(directory, task)
+    assert loader.call_count == 1
+    assert [encoder for _, encoder in bundles] == ["motion", "velocity"]
+    assert bundles[0][0] is bundles[1][0]
+    assert paths == [directory / "exported/policy.onnx", directory / "exported/velocity/policy.onnx"]

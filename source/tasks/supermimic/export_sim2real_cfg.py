@@ -102,7 +102,7 @@ def validate_proprio_observations(terms):
 def validate_policy_config(cfg, rcfg, task):
     """Apply the same interface checks to training YAML and checkpoint ONNX."""
     from mjlab.tasks.registry import load_env_cfg
-    from .checkpoint import json_value
+    from .checkpoint_config import json_value
 
     if type(rcfg.history_length) is not int or rcfg.history_length < 1:
         raise ValueError("Invalid history_length")

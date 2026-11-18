@@ -20,8 +20,8 @@ from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 from supermimic.scripts.train_utils import create_env, setup_device
 
 from source.tasks.supermimic import REPO_ROOT
-from source.tasks.supermimic.checkpoint import (
-    LocalBundleRunner,
+from source.tasks.supermimic.checkpoint import LocalBundleRunner
+from source.tasks.supermimic.checkpoint_config import (
     make_manifest,
     read_bundle,
 )
