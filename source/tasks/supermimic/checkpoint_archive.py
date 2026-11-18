@@ -113,6 +113,48 @@ def _load_archive_checkpoint(source):
     )
 
 
+def load_world_model(path, target):
+    """Read native split or combined weights, checking the dynamics contract."""
+    if path.is_dir() and not (path / "last.pt").exists():
+        path = path / "world_model.pt"
+    if path.name == "world_model.pt":
+        source = json.loads((path.parent / "manifest.json").read_text())
+        weights = torch.load(path, map_location="cpu", weights_only=True)
+    else:
+        checkpoint = load_checkpoint(path)
+        source, weights = checkpoint.manifest, checkpoint.world_model
+
+    for key in ("schema_version", "representation", "robot"):
+        if source[key] != target[key]:
+            raise ValueError(f"World model {key} differs from the target")
+
+    def dynamics_config(manifest):
+        env = manifest["environment"]
+        motion = env["commands"]["motion"]
+        return (
+            env["sim"]["mujoco"],
+            env["decimation"],
+            env["events"],
+            env["actions"],
+            env["observations"],
+            env["scene"]["entities"],
+            motion["body_names"],
+            motion["anchor_body_name"],
+            manifest["runner_cfg"]["dynamics_hidden_dims"],
+        )
+
+    if dynamics_config(source) != dynamics_config(target):
+        raise ValueError(
+            "World model dynamics configuration differs from the target"
+        )
+    if (
+        not isinstance(weights, dict)
+        or not {"dynamics", "sim_context"} <= weights.keys()
+    ):
+        raise ValueError("Expected a SuperMimic world-model bundle")
+    return weights
+
+
 def save_checkpoint(
     directory,
     *,

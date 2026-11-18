@@ -25,6 +25,7 @@ K1's 50 Hz reference/control-rate contract after parsing environment overrides.
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import mjlab
 import tyro
@@ -38,7 +39,7 @@ from source.utils.training_resume import (
     select_resume_checkpoint,
 )
 from . import LOG_ROOT
-from .checkpoint_archive import load_checkpoint
+from .checkpoint_archive import load_checkpoint, load_world_model
 from .resume import restore_training_state, validate_resume_configuration
 from .config import TASKS, check_representation_matches
 from .checkpoint import LocalBundleRunner as SuperMimicRunner
@@ -53,6 +54,8 @@ from .checkpoint_config import (
 @dataclass
 class TrainConfig(NativeTrainConfig):
     agent: ResumeOptions = field(default_factory=ResumeOptions)
+    world_model_checkpoint: Path | None = None
+    """Start at iteration zero with the world model from a local checkpoint."""
 
 
 def training_defaults(task):
@@ -136,6 +139,16 @@ def main(argv=None):
     )
     manifest["num_envs"] = args.num_envs
     validate_manifest(manifest, chosen_task)
+    local_model = None
+    if args.world_model_checkpoint is not None:
+        if checkpoint is not None or args.runner.wandb_run_path is not None:
+            raise ValueError(
+                "Choose one of --world-model-checkpoint, --agent.resume,"
+                " or --runner.wandb-run-path"
+            )
+        path = args.world_model_checkpoint.expanduser().resolve()
+        local_model = load_world_model(path, manifest)
+        manifest["world_model_from"] = str(path)
     if checkpoint is not None:
         validate_resume_configuration(checkpoint, manifest)
         if args.runner.wandb_run_path is not None:
@@ -161,6 +174,10 @@ def main(argv=None):
         )
         if checkpoint is not None:
             restore_training_state(runner, checkpoint)
+        elif local_model is not None:
+            runner._wm.load_bundle(local_model)
+            del local_model
+            print(f"[INFO] Initialized world model from {path}")
         runner.run()
     finally:
         env.close()
