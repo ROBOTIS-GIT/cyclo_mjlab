@@ -21,6 +21,38 @@ class LocalBundleRunner(SuperMimicRunner):
         self._checkpoint_step = -1
         super().__init__(**kwargs)
 
+    def _init_policy(self):
+        if self.cfg.slot_mix.get("motion", 0) > 0:
+            return super()._init_policy()
+
+        # The native world-model environment always needs a motion reference
+        # for rewards, even if every actor slot uses the velocity encoder.
+        from unittest.mock import patch
+        from supermimic.runners import supermimic_runner as native
+        from supermimic.tasks.task_spec import make_motion_task
+
+        motion = make_motion_task(self._representation, self._num_goals)
+        build_env = native.MultiTaskWorldModelEnv
+
+        def with_reference(*, task_specs, **kwargs):
+            if kwargs["env"] is self.env and task_specs[0].name != "motion":
+                task_specs = [motion, *task_specs]
+            return build_env(task_specs=task_specs, **kwargs)
+
+        with patch.object(native, "MultiTaskWorldModelEnv", with_reference):
+            super()._init_policy()
+
+    def _build_sim_obs_td(self, rep_state, aux_state, sim_actor_obs, motion_times, sim_ctx):
+        obs = super()._build_sim_obs_td(
+            rep_state, aux_state, sim_actor_obs, motion_times, sim_ctx
+        )
+        if self.cfg.latent_bc_weight and "goal_motion" not in obs:
+            # The auxiliary loss reads the reference even for velocity-only slots.
+            _, obs["goal_motion"] = self._representation.compute_wm_goal(
+                self.motion, motion_times, aux_state
+            )
+        return obs
+
     def run(self):
         from .tensorboard import SuperMimicTensorBoardLogger
 

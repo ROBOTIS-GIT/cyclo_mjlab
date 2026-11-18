@@ -4,7 +4,9 @@ import os
 
 import pytest
 import torch
-from supermimic.runners.supermimic_runner import SuperMimicRunner, SuperMimicRunnerCfg
+from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
+
+from source.tasks.supermimic.checkpoint import LocalBundleRunner
 from supermimic.scripts.train_utils import create_env
 
 from source.tasks.supermimic import REPO_ROOT
@@ -18,8 +20,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.parametrize("representation", ["gencoord", "maxcoord"])
-def test_native_partial_reset_and_multiclip_replay(representation, tmp_path):
+@pytest.mark.parametrize(
+    "representation, velocity_only",
+    [("gencoord", False), ("maxcoord", False), ("gencoord", True)],
+)
+def test_native_partial_reset_and_multiclip_replay(representation, velocity_only, tmp_path):
     cfg = make_env_cfg(representation)
     source = REPO_ROOT / "source/assets/motions/K1_rev1"
     paths = [source / name / f"{name}.npz" for name in ("dance1", "dance2")]
@@ -78,9 +83,15 @@ def test_native_partial_reset_and_multiclip_replay(representation, tmp_path):
             actor_hidden_dims=(16, 16),
             critic_hidden_dims=(16, 16),
         )
-        runner = SuperMimicRunner(
-            env, cfg_runner, f"Cyclo-SuperMimic-{representation}-K1-Rev1-001", device="cpu"
+        if velocity_only:
+            cfg_runner.slot_mix = {"motion": 0.0, "velocity": 1.0}
+        runner = LocalBundleRunner(
+            manifest={}, env=env, cfg=cfg_runner,
+            task_id=f"Cyclo-SuperMimic-{representation}-K1-Rev1-001", device="cpu",
         )
+        if velocity_only:
+            assert [s.name for s in runner._active_task_specs] == ["velocity"]
+            assert [s.name for s in runner.wm_env.task_specs] == ["motion", "velocity"]
         raw = torch.linspace(-1.7, 1.4, 23).repeat(3, 1)
         action = native.action_manager.get_term("joint_pos")
         exported = nominal_action_contract(cfg, list(native.scene["robot"].joint_names))
