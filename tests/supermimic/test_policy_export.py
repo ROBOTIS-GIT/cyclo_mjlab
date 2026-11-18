@@ -286,12 +286,12 @@ def test_mismatched_bundle_is_rejected(tmp_path, synthetic_bundles, failure):
 
 
 @pytest.mark.parametrize(
-    "representation,mode",
+    "representation,mode,active_encoders",
     [
-        ("gencoord", "proprio"),
-        ("maxcoord", "proprio"),
-        ("gencoord", "rep_state"),
-        ("maxcoord", "rep_state"),
+        ("gencoord", "proprio", ("motion",)),
+        ("maxcoord", "proprio", ("motion", "velocity")),
+        ("gencoord", "rep_state", ("motion", "velocity")),
+        ("maxcoord", "rep_state", ("velocity",)),
     ],
 )
 def test_training_start_writes_deployment_configs(
@@ -300,6 +300,7 @@ def test_training_start_writes_deployment_configs(
     monkeypatch,
     representation,
     mode,
+    active_encoders,
 ):
     import yaml
     from source.tasks.supermimic.checkpoint import LocalBundleRunner
@@ -309,6 +310,9 @@ def test_training_start_writes_deployment_configs(
     bundle = load_policy_bundle(directory, task)
     runner = object.__new__(LocalBundleRunner)
     runner.manifest = bundle.manifest
+    runner._active_task_specs = [
+        spec for spec in bundle.actor.task_specs if spec.name in active_encoders
+    ]
     runner.cfg = bundle.runner_cfg
     runner.env = SimpleNamespace(unwrapped=SimpleNamespace(cfg=bundle.env_cfg))
     runner.policy_learner = SimpleNamespace(
@@ -345,6 +349,9 @@ def test_training_start_writes_deployment_configs(
         ("velocity", "params/velocity/sim2real.yaml"),
     ):
         path = run_dir / relative
+        if encoder not in active_encoders:
+            assert not path.exists()
+            continue
         expected_files.append(str(path))
         cfg = yaml.safe_load(path.read_text())
         contract = policy_contract(bundle, encoder)
