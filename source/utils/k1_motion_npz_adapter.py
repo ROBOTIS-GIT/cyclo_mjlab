@@ -7,10 +7,12 @@ Root-only files must explicitly declare their coordinate contract.
 
 import glob
 import hashlib
+import io
 import json
 import os
 import re
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -301,7 +303,7 @@ def convert_motion(input_path, output_path, joint_names, model=None):
     return output_path
 
 
-def prepare_motion_files(source, model, cache_dir):
+def _resolve_motion_sources(source):
     files = []
     for pattern in source.split(","):
         expanded = os.path.expanduser(pattern.strip())
@@ -311,21 +313,21 @@ def prepare_motion_files(source, model, cache_dir):
         if not matches:
             raise ValueError(f"No reference files matched {pattern!r}")
         files.extend(Path(file).resolve() for file in matches)
-    # Full validation happens on every invocation; the persistent normalized
-    # cache is only an internal loader bridge, never an authority for validity.
-    results, hashes = [], []
-    for file in files:
-        try:
-            raw = file.read_bytes()
-            import io
+    return files
 
-            with np.load(io.BytesIO(raw), allow_pickle=False) as archive:
-                results.append(
-                    adapt_motion(dict(archive), model_joint_names(model), model)
-                )
-            hashes.append(hashlib.sha256(raw).hexdigest())
-        except (ValueError, KeyError, OSError) as error:
-            raise ValueError(f"Reference {file}: {error}") from error
+
+def _read_and_adapt_motion(file, model):
+    """Hash and validate the same source bytes before writing any cache files."""
+    try:
+        raw = file.read_bytes()
+        with np.load(io.BytesIO(raw), allow_pickle=False) as archive:
+            result = adapt_motion(dict(archive), model_joint_names(model), model)
+        return result, hashlib.sha256(raw).hexdigest()
+    except (ValueError, KeyError, OSError) as error:
+        raise ValueError(f"Reference {file}: {error}") from error
+
+
+def _motion_cache_directory(files, hashes, model, cache_dir):
     signature = hashlib.sha256()
     for attribute in (
         "body_pos",
@@ -344,18 +346,32 @@ def prepare_motion_files(source, model, cache_dir):
     group = hashlib.sha256(
         (ADAPTER_VERSION + model_hash + identity).encode()
     ).hexdigest()
-    folder = Path(cache_dir) / group
+    return Path(cache_dir) / group, model_hash
+
+
+@contextmanager
+def _atomic_output(target, mode):
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode=mode, dir=target.parent, suffix=".tmp", delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            yield temporary
+        os.replace(temporary_path, target)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
+def _write_motion_library(folder, files, results, hashes, model_hash):
     folder.mkdir(parents=True, exist_ok=True)
     paths = []
     for i, (file, result) in enumerate(zip(files, results, strict=True)):
         safe_stem = re.sub(r"[^a-zA-Z0-9_.-]", "_", file.stem)
         target = folder / f"{i:04d}-{safe_stem}.npz"
-        with tempfile.NamedTemporaryFile(
-            dir=folder, suffix=".tmp", delete=False
-        ) as temporary:
-            name = temporary.name
+        with _atomic_output(target, "w+b") as temporary:
             np.savez_compressed(temporary, **result)
-        os.replace(name, target)
         paths.append(str(target.resolve()))
     manifest = {
         "adapter": ADAPTER_VERSION,
@@ -365,11 +381,17 @@ def prepare_motion_files(source, model, cache_dir):
         ],
         "outputs": paths,
     }
-    with tempfile.NamedTemporaryFile(
-        mode="w", dir=folder, suffix=".tmp", delete=False
-    ) as temporary:
+    with _atomic_output(folder / "manifest.json", "w") as temporary:
         json.dump(manifest, temporary, indent=2)
         temporary.write("\n")
-        manifest_temporary = temporary.name
-    os.replace(manifest_temporary, folder / "manifest.json")
     return paths[0] if len(paths) == 1 else str(folder.resolve() / "*.npz")
+
+
+def prepare_motion_files(source, model, cache_dir):
+    """Validate references, then publish the internal normalized loader library."""
+    files = _resolve_motion_sources(source)
+    # A cache path never bypasses source/model validation.
+    prepared = [_read_and_adapt_motion(file, model) for file in files]
+    results, hashes = zip(*prepared, strict=True)
+    folder, model_hash = _motion_cache_directory(files, hashes, model, cache_dir)
+    return _write_motion_library(folder, files, results, hashes, model_hash)

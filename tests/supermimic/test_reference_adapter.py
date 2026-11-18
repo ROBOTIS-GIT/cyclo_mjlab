@@ -202,3 +202,30 @@ def test_multiple_references_keep_clip_boundaries(model, tmp_path):
         len(data1["joint_pos"]),
         len(data1["joint_pos"]) + len(data2["joint_pos"]),
     ]
+
+
+def test_failed_cache_write_preserves_published_data_and_cleans_temporary(model, tmp_path, monkeypatch):
+    from pathlib import Path
+    from source.utils import k1_motion_npz_adapter as adapter
+
+    names = model_joint_names(model)
+    source = tmp_path / "source.npz"
+    np.savez(source, fps=50, joint_names=names,
+             joint_pos=np.zeros((2, len(names))), joint_vel=np.zeros((2, len(names))),
+             root_pos_w=np.zeros((2, 3)), root_quat_w=np.tile([1., 0., 0., 0.], (2, 1)),
+             root_lin_vel_w=np.zeros((2, 3)), root_ang_vel_w=np.zeros((2, 3)),
+             **adapter.ROOT_CONTRACT)
+    output = Path(prepare_motion_files(str(source), model, tmp_path / "cache"))
+    before = output.read_bytes()
+    manifest = (output.parent / "manifest.json").read_bytes()
+
+    def fail(stream, **arrays):
+        stream.write(b"incomplete")
+        raise OSError("write failed")
+
+    monkeypatch.setattr(adapter.np, "savez_compressed", fail)
+    with pytest.raises(OSError, match="write failed"):
+        prepare_motion_files(str(source), model, tmp_path / "cache")
+    assert output.read_bytes() == before
+    assert (output.parent / "manifest.json").read_bytes() == manifest
+    assert not list(output.parent.glob("*.tmp"))
