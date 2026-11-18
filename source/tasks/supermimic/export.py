@@ -461,6 +461,8 @@ def export_play_policies(directory, task):
     paths = []
     for spec in bundle.actor.task_specs:
         encoder = spec.name
+        if bundle.runner_cfg.slot_mix.get(encoder, 0.0) <= 0.0:
+            continue
         output_dir = checkpoint.export_directory
         if encoder != "motion":
             output_dir /= encoder

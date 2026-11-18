@@ -458,10 +458,12 @@ def test_observation_order_must_match_native_representation(synthetic_bundles):
         policy_contract(bundle, "motion")
 
 
+@pytest.mark.parametrize("velocity_fraction", [0.0, 0.25, 1.0])
 def test_play_exports_before_simulator_and_refreshes_existing_files(
     synthetic_bundles,
     tmp_path,
     monkeypatch,
+    velocity_fraction,
 ):
     import shutil
     from source.tasks.supermimic import play
@@ -469,6 +471,12 @@ def test_play_exports_before_simulator_and_refreshes_existing_files(
     source, task, _ = synthetic_bundles["gencoord", "proprio"]
     directory = tmp_path / "checkpoint"
     shutil.copytree(source, directory)
+    manifest_path = directory / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["runner_cfg"]["slot_mix"] = {
+        "motion": 1.0 - velocity_fraction, "velocity": velocity_fraction,
+    }
+    manifest_path.write_text(json.dumps(manifest))
     params = directory / "params" / "sim2real.yaml"
     params.parent.mkdir()
     params.write_text("training-owned yaml\n")
@@ -485,18 +493,21 @@ def test_play_exports_before_simulator_and_refreshes_existing_files(
     for iteration in range(2):
         with pytest.raises(BeforeSimulator):
             play.play(task, cfg)
-        for relative in (
-            "exported/policy.onnx",
-            "exported/velocity/policy.onnx",
+        for relative, active in (
+            ("exported/policy.onnx", velocity_fraction < 1.0),
+            ("exported/velocity/policy.onnx", velocity_fraction > 0.0),
         ):
             path = directory / relative
+            if not active:
+                assert not path.exists()
+                continue
             metadata = json.loads((path.parent / "metadata.json").read_text())
             assert metadata["onnx_sha256"] == sha256(path)
             assert metadata["source_sha256"]["actor.pt"] == sha256(
                 directory / "actor.pt"
             )
         assert params.read_text() == "training-owned yaml\n"
-        path = directory / "exported/policy.onnx"
+        path = next((directory / "exported").rglob("policy.onnx"))
         if iteration == 0:
             previous_hash = sha256(path)
             state = torch.load(directory / "actor.pt", weights_only=True)
@@ -740,7 +751,9 @@ def test_play_export_loads_one_actor_for_all_encoders(
     from source.tasks.supermimic import export
 
     directory, task, _ = synthetic_bundles["gencoord", "proprio"]
-    loader = Mock(wraps=export.load_policy_bundle)
+    bundle = export.load_policy_bundle(directory, task)
+    bundle.runner_cfg.slot_mix = {"motion": 0.5, "velocity": 0.5}
+    loader = Mock(return_value=bundle)
     monkeypatch.setattr(export, "load_policy_bundle", loader)
     bundles = []
 
