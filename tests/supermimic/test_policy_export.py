@@ -3,6 +3,7 @@ Synthetic full-width encoder export; no trained weights or motion datasets.
 """
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -303,7 +304,6 @@ def test_training_start_writes_deployment_configs(
     import yaml
     from source.tasks.supermimic.checkpoint import LocalBundleRunner
     from source.tasks.supermimic.export import policy_contract
-    from supermimic.runners.supermimic_runner import SuperMimicRunner
 
     directory, task, _ = synthetic_bundles[representation, mode]
     bundle = load_policy_bundle(directory, task)
@@ -325,9 +325,8 @@ def test_training_start_writes_deployment_configs(
     )
     runner._representation = bundle.representation
     runner.logger = SimpleNamespace()
-    monkeypatch.setattr(
-        SuperMimicRunner, "_create_log_dir", lambda *args: tmp_path
-    )
+    monkeypatch.chdir(tmp_path)
+    runner.task_id = task
 
     def unexpected_metadata(*args, **kwargs):
         pytest.fail("Training YAML export must not construct ONNX metadata")
@@ -336,15 +335,16 @@ def test_training_start_writes_deployment_configs(
         "source.tasks.supermimic.export.policy_contract", unexpected_metadata
     )
 
-    assert runner._create_log_dir() == tmp_path
-    assert not (tmp_path / "actor.pt").exists()
-    assert not (tmp_path / "world_model.pt").exists()
-    expected_files = [str(tmp_path / "manifest.json")]
+    run_dir = runner._create_log_dir()
+    assert run_dir.parent == Path("logs/supermimic") / task
+    assert not (run_dir / "actor.pt").exists()
+    assert not (run_dir / "world_model.pt").exists()
+    expected_files = [str(run_dir / "manifest.json")]
     for encoder, relative in (
         ("motion", "params/sim2real.yaml"),
         ("velocity", "params/velocity/sim2real.yaml"),
     ):
-        path = tmp_path / relative
+        path = run_dir / relative
         expected_files.append(str(path))
         cfg = yaml.safe_load(path.read_text())
         contract = policy_contract(bundle, encoder)
@@ -396,7 +396,7 @@ def test_training_start_writes_deployment_configs(
             assert props["damping"] == float(
                 f"{-model.actuator_biasprm[aid, 2]:.3g}"
             )
-    assert runner.checkpoint_extra_files(tmp_path) == expected_files
+    assert runner.checkpoint_extra_files(run_dir) == expected_files
     runner.logger.close()
 
 

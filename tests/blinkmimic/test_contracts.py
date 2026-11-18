@@ -245,7 +245,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     data = tmp_path / "data"
     data.mkdir()
     (data / "manifest.json").write_text("{}")
-    train = tmp_path / "logs" / TEST_TASK / "train"
+    train = tmp_path / "logs" / "blinkmimic" / TEST_TASK / "train"
     with pytest.raises(SystemExit) as result:
         cli.main(
             "train",
@@ -350,7 +350,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
         cli.main("train", [TEST_TASK])
     assert result.value.code == 0
     automatic = prepared[-1][1].parent
-    assert automatic.parent == tmp_path / "logs" / TEST_TASK
+    assert automatic.parent == tmp_path / "logs" / "blinkmimic" / TEST_TASK
     datetime.datetime.strptime(automatic.name, "%Y-%m-%d_%H-%M-%S")
     (automatic / "model_200.pt").touch()
     with pytest.raises(SystemExit) as result:

@@ -37,7 +37,7 @@ from source.utils.training_resume import (
     parse_resume_options,
     select_resume_checkpoint,
 )
-from . import REPO_ROOT
+from . import LOG_ROOT
 from .checkpoint_archive import load_checkpoint
 from .resume import restore_training_state, validate_resume_configuration
 from .config import TASKS, check_representation_matches
@@ -77,7 +77,7 @@ def parse_training_configuration(argv):
     default = training_defaults(chosen_task)
     options = parse_resume_options(remaining_args)
     resume_path = select_resume_checkpoint(
-        REPO_ROOT / "logs" / chosen_task, options
+        LOG_ROOT / chosen_task, options
     )
     checkpoint = load_checkpoint(resume_path) if resume_path else None
     saved_environment_options = []

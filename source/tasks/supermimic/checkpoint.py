@@ -1,9 +1,11 @@
 """Training output hooks for local checkpoints and deployment files."""
 
 import json
+from datetime import datetime
 
 from supermimic.runners.supermimic_runner import SuperMimicRunner
 
+from . import LOG_ROOT
 from .checkpoint_archive import save_checkpoint
 from .resume import optimizer_groups
 from .training_loop import run_training_loop
@@ -54,13 +56,10 @@ class LocalBundleRunner(SuperMimicRunner):
         return [str(log_dir / "manifest.json"), *self._deployment_files]
 
     def _create_log_dir(self, *parts):
-        directory = super()._create_log_dir(*parts)
-        if (directory / "manifest.json").exists() or (
-            directory / "last.pt"
-        ).exists():
-            raise FileExistsError(
-                f"Refusing to overwrite an existing training run: {directory}"
-            )
+        stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        directory = LOG_ROOT.joinpath(self.task_id, *parts, stamp)
+        directory.mkdir(parents=True, exist_ok=False)
+        print(f"[INFO] Logging to {directory}")
         temporary = directory / "manifest.json.tmp"
         temporary.write_text(
             json.dumps(self.manifest, indent=2, allow_nan=False) + "\n"

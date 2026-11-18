@@ -48,7 +48,7 @@ def add_resume_arguments(parser):
         "--agent.load-run",
         dest="load_run",
         default=".*",
-        help="Run directory or regex under logs/<task>",
+        help="Run directory or regex under the task log directory",
     )
     parser.add_argument(
         "--agent.load-checkpoint",

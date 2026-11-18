@@ -27,7 +27,7 @@ from source.utils.export_notices import (
     write_software_notices,
 )
 
-from . import REPO_ROOT
+from . import LOG_ROOT, REPO_ROOT
 from .checkpoint_config import json_value, read_bundle
 from .checkpoint_archive import load_checkpoint
 from .config import TASKS, register_tasks
@@ -489,7 +489,7 @@ def main(argv=None):
     if selected is None:
         from .play import latest_checkpoint_directory
 
-        selected = latest_checkpoint_directory(Path("logs"), args.task)
+        selected = latest_checkpoint_directory(LOG_ROOT, args.task)
     checkpoint = load_checkpoint(selected)
     output = args.output_dir or checkpoint.export_directory
     if args.output_dir is None and args.encoder != "motion":

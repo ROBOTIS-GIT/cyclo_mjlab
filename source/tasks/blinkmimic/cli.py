@@ -27,6 +27,9 @@ from .checkpoint import (
 )
 
 
+LOG_ROOT = Path("logs/blinkmimic")
+
+
 def latest_training_checkpoint(log_root, task):
     candidates = []
     for record_path in (log_root / task).glob("*/run-record.json"):
@@ -231,7 +234,7 @@ def create_parser():
     parser.add_argument(
         "--run-dir",
         type=Path,
-        help="Output directory; training defaults to logs/<task>/<timestamp>",
+        help="Output directory; training defaults to logs/blinkmimic/<task>/<timestamp>",
     )
     parser.add_argument("--checkpoint", type=Path)
     parser.add_argument(
@@ -275,7 +278,7 @@ def create_parser():
 
 def resolve_playback_inputs(args):
     if args.checkpoint is None and args.checkpoint_dir is None:
-        args.checkpoint = latest_training_checkpoint(ROOT / "logs", args.task)
+        args.checkpoint = latest_training_checkpoint(ROOT / LOG_ROOT, args.task)
     else:
         args.checkpoint = select_checkpoint(
             args.checkpoint, args.checkpoint_dir
@@ -385,14 +388,14 @@ def run_training(args, extra):
 
     if args.run_dir is None:
         stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        args.run_dir = ROOT / "logs" / args.task / stamp
+        args.run_dir = ROOT / LOG_ROOT / args.task / stamp
     prepare()
     robot = TASKS[args.task].robot_factory()
     out = args.run_dir.resolve()
     effective_recipe, removed_systems_flags = execution_recipe(args.execution)
     from source.utils.training_resume import select_resume_checkpoint
 
-    resume_path = select_resume_checkpoint(ROOT / "logs" / args.task, args)
+    resume_path = select_resume_checkpoint(ROOT / LOG_ROOT / args.task, args)
     if resume_path is not None:
         effective_recipe, removed_systems_flags, extra = (
             resolve_training_resume(args, extra, robot, resume_path)

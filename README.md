@@ -230,7 +230,7 @@ WANDB_MODE=offline python \
 python scripts/reinforcement_learning/play.py \
   --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
   --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
-  --checkpoint-dir logs/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> --viewer viser
+  --checkpoint-dir logs/supermimic/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> --viewer viser
 ```
 
 Replace `<timestamp>` with the training run directory. Select
