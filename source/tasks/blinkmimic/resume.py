@@ -65,7 +65,9 @@ def training_arguments(saved, robot_name):
 
 
 @contextmanager
-def allow_model_only_resume(checkpoint):
+def allow_model_only_resume(
+    checkpoint, source=None, target=None, *, allow_removed=False
+):
     """
     Scope the upstream optimizer fallback to this worker and this input file.
 
@@ -90,6 +92,13 @@ def allow_model_only_resume(checkpoint):
             isinstance(file, (str, Path))
             and Path(file).resolve() == Path(checkpoint).resolve()
         ):
+            if source is not None:
+                from .resume_sampler import transfer_sampler
+
+                saved["ctrl"] = transfer_sampler(
+                    saved.get("ctrl"), source, target,
+                    allow_removed=allow_removed,
+                )
             keys = {"opt_pi", "opt_wm", "opt_v"}
             if not keys.intersection(saved):
                 saved = dict(saved, **{key: marker for key in keys})

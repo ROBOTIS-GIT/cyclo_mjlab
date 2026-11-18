@@ -234,7 +234,7 @@ def create_parser():
     parser.add_argument(
         "--run-dir",
         type=Path,
-        help="Output directory; training defaults to logs/blinkmimic/<task>/<timestamp>",
+        help="Training output (default: logs/blinkmimic/<task>/<timestamp>)",
     )
     parser.add_argument("--checkpoint", type=Path)
     parser.add_argument(
@@ -278,7 +278,9 @@ def create_parser():
 
 def resolve_playback_inputs(args):
     if args.checkpoint is None and args.checkpoint_dir is None:
-        args.checkpoint = latest_training_checkpoint(ROOT / LOG_ROOT, args.task)
+        args.checkpoint = latest_training_checkpoint(
+            ROOT / LOG_ROOT, args.task
+        )
     else:
         args.checkpoint = select_checkpoint(
             args.checkpoint, args.checkpoint_dir
@@ -309,6 +311,8 @@ def parse_arguments(parser, action, argv):
         "--motion_dir",
         "--log_dir",
         "--run_dir",
+        "--resume-source-library",
+        "--allow-removed-clips",
         "--ckpt",
         "--resume",
     }
@@ -345,6 +349,48 @@ def prepare_run_inputs(action, args, extra):
             )
 
 
+def resume_motion_arguments(args, resume_path):
+    record = json.loads((resume_path.parent / "run-record.json").read_text())
+    source_task = record["task"]
+    cross_task = source_task != args.task
+    if cross_task and (
+        source_task not in TASKS
+        or TASKS[source_task].robot_factory
+        is not TASKS[args.task].robot_factory
+    ):
+        raise ValueError(
+            "Cross-task resume requires the same robot configuration"
+        )
+    original_motion_dir = training_motion_directory(resume_path)
+    manifest = original_motion_dir / "manifest.json"
+    recorded_hash = record.get("manifest_sha256")
+    if (
+        recorded_hash
+        and hashlib.sha256(manifest.read_bytes()).hexdigest() != recorded_hash
+    ):
+        raise ValueError(
+            "The source run's recorded motion manifest has changed"
+        )
+    # For older runs, task motions were prepared inside the run directory.
+    source = record.get("motion_source") or (
+        "task"
+        if original_motion_dir.resolve() == resume_path.parent / "motions"
+        else "explicit"
+    )
+    if not cross_task and args.motion_dir is None and source == "explicit":
+        args.motion_dir = original_motion_dir
+        args.motion_source = source
+    flags = [
+        "--resume",
+        str(resume_path),
+        "--resume-source-library",
+        str(original_motion_dir),
+    ]
+    if cross_task:
+        flags.append("--allow-removed-clips")
+    return flags
+
+
 def resolve_training_resume(args, extra, robot, resume_path):
     from .resume import read_resume_checkpoint, training_arguments
 
@@ -361,19 +407,7 @@ def resolve_training_resume(args, extra, robot, resume_path):
         raise ValueError(
             "--iterations must exceed the saved completed iterations"
         )
-    record = json.loads((resume_path.parent / "run-record.json").read_text())
-    if record["task"] != args.task:
-        raise ValueError("Resume checkpoint belongs to a different task")
-    original_motion_dir = training_motion_directory(resume_path)
-    if args.motion_dir is not None and (
-        (args.motion_dir / "manifest.json").read_bytes()
-        != (original_motion_dir / "manifest.json").read_bytes()
-    ):
-        raise ValueError(
-            "Resume requires the original motion library and ordering"
-        )
-    args.motion_dir = args.motion_dir or original_motion_dir
-    extra = [*extra, "--resume", str(resume_path)]
+    extra = [*extra, *resume_motion_arguments(args, resume_path)]
     print(
         f"[INFO] Resuming {resume_path} at iteration {saved['iteration']}; "
         "simulation and replay buffer restart",
@@ -381,6 +415,16 @@ def resolve_training_resume(args, extra, robot, resume_path):
     )
     args.resume_checkpoint = resume_path
     return effective_recipe, removed_systems_flags, extra
+
+
+def copy_training_log_header(previous_run, new_run):
+    """The native trainer only writes a CSV header on iteration zero."""
+    previous_log = previous_run / "train_log.csv"
+    if previous_log.is_file():
+        with previous_log.open() as stream:
+            header = stream.readline()
+        if header.startswith("iteration,"):
+            (new_run / "train_log.csv").write_text(header)
 
 
 def run_training(args, extra):
@@ -395,6 +439,7 @@ def run_training(args, extra):
     effective_recipe, removed_systems_flags = execution_recipe(args.execution)
     from source.utils.training_resume import select_resume_checkpoint
 
+    args.motion_source = "task" if args.motion_dir is None else "explicit"
     resume_path = select_resume_checkpoint(ROOT / LOG_ROOT / args.task, args)
     if resume_path is not None:
         effective_recipe, removed_systems_flags, extra = (
@@ -403,6 +448,8 @@ def run_training(args, extra):
     out.mkdir(parents=True, exist_ok=False)
     if args.motion_dir is None:
         args.motion_dir = prepare_task_motions(args.task, out / "motions")
+    if resume_path:
+        copy_training_log_header(resume_path.parent, out)
     flags = [
         *checkpoint_recipe(effective_recipe),
         *extra,
@@ -464,6 +511,7 @@ def build_run_record(
     return dict(
         task=args.task,
         action=action,
+        motion_source=getattr(args, "motion_source", None),
         resumed_from=(
             str(args.resume_checkpoint)
             if getattr(args, "resume_checkpoint", None)
