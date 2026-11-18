@@ -20,7 +20,6 @@ import csv
 import datetime
 import json
 import math
-import subprocess
 from pathlib import Path
 
 from torch.utils.tensorboard import SummaryWriter
@@ -90,18 +89,3 @@ class BlinkMimicTensorBoard:
 
     def close(self):
         self.writer.close()
-
-
-def wait_with_tensorboard(child, run_dir):
-    metrics = BlinkMimicTensorBoard(run_dir)
-    try:
-        while child.poll() is None:
-            metrics.update()
-            try:
-                child.wait(timeout=1)
-            except subprocess.TimeoutExpired:
-                pass
-        metrics.update()  # Include the trainer's final flushed row.
-        return child.returncode
-    finally:
-        metrics.close()

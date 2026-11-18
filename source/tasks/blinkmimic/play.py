@@ -25,7 +25,7 @@ from .runtime import prepare
 
 
 class BlinkMimicPlayback:
-    """Switch references independently of policy history and physical state."""
+    """Interactive playback with an environment reset on motion selection."""
 
     def __init__(self, checkpoint_path, motion_dir, robot, device="cuda:0"):
         prepare()
@@ -59,15 +59,16 @@ class BlinkMimicPlayback:
         if not 0 <= clip_index < len(self.motion.names):
             raise ValueError(f"Invalid clip index: {clip_index}")
         self.clip_index = clip_index
-        self.env.f.copy_(self.motion.clip_start[clip_index].reshape(1))
+        self.reset()
+
+    @torch.no_grad()
+    def reset(self):
+        self.env.f.copy_(self.motion.clip_start[self.clip_index].reshape(1))
         self.env.done_eval.zero_()
         self.env.failed_eval.zero_()
         self.is_finished = False
         self.has_failed = False
 
-    @torch.no_grad()
-    def reset(self):
-        self.select_motion(self.clip_index)
         ids = torch.zeros(1, dtype=torch.long, device=self.env.device)
         self.env.reset(ids, self.env.f.clone())
         self.history = None
