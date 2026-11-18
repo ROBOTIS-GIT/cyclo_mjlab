@@ -6,6 +6,7 @@ environment. Training and evaluation run in a separate JAX environment so their
 MuJoCo and Warp versions can coexist. The initial task uses the public K1 Rev.1
 robot configuration and the same motion validation as BlinkMimic.
 
+Initialize the pinned X-Mimic fork with `git submodule update --init third_party/xmimic`.
 Install `third_party/xmimic/requirements.txt` in a dedicated Python environment
 with CUDA support. From the Cyclo environment, pass the absolute path to that
 environment's Python interpreter. Prepare the reference manifest using the

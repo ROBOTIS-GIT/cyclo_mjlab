@@ -9,3 +9,7 @@
 	path = third_party/blinkmimic
 	url = https://github.com/ROBOTIS-GIT/blinkmimic.git
 	branch = feature-cyclo-native
+[submodule "third_party/xmimic"]
+	path = third_party/xmimic
+	url = https://github.com/ROBOTIS-GIT/xmimic.git
+	branch = feature-cyclo-native

@@ -151,7 +151,9 @@ and usage/redistribution conditions; the software license does not clear them.
 
 ## X-Mimic
 
-The JAX learner in `third_party/xmimic` comes from
-[nico-bohlinger/xmimic](https://github.com/nico-bohlinger/xmimic) under MIT.
-The pinned revision, original license, notices, and local changes are recorded
-in that directory. The checkout does not include X-Mimic motion data or weights.
+The JAX learner is pinned as a submodule at `third_party/xmimic` from
+[ROBOTIS-GIT/xmimic](https://github.com/ROBOTIS-GIT/xmimic), a fork of
+[nico-bohlinger/xmimic](https://github.com/nico-bohlinger/xmimic).
+The fork retains the original [MIT license](third_party/xmimic/LICENSE)
+and [third-party notices](third_party/xmimic/THIRD_PARTY_NOTICES.md).
+Its [patch record](third_party/xmimic/PATCHES.md) describes the Cyclo changes.
