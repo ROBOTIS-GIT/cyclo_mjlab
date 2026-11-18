@@ -50,6 +50,7 @@ def main():
     parser.add_argument("mode", choices=("train", "evaluate", "play"))
     parser.add_argument("--task", choices=tuple(TASKS), required=True)
     parser.add_argument("--resume")
+    parser.add_argument("--world-model-checkpoint", type=Path)
     parser.add_argument("--resume-source-library", type=Path)
     parser.add_argument("--allow-removed-clips", action="store_true")
     parser.add_argument("--motion_dir", type=Path)
@@ -74,7 +75,7 @@ def main():
                 raise ValueError(
                     "--ckpt_light is incompatible with critic snapshots"
                 )
-            from .resume import allow_model_only_resume
+            from .resume import allow_model_only_resume, initialize_world_model
 
             with (
                 include_critic_in_snapshots(),
@@ -83,6 +84,9 @@ def main():
                     args.resume_source_library,
                     args.motion_dir,
                     allow_removed=args.allow_removed_clips,
+                ),
+                initialize_world_model(
+                    args.world_model_checkpoint, robot.name
                 ),
             ):
                 runpy.run_module("blinkmimic.train", run_name="__main__")

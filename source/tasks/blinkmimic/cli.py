@@ -236,6 +236,11 @@ def create_parser():
         type=Path,
         help="Training output (default: logs/blinkmimic/<task>/<timestamp>)",
     )
+    parser.add_argument(
+        "--world-model-checkpoint",
+        type=Path,
+        help="Initialize only the world model when starting a new run",
+    )
     parser.add_argument("--checkpoint", type=Path)
     parser.add_argument(
         "--checkpoint-dir",
@@ -297,6 +302,13 @@ def resolve_playback_inputs(args):
 
 def parse_arguments(parser, action, argv):
     args, extra = parser.parse_known_args(argv)
+    if args.world_model_checkpoint is not None:
+        if action != "train" or args.resume:
+            parser.error("--world-model-checkpoint requires fresh training")
+        path = args.world_model_checkpoint.expanduser().resolve()
+        if not path.is_file():
+            parser.error(f"Missing world model checkpoint: {path}")
+        args.world_model_checkpoint = path
     if action == "train" and "--ckpt_light" in extra:
         parser.error(
             "--ckpt_light omits world model and critic; full checkpoints are"
@@ -450,6 +462,12 @@ def run_training(args, extra):
         args.motion_dir = prepare_task_motions(args.task, out / "motions")
     if resume_path:
         copy_training_log_header(resume_path.parent, out)
+    if args.world_model_checkpoint:
+        extra = [
+            *extra,
+            "--world-model-checkpoint",
+            str(args.world_model_checkpoint),
+        ]
     flags = [
         *checkpoint_recipe(effective_recipe),
         *extra,

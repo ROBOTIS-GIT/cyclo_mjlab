@@ -20,6 +20,7 @@ Restore native training arguments; bridge model-only snapshots in the worker.
 
 from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 
@@ -129,3 +130,34 @@ def allow_model_only_resume(
         torch.load = original_load
         for cls, original in optimizer_loaders:
             cls.load_state_dict = original
+
+
+@contextmanager
+def initialize_world_model(checkpoint, robot_name):
+    """Seed the native world model before optimizer construction."""
+    if checkpoint is None:
+        yield
+        return
+    from blinkmimic import networks
+
+    saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    settings = saved.get("args", {})
+    if settings.get("robot") != robot_name or "wm" not in saved:
+        raise ValueError(
+            "Expected a BlinkMimic world model for the target robot"
+        )
+    weights = saved["wm"]
+    del saved
+    native_init = networks.WorldModel.__init__
+
+    def initialize(model, *args, **kwargs):
+        native_init(model, *args, **kwargs)
+        if model.structured != settings.get("wm_structured", False):
+            raise ValueError(
+                "World model representation differs from the checkpoint"
+            )
+        model.load_state_dict(weights, strict=True)
+        print(f"[INFO] Initialized world model from {checkpoint}", flush=True)
+
+    with patch.object(networks.WorldModel, "__init__", initialize):
+        yield
