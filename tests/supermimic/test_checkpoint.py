@@ -160,7 +160,8 @@ def test_real_runner_loop_saves_final_parameters(
         count["wm"] += 1
         return {}
 
-    def update_policy():
+    def update_policy(starts):
+        assert len(list(starts)) == cfg.policy.num_batches
         update_optimizer("actor", actor)
         update_optimizer("critic", critic)
         actor.weight.data.add_(1)
@@ -168,7 +169,9 @@ def test_real_runner_loop_saves_final_parameters(
         count["policy"] += 1
         return {}
 
-    buffer = SimpleNamespace(num_transitions=0, sample=lambda *a: None)
+    buffer = SimpleNamespace(
+        num_transitions=0, sample=lambda horizon, batch: torch.zeros(batch, horizon)
+    )
 
     def step():
         buffer.num_transitions += 1
@@ -179,6 +182,8 @@ def test_real_runner_loop_saves_final_parameters(
         save_interval=interval,
         log_interval=100,
         wm=SimpleNamespace(num_batches=1, batch_size=1, horizon=8),
+        policy=SimpleNamespace(num_batches=2, batch_size=1),
+        history_length=1,
         replay_ratio=8,
     )
     cleanup = []

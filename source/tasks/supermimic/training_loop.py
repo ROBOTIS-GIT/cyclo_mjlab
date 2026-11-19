@@ -26,6 +26,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 
 import torch
 import wandb
+from supermimic.envs.world_model_env import sample_start
 from supermimic.runners.supermimic_runner import (
     Ratio,
     export_actor_as_onnx,
@@ -89,7 +90,16 @@ def run_training_loop(runner, start_iteration=0) -> None:
                 wm_learn_time += time.time() - start_wm_time
 
                 start_policy_time = time.time()
-                policy_logs = runner.policy_learner.update()
+                policy_cfg = runner.cfg.policy
+                starts = (
+                    sample_start(
+                        runner.replay_buffer,
+                        runner.cfg.history_length,
+                        policy_cfg.batch_size,
+                    )
+                    for _ in range(policy_cfg.num_batches)
+                )
+                policy_logs = runner.policy_learner.update(starts)
                 policy_learn_time += time.time() - start_policy_time
 
                 loss_dict.update(wm_logs)
