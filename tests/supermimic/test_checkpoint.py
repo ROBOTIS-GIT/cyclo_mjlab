@@ -115,7 +115,12 @@ def test_offline_artifacts_never_call_remote_api(monkeypatch, mode):
     [(16, 1000, False), (3, 2, False), (16, 1000, True)],
 )
 @pytest.mark.parametrize("local_archive", [False, True])
-@pytest.mark.parametrize("local_loop", [False, True])
+@pytest.mark.parametrize(
+    "local_loop,request_upload,mode",
+    [(False, True, "online"), (True, True, "online"),
+     (True, False, "online"), (True, True, "offline"),
+     (True, True, "disabled")],
+)
 def test_real_runner_loop_saves_final_parameters(
     monkeypatch,
     tmp_path,
@@ -124,6 +129,8 @@ def test_real_runner_loop_saves_final_parameters(
     upload_failure,
     local_archive,
     local_loop,
+    request_upload,
+    mode,
 ):
     from supermimic.runners import supermimic_runner as module
 
@@ -216,7 +223,14 @@ def test_real_runner_loop_saves_final_parameters(
         )
         runner = local
     logged = []
-    monkeypatch.setattr(module.wandb, "run", SimpleNamespace(name="local"))
+    if request_upload:
+        monkeypatch.setenv("CYCLO_WANDB_UPLOAD_MODELS", "1")
+    else:
+        monkeypatch.delenv("CYCLO_WANDB_UPLOAD_MODELS", raising=False)
+    monkeypatch.setattr(
+        module.wandb, "run",
+        SimpleNamespace(name="local", settings=SimpleNamespace(mode=mode)),
+    )
 
     def log(files):
         logged.append(torch.load(files[0], weights_only=True)["weight"].item())
@@ -232,7 +246,8 @@ def test_real_runner_loop_saves_final_parameters(
         if local_loop
         else module.SuperMimicRunner.run
     )
-    if upload_failure:
+    should_upload = request_upload and mode == "online"
+    if upload_failure and should_upload:
         with pytest.raises(RuntimeError, match="final artifact failed"):
             run(runner)
     else:
@@ -273,6 +288,9 @@ def test_real_runner_loop_saves_final_parameters(
             for parameter, state in expected["state"].items():
                 for key, value in state.items():
                     assert torch.equal(saved["state"][parameter][key], value)
+    if not should_upload:
+        assert logged == []
+        return
     assert logged[-1] == count["wm"]
     if iterations == 16:
         assert count == {"wm": 9, "policy": 9}

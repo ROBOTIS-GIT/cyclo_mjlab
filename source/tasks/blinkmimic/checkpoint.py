@@ -38,11 +38,17 @@ def publish_completed_snapshots(run_dir):
     Normalize only atomically published upstream snapshots, never partial
     writes.
     """
+    published = []
     for path in run_dir.glob("ckpt_*.pt"):
         match = re.fullmatch(r"ckpt_([0-9]+)\.pt", path.name)
         if match and path.is_file():
-            path.rename(run_dir / f"model_{int(match[1])}.pt")
+            snapshot = run_dir / f"model_{int(match[1])}.pt"
+            path.rename(snapshot)
+            published.append(snapshot)
     prune_model_checkpoints(run_dir)
+    return sorted(
+        (p for p in published if p.exists()), key=lambda p: int(p.stem[6:])
+    )
 
 
 def select_checkpoint(checkpoint, checkpoint_dir):

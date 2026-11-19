@@ -28,6 +28,9 @@ so K1 can use the same reward. Initialize the dependency with
 `git submodule update --init third_party/blinkmimic`.
 The remaining upstream Python source files retain their original bytes.
 
+Training keeps checkpoints local by default. Set `CYCLO_WANDB_UPLOAD_MODELS=1 WANDB_MODE=online`
+when launching training to publish numbered model snapshots to W&B.
+
 ## Applied recipe
 
 | Component | This task's default |

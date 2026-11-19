@@ -32,6 +32,8 @@ from supermimic.runners.supermimic_runner import (
     log_model_artifact,
 )
 
+from source.utils.wandb_models import model_upload_requested
+
 
 def run_training_loop(runner, start_iteration=0) -> None:
     log_dir = runner._create_log_dir()
@@ -58,7 +60,10 @@ def run_training_loop(runner, start_iteration=0) -> None:
     wm_learn_time = 0.0
     policy_learn_time = 0.0
     loss_dict: dict[str, torch.Tensor] = {}
-    uploader = ThreadPoolExecutor(max_workers=1)
+    upload_models = (
+        model_upload_requested() and wandb.run.settings.mode == "online"
+    )
+    uploader = ThreadPoolExecutor(max_workers=1) if upload_models else None
     upload: Future | None = None
 
     try:
@@ -147,10 +152,14 @@ def run_training_loop(runner, start_iteration=0) -> None:
                             runner._num_actions
                         ),
                     )
-                upload = uploader.submit(log_model_artifact, checkpoint_files)
+                if uploader is not None:
+                    upload = uploader.submit(
+                        log_model_artifact, checkpoint_files
+                    )
 
         if upload is not None:
             upload.result()
     finally:
-        uploader.shutdown()
+        if uploader is not None:
+            uploader.shutdown()
         runner._cleanup()
