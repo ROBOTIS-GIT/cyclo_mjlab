@@ -196,7 +196,7 @@ def run_gui(args):
     ).returncode
 
 
-def wait_for_training(child, run_dir):
+def wait_for_training(child, run_dir, upload_run=None):
     """
     Collect training outputs while the child runs, including its final writes.
     """
@@ -204,16 +204,21 @@ def wait_for_training(child, run_dir):
 
     metrics = BlinkMimicTensorBoard(run_dir)
     try:
-        while child.poll() is None:
-            publish_completed_snapshots(run_dir)
+        from source.utils.wandb_models import upload_checkpoint
+
+        while True:
+            finished = child.poll() is not None
+            snapshots = publish_completed_snapshots(run_dir)
             metrics.update()
+            if upload_run is not None:
+                for snapshot in snapshots:
+                    upload_checkpoint(upload_run, snapshot)
+            if finished:
+                return child.returncode
             try:
                 child.wait(timeout=1)
             except subprocess.TimeoutExpired:
                 pass
-        publish_completed_snapshots(run_dir)
-        metrics.update()
-        return child.returncode
     finally:
         metrics.close()
 
@@ -631,7 +636,10 @@ def run_worker(args, *, action, flags, extra, robot, removed_systems_flags):
                     file=log,
                     flush=True,
                 )
-                code = wait_for_training(child, out)
+                from source.utils.wandb_models import model_upload_run
+
+                with model_upload_run(out, args.task) as upload_run:
+                    code = wait_for_training(child, out, upload_run)
             else:
                 code = child.wait()
         except BaseException as error:

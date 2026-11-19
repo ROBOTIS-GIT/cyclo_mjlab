@@ -145,8 +145,9 @@ W&B tracking. Local `--motion-file` disables the upstream remote motion registry
 Completed training writes a local inference bundle containing `manifest.json`,
 `world_model.pt`, `actor.pt`, and `critic.pt` when the policy has a critic. The last
 iteration saves final trained parameters even when it is not a save-interval
-boundary. Final artifact work completes before cleanup. Offline/disabled W&B
-logging never enumerates or prunes remote artifacts.
+boundary. Checkpoints stay local by default, including runs with online W&B metrics.
+Set `CYCLO_WANDB_UPLOAD_MODELS=1 WANDB_MODE=online` when launching training to
+publish each saved model bundle. Offline and disabled runs skip artifact staging.
 
 Play directly from that directory, without syncing or uploading:
 
