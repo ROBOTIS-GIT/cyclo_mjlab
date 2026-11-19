@@ -2,6 +2,7 @@
 Verify checkpoint contents against the upstream trainer's actual save block.
 """
 
+import ast
 import os
 import textwrap
 from types import SimpleNamespace
@@ -138,8 +139,16 @@ def test_native_resume_restores_models_and_next_update(
     # Run the actual upstream restoration block, including its assertion and
     # EMA/control branches.
     source = (VENDOR / "src/blinkmimic/train.py").read_text()
-    start = source.index("def load_opt_states(")
-    end = source.index("# per-component floors", start)
+    statements = ast.parse(source).body
+    load_states = next(
+        node for node in statements
+        if isinstance(node, ast.FunctionDef) and node.name == "load_opt_states"
+    )
+    resume = next(
+        node for node in statements
+        if isinstance(node, ast.If) and ast.unparse(node.test) == "args.resume"
+    )
+    restore_block = ast.Module(body=[load_states, resume], type_ignores=[])
     scope = dict(
         torch=torch,
         args=SimpleNamespace(resume=str(path)),
@@ -151,7 +160,7 @@ def test_native_resume_restores_models_and_next_update(
     scope.update(zip(("opt_wm", "opt_pi", "opt_v"), restored_optimizers))
     original_load, original_adam = torch.load, torch.optim.Adam.load_state_dict
     with allow_model_only_resume(path):
-        exec(compile(source[start:end], "native_resume", "exec"), scope)
+        exec(compile(restore_block, "native_resume", "exec"), scope)
     assert (
         torch.load is original_load
         and torch.optim.Adam.load_state_dict is original_adam
