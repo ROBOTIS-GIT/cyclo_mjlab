@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from blinkmimic.motion import BIN_FRAMES, MotionLib
+from blinkmimic.motion import MotionLib
 from blinkmimic.rotations import quat_to_mat
 
 
@@ -138,13 +138,6 @@ class ExactMotionLib(MotionLib):
         lens = [len(c[0]) for c in clips]
         if lens != [r["frames"] for r in rows]:
             raise ValueError("Manifest frame lengths differ")
-        self.clip_len = torch.tensor(lens, device=device)
-        self.clip_start = self.clip_len.cumsum(0) - self.clip_len
-        self.clip_end = self.clip_start + self.clip_len - 1
-        self.num_frames = sum(lens)
-        self.clip_id = torch.repeat_interleave(
-            torch.arange(len(lens), device=device), self.clip_len
-        )
         values = [
             torch.as_tensor(
                 np.concatenate([c[i] for c in clips]),
@@ -155,30 +148,7 @@ class ExactMotionLib(MotionLib):
         ]
         self.root_p, quat, self.root_v, self.root_w, self.q, self.qd = values
         self.root_R = quat_to_mat(quat)
-        with torch.no_grad():
-            out = [
-                kin.forward(*(v[s : s + 8192] for v in self.ref_state_all()))
-                for s in range(0, self.num_frames, 8192)
-            ]
-            self.body_p, self.body_R, self.body_v, self.body_w = [
-                torch.cat([chunk[i] for chunk in out]) for i in range(4)
-            ]
-        Rt = self.root_R.transpose(-1, -2)
-        self.root_v_local = (Rt @ self.root_v.unsqueeze(-1)).squeeze(-1)
-        self.root_w_local = (Rt @ self.root_w.unsqueeze(-1)).squeeze(-1)
-        self.root_gz = self.root_R[:, 2, 2]
-        bin_clip, bin_start, frame_bin = [], [], []
-        start = 0
-        for c, n in enumerate(lens):
-            for b in range(0, n, BIN_FRAMES):
-                frame_bin.extend([len(bin_start)] * min(BIN_FRAMES, n - b))
-                bin_clip.append(c)
-                bin_start.append(start + b)
-            start += n
-        self.bin_clip = torch.tensor(bin_clip, device=device)
-        self.bin_start = torch.tensor(bin_start, device=device)
-        self.num_bins = len(bin_start)
-        self.frame_bin = torch.tensor(frame_bin, device=device)
+        self.prepare_reference(lens, kin, chunk_size=8192)
 
     def ref_state_all(self):
         return self.root_p, self.root_R, self.root_v, self.root_w, self.q, self.qd
