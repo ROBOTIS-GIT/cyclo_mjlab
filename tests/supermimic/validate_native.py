@@ -213,14 +213,14 @@ def main():
             updates["wm"] += 1
             return result
 
-        def tracked_policy():
+        def tracked_policy(starts):
             before = parameters(runner._dynamics)
             start = time.perf_counter()
             print(
                 f"[INFO] Actor update {updates['actor'] + 1} starting",
                 flush=True,
             )
-            result = policy_update()
+            result = policy_update(starts)
             update_seconds["actor"].append(time.perf_counter() - start)
             print(
                 "[INFO] Actor update completed in"

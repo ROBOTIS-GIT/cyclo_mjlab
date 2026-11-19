@@ -43,8 +43,8 @@ scripts. Install pytest and ruff separately when running the
 
 `third_party/supermimic` is a real Git submodule of
 [ROBOTIS-GIT/supermimic](https://github.com/ROBOTIS-GIT/supermimic), pinned to
-`10dd5dd3f02601caf1991790952a25db63a6fb99`, descended from official HybridRobotics
-`abc124c1bd5976341034668af3d12c087f2f1f55`. Its core retains the official models,
+`2784f180ee78ac9b157acafda0e9f570ed0fc153`, descended from official HybridRobotics
+`698ea39bc901d8fe733b3c8621df3199d241f7e4`. Its core retains the official models,
 replay, learners and representation mathematics. Changes and licenses are recorded
 in [PATCHES.md](../third_party/supermimic/PATCHES.md).
 

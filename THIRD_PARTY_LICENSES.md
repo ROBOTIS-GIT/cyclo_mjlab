@@ -57,9 +57,9 @@ SOFTWARE.
 ## HybridRobotics/SuperMimic
 
 - Official algorithm source: https://github.com/HybridRobotics/supermimic
-- Official base: `abc124c1bd5976341034668af3d12c087f2f1f55`.
+- Official base: `698ea39bc901d8fe733b3c8621df3199d241f7e4`.
 - Shared fork: https://github.com/ROBOTIS-GIT/supermimic, gitlink revision
-  `10dd5dd3f02601caf1991790952a25db63a6fb99`.
+  `2784f180ee78ac9b157acafda0e9f570ed0fc153`.
 - Copyright 2026 The SuperMimic Authors; original Apache License 2.0 retained at
   [third_party/supermimic/LICENSE](third_party/supermimic/LICENSE).
 - Portable math extracted from official `mjlab_research` retains its Isaac Lab

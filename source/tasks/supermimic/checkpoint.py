@@ -32,14 +32,14 @@ class LocalBundleRunner(SuperMimicRunner):
         from supermimic.tasks.task_spec import make_motion_task
 
         motion = make_motion_task(self._representation, self._num_goals)
-        build_env = native.MultiTaskWorldModelEnv
+        build_env = native.WorldModelEnv
 
         def with_reference(*, task_specs, **kwargs):
             if kwargs["env"] is self.env and task_specs[0].name != "motion":
                 task_specs = [motion, *task_specs]
             return build_env(task_specs=task_specs, **kwargs)
 
-        with patch.object(native, "MultiTaskWorldModelEnv", with_reference):
+        with patch.object(native, "WorldModelEnv", with_reference):
             super()._init_policy()
 
     def _build_sim_obs_td(self, rep_state, aux_state, sim_actor_obs, motion_times, sim_ctx):
