@@ -63,4 +63,5 @@ def make_robot():
         load_motion=None,
         njmax=300,
         nconmax=128,
+        foot_contact_z=0.074,
     )
