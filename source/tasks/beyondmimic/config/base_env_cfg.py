@@ -18,7 +18,7 @@
 # This file includes modifications by ROBOTIS CO., LTD. to code derived
 # from mujocolab/mjlab.
 
-"""K1 Rev.1-specific configuration for Mimic tasks."""
+"""Shared K1 configuration for Mimic tasks."""
 
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
@@ -26,7 +26,7 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 
 import source.tasks.beyondmimic.mdp as mdp
-from source.assets.robots import K1_REV1_ACTION_SCALE, get_k1_rev1_cfg
+from source.assets.robots import K1_REV1_ACTION_SCALE
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 from source.tasks.beyondmimic.tracking_env_cfg import make_mimic_env_cfg
 
@@ -55,12 +55,12 @@ END_BODY_NAMES = (
 )
 
 
-def k1_rev1_mimic_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create the K1 Rev.1 base Mimic environment configuration."""
+def k1_mimic_env_cfg(robot, play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Create the K1 base Mimic environment configuration."""
   cfg = make_mimic_env_cfg()
 
   cfg.scene.num_envs = 4096
-  cfg.scene.entities = {"robot": get_k1_rev1_cfg()}
+  cfg.scene.entities = {"robot": robot}
 
   cfg.sim.njmax = 300
   cfg.sim.nconmax = 128

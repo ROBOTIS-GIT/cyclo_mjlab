@@ -37,6 +37,10 @@ def test_common_runtime_registers_existing_tasks():
     assert "Cyclo-BeyondMimic-K1-Rev1-Dance1" in list_tasks()
     assert not any(task.startswith("Cyclo-Mimic-") for task in list_tasks())
     assert "Cyclo-Velocity-Flat-K1-Rev1-v0" in list_tasks()
+    for revision in ("Rev1", "Rev2"):
+        for representation in ("GenCoord", "MaxCoord"):
+            assert f"Cyclo-SuperMimic-{representation}-K1-{revision}-001" in list_tasks()
+    assert not any(task.startswith("Cyclo-BlinkMimic-") for task in list_tasks())
 
 
 def test_supermimic_wrong_python_rejected(monkeypatch):
@@ -51,8 +55,8 @@ def test_shared_runtime_is_accepted(monkeypatch):
     cli.require_runtime()
 
 
-@pytest.mark.parametrize("family", ["blinkmimic", "supermimic"])
-def test_task_listing_reads_registered_configs(family, monkeypatch, capsys):
+def test_blinkmimic_listing_reads_registered_configs(monkeypatch, capsys):
+    family = "blinkmimic"
     from importlib import import_module
 
     registry = import_module(f"source.tasks.{family}.config").TASKS
@@ -63,16 +67,17 @@ def test_task_listing_reads_registered_configs(family, monkeypatch, capsys):
     assert name in capsys.readouterr().out
 
 
-def test_beyondmimic_listing_includes_new_registered_tasks(monkeypatch, capsys):
+@pytest.mark.parametrize("family", ["BeyondMimic", "SuperMimic"])
+def test_listing_includes_new_registered_tasks(family, monkeypatch, capsys):
     from mjlab.tasks import registry
     import source.tasks  # noqa: F401
 
-    name = "Cyclo-BeyondMimic-K1-Rev1-NewMotion"
+    name = f"Cyclo-{family}-K1-Rev1-NewMotion"
     monkeypatch.setitem(
         registry._REGISTRY, name,
         registry._REGISTRY["Cyclo-BeyondMimic-K1-Rev1-Dance1"],
     )
-    monkeypatch.setattr(sys, "argv", ["train.py", "--list-tasks", "--algorithm", "beyondmimic"])
+    monkeypatch.setattr(sys, "argv", ["train.py", "--list-tasks", "--algorithm", family.lower()])
     assert cli.prepare_args("train") is None
     assert name in capsys.readouterr().out
 
@@ -116,3 +121,28 @@ def test_shared_options_removed_before_default_backend(task, monkeypatch):
     assert options == original
     assert sys.argv is process_args
     assert sys.argv == ["train.py", *options]
+
+
+
+def test_rev2_counterparts_use_rev2_geometry_and_matching_motion_libraries():
+    from mjlab.tasks.registry import list_tasks, load_env_cfg
+    from source.assets.robots.ai_sapiens.k1_rev2 import load_k1_rev2_spec
+    from source.tasks.blinkmimic.config import TASKS as blinkmimic_tasks
+    from source.tasks.supermimic.config import register_tasks
+
+    register_tasks()
+    for task in list_tasks():
+        if "-K1-Rev1-" in task:
+            for play in (False, True):
+                cfg = load_env_cfg(task.replace("-Rev1-", "-Rev2-"), play=play)
+                assert cfg.scene.entities["robot"].spec_fn is load_k1_rev2_spec
+    for task, cfg in blinkmimic_tasks.items():
+        if "-K1-Rev1-" in task:
+            name = task.replace("-Rev1-", "-Rev2-")
+            from source import SRC_PATH
+            motion_root = SRC_PATH / "assets/motions"
+            expected = tuple(motion_root / "K1_rev2" / path.relative_to(motion_root / "K1_rev1")
+                             for path in cfg.motion_paths)
+            assert blinkmimic_tasks[name].motion_paths == expected
+            assert all(path.is_file() for path in expected)
+            assert blinkmimic_tasks[name].robot_factory().robot_cfg().spec_fn is load_k1_rev2_spec

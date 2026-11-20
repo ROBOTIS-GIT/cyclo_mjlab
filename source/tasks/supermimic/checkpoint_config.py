@@ -34,7 +34,7 @@ from supermimic.runners.run_config import load_runner_cfg
 
 from .checkpoint_archive import load_checkpoint
 from .motion import model_joint_names
-from source.assets.robots.robotis_k1.k1_rev1 import K1_REV1_XML_PATH
+from source.assets.robots.ai_sapiens.k1_rev1 import K1_REV1_XML_PATH
 
 SCHEMA_VERSION = 1
 
@@ -69,7 +69,12 @@ def json_value(value):
             "kwargs": json_value(value.keywords),
         }
     if callable(value):
-        return {"callable": value.__module__ + "." + value.__qualname__}
+        # Keep the callable identity used by existing checkpoint manifests.
+        module = value.__module__
+        prefix = "source.assets.robots.ai_sapiens."
+        if module.startswith(prefix):
+            module = "source.assets.robots.robotis_k1." + module.removeprefix(prefix)
+        return {"callable": module + "." + value.__qualname__}
     if isinstance(value, enum.Enum):
         return value.value
     if isinstance(value, dict):
@@ -116,6 +121,8 @@ def environment_contract(cfg):
 
 
 def robot_contract(cfg):
+    from source.assets.robots.ai_sapiens.k1_rev2 import K1_REV2_XML_PATH, load_k1_rev2_spec
+
     from mjlab.entity import Entity
     from mjlab.envs.mdp.actions import JointPositionActionCfg
 
@@ -167,10 +174,12 @@ def robot_contract(cfg):
         "actuator_biasprm",
     ):
         physical.update(np.asarray(getattr(model, attribute)).tobytes())
+    rev2 = cfg.scene.entities["robot"].spec_fn is load_k1_rev2_spec
+    xml = K1_REV2_XML_PATH if rev2 else K1_REV1_XML_PATH
     return {
-        "name": "K1-Rev1",
+        "name": "K1-Rev2" if rev2 else "K1-Rev1",
         "xml_sha256": (
-            hashlib.sha256(K1_REV1_XML_PATH.read_bytes()).hexdigest()
+            hashlib.sha256(xml.read_bytes()).hexdigest()
         ),
         "joint_order": names,
         "action_joint_order": action_names,

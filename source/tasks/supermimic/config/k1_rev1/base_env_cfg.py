@@ -44,7 +44,7 @@ def make_env_cfg(representation="gencoord", play=False):
     from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
 
     from ...native_motion import NativeMotionCommandCfg, motion_end
-    from source.assets.robots.robotis_k1.k1_rev1 import (
+    from source.assets.robots.ai_sapiens.k1_rev1 import (
         K1_REV1_ACTION_SCALE,
         K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
         get_k1_rev1_cfg,

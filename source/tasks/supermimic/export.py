@@ -30,7 +30,7 @@ from source.utils.export_notices import (
 from . import LOG_ROOT, REPO_ROOT
 from .checkpoint_config import json_value, read_bundle
 from .checkpoint_archive import load_checkpoint
-from .config import TASKS, register_tasks
+from .config import TASKS
 from .export_sim2real_cfg import (
     observation_config,
     observation_terms,
@@ -118,10 +118,6 @@ def load_policy_bundle(directory, task):
     Load saved settings, actor and affine buffers; never convert observation
     mode.
     """
-    from mjlab.tasks.registry import list_tasks
-
-    if not set(TASKS).issubset(list_tasks()):
-        register_tasks()
     checkpoint = load_checkpoint(directory)
     manifest = checkpoint.manifest
     cfg, rcfg = read_bundle(checkpoint, task)

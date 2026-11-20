@@ -68,7 +68,7 @@ def test_systems_memory_alternative_preserves_all_learning_options():
 
 
 def test_nominal_pose_does_not_modify_shared_asset():
-    from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+    from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
     r = make_robot()
     assert r.default_joint_pos[".*_elbow_joint"] == 0.6
@@ -271,7 +271,8 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
         and "--dec_hidden" not in commands[-1]
     )
     ckpt = train / "model_100.pt"
-    ckpt.write_bytes(b"test-only; subprocess mocked")
+    torch.save({"args": {"robot": selected_robot.name}}, ckpt)
+    original_checkpoint = ckpt.read_bytes()
     evaluation = tmp_path / "eval"
     with pytest.raises(SystemExit) as result:
         cli.main(
@@ -296,7 +297,23 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     assert config_exports == [train]
     assert "--ckpt" not in commands[-1]  # directory mode writes per-clip JSON
     assert (evaluation / "ckpt_000100.pt").resolve() == ckpt
-    assert ckpt.read_bytes() == b"test-only; subprocess mocked"
+    assert ckpt.read_bytes() == original_checkpoint
+
+    wrong = tmp_path / "model_101.pt"
+    torch.save({"args": {"robot": "other_revision"}}, wrong)
+    with pytest.warns(UserWarning, match="other_revision.*task_selected_robot"), pytest.raises(SystemExit) as result:
+        cli.main(
+            "play",
+            [
+                TEST_TASK,
+                "--motion-dir", str(data),
+                "--checkpoint", str(wrong),
+                "--viewer", "headless",
+                "--run-dir", str(tmp_path / "wrong"),
+            ],
+        )
+    assert result.value.code == 0
+    assert commands[-1][4] == "evaluate"
 
     monkeypatch.setattr(cli, "ROOT", tmp_path)
 

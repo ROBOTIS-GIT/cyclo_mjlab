@@ -1,5 +1,5 @@
 """
-Motion-independent FP32 ONNX export of the original deployed Blink Policy.
+Motion-independent FP32 ONNX export of the original deployed BlinkMimic Policy.
 """
 
 import argparse
@@ -12,6 +12,7 @@ from torch import nn
 
 from source.utils.export_notices import write_software_notices
 
+from .checkpoint import check_robot
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
 from .export_sim2real_cfg import (
     goal_fields,
@@ -49,13 +50,13 @@ class FlatPolicy(nn.Module):
         return self.policy(history, observations[:, self.history_size:])
 
 
-def validated_checkpoint(checkpoint, robot):
+def validated_checkpoint(checkpoint, robot, *, playback=False):
     if not isinstance(checkpoint, dict):
-        raise ValueError("Expected an official Blink checkpoint dictionary")
+        raise ValueError("Expected an official BlinkMimic checkpoint dictionary")
     args, state = checkpoint.get("args"), checkpoint.get("pi")
     if not isinstance(args, dict) or not isinstance(state, dict):
         raise ValueError(
-            "Expected official Blink checkpoint with args and deployed pi"
+            "Expected official BlinkMimic checkpoint with args and deployed pi"
         )
     required = (
         "robot",
@@ -67,8 +68,7 @@ def validated_checkpoint(checkpoint, robot):
     )
     if any(key not in args for key in required):
         raise ValueError("Checkpoint is missing required policy configuration")
-    if args["robot"] != robot.name:
-        raise ValueError("Checkpoint robot does not match the selected robot")
+    check_robot(args, robot.name, playback=playback)
     for key in ("hist", "goal_frames"):
         if type(args[key]) is not int or args[key] < 1:
             raise ValueError(f"Invalid checkpoint {key}")
@@ -101,7 +101,7 @@ def validate_policy_state(state, args, robot):
             raise ValueError(f"Negative normalizer variance: {name}")
 
 
-def load_policy(checkpoint, robot):
+def load_policy(checkpoint, robot, *, playback=False):
     """
     Rebuild the recorded architecture strictly; never substitute live weights.
     """
@@ -113,7 +113,7 @@ def load_policy(checkpoint, robot):
         raise ValueError(
             "FP32 export requires an isolated process with AMP_DTYPE=None"
         )
-    args, state = validated_checkpoint(checkpoint, robot)
+    args, state = validated_checkpoint(checkpoint, robot, playback=playback)
     check_pruned(args, nets_only=True)
 
     def widths(key):

@@ -10,7 +10,7 @@ from source.utils.motion_paths import resolve_motion_files
 from .runtime import prepare
 
 
-def prepare_library(inputs, output, joint_names):
+def prepare_library(inputs, output, joint_names, *, mjcf_path=None):
     from .motion import digest, load_exact
 
     paths = [Path(p).resolve() for p in inputs]
@@ -23,7 +23,7 @@ def prepare_library(inputs, output, joint_names):
         raise ValueError("Reference basenames must be unique clip identifiers")
     rows = []
     for i, (path, name) in enumerate(zip(paths, names, strict=True)):
-        arrays = load_exact(path, joint_names)
+        arrays = load_exact(path, joint_names, mjcf_path=mjcf_path)
         rows.append(
             dict(
                 song=name,
@@ -57,7 +57,7 @@ def main():
     args = parser.parse_args()
     prepare()
     robot = TASKS[args.task].robot_factory()
-    print(prepare_library(args.inputs, args.output, robot.joint_names))
+    print(prepare_library(args.inputs, args.output, robot.joint_names, mjcf_path=robot.mjcf_path))
 
 
 if __name__ == "__main__":

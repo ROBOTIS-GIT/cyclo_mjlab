@@ -17,8 +17,19 @@
 """Checkpoint naming, selection, and retention for the BlinkMimic adapter."""
 
 import re
+import warnings
 
 from source.utils.checkpoint_retention import prune_model_checkpoints
+
+
+def check_robot(args, expected, *, playback=False):
+    actual = args.get("robot")
+    if actual != expected:
+        message = f"Checkpoint robot {actual!r} does not match selected robot {expected!r}"
+        if playback:
+            warnings.warn(message, UserWarning, stacklevel=2)
+        else:
+            raise ValueError(message)
 
 
 def checkpoint_recipe(flags):

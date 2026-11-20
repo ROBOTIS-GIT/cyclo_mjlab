@@ -15,7 +15,7 @@
 # Author: Kiwoong Park
 
 """
-Interactive playback using the original Blink policy and tracking simulator.
+Interactive playback using the original BlinkMimic policy and tracking simulator.
 """
 
 import argparse
@@ -42,7 +42,7 @@ class BlinkMimicPlayback:
         checkpoint = torch.load(
             checkpoint_path, map_location="cpu", weights_only=True
         )
-        self.policy = load_policy(checkpoint, robot).policy.to(device).eval()
+        self.policy = load_policy(checkpoint, robot, playback=True).policy.to(device).eval()
         networks.AMP_DTYPE = (
             torch.bfloat16
             if checkpoint["args"].get("amp", "none") == "bf16"
@@ -130,10 +130,13 @@ def main(argv=None, *, robot=None):
         prepare()
         robot = TASKS[args.task].robot_factory()
 
-    path = export_policy(
-        args.checkpoint, args.checkpoint.parent, robot, overwrite=True
-    )
-    print(f"[INFO] Exported policy: {path}", flush=True)
+    # A cross-revision preview must not overwrite the training run's export.
+    metadata = torch.load(args.checkpoint, map_location="meta", weights_only=True)
+    if metadata["args"]["robot"] == robot.name:
+        path = export_policy(
+            args.checkpoint, args.checkpoint.parent, robot, overwrite=True
+        )
+        print(f"[INFO] Exported policy: {path}", flush=True)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.manual_seed(0)
     playback = BlinkMimicPlayback(args.checkpoint, args.motion_dir, robot)

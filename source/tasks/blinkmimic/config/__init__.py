@@ -33,4 +33,7 @@ class BlinkMimicTaskCfg:
 
 
 # Define the configuration type before importing tasks that instantiate it.
-from .k1_rev1 import TASKS  # noqa: E402
+from .k1_rev1 import TASKS as REV1_TASKS  # noqa: E402
+from .k1_rev2 import TASKS as REV2_TASKS  # noqa: E402
+
+TASKS = {**REV1_TASKS, **REV2_TASKS}

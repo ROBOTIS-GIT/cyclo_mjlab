@@ -133,7 +133,7 @@ frame count is hardcoded.
 The common launcher routes only the new task to `source/tasks/blinkmimic`.
 It starts an independent worker process. Upstream's MJLab performance monkey
 patches are confined to that process and never enter the existing learners.
-Ordinary task auto-discovery excludes BlinkMimic, just as it excludes SuperMimic.
+Ordinary task auto-discovery registers SuperMimic. BlinkMimic uses its dedicated launcher.
 The task is registered in Cyclo's algorithm dispatcher; its simulator is the
 official BlinkMimic TrackingSim rather than an unrelated MJLab/PPO task config.
 
@@ -209,7 +209,7 @@ is added to the PD target and subtracted in the observation as shown above.
 
 ## Motion-independent ONNX export
 
-Export a local official Blink checkpoint without loading a motion library or
+Export a local official BlinkMimic checkpoint without loading a motion library or
 constructing a simulator:
 
 ```bash
