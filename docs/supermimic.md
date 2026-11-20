@@ -170,10 +170,8 @@ manifest are rejected instead of guessing training settings.
 Manifest schema 1 records the exact K1 task, representation, actor observation
 mode, runner configuration, ordered joints/actions, physical-model fingerprint,
 and declarative training environment overrides plus the effective configuration.
-Playback reconstructs and validates those settings before environment creation,
-including timestep **and decimation**, gains, action scales, observation and
-randomization configuration. It changes only the selected local reference and
-environment count (one). An incompatible checkout or altered contract is rejected.
+Playback uses the selected task's registered play environment and local motion file.
+The play task sets the physics timestep, decimation, robot geometry and reset behavior.
 The manifest contains JSON data, not executable/pickled Python configuration.
 Only the complete native-order K1 joint-position action is supported; target
 clipping, joint subselection/reordering and custom action classes are rejected

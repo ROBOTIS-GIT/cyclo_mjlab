@@ -299,22 +299,6 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     assert (evaluation / "ckpt_000100.pt").resolve() == ckpt
     assert ckpt.read_bytes() == original_checkpoint
 
-    wrong = tmp_path / "model_101.pt"
-    torch.save({"args": {"robot": "other_revision"}}, wrong)
-    with pytest.warns(UserWarning, match="other_revision.*task_selected_robot"), pytest.raises(SystemExit) as result:
-        cli.main(
-            "play",
-            [
-                TEST_TASK,
-                "--motion-dir", str(data),
-                "--checkpoint", str(wrong),
-                "--viewer", "headless",
-                "--run-dir", str(tmp_path / "wrong"),
-            ],
-        )
-    assert result.value.code == 0
-    assert commands[-1][4] == "evaluate"
-
     monkeypatch.setattr(cli, "ROOT", tmp_path)
 
     def run_gui(command, **kwargs):

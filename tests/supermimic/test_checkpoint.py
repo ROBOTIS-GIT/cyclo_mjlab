@@ -509,41 +509,6 @@ def test_play_accepts_archive_and_rejects_conflicting_sources(
             )
 
 
-def test_playback_uses_play_resets_without_changing_training_contract(
-    manifest,
-):
-    from mjlab.tasks.registry import load_env_cfg
-    from source.tasks.supermimic.checkpoint_config import json_value
-    from source.tasks.supermimic.play import playback_environment
-
-    task = manifest["task_id"]
-    training, _ = validate_manifest(manifest, task)
-    before = json_value(training)
-    playback = playback_environment(training, task, "selected.npz")
-    defaults = load_env_cfg(task, play=True)
-    assert playback.episode_length_s == defaults.episode_length_s > 10
-    assert playback.sim.mujoco.timestep == 0.0025 and playback.decimation == 8
-    assert json_value(training) == before
-    motion = playback.commands["motion"]
-    assert motion.motion_file == "selected.npz"
-    assert motion.pose_range == motion.velocity_range == {}
-    assert motion.sampling_mode == "start"
-    expected = copy.deepcopy(before)
-    expected["episode_length_s"] = defaults.episode_length_s
-    expected["scene"]["num_envs"] = 1
-    for name in (
-        "pose_range",
-        "velocity_range",
-        "sampling_mode",
-        "joint_position_range",
-    ):
-        expected["commands"]["motion"][name] = json_value(
-            getattr(defaults.commands["motion"], name)
-        )
-    expected["commands"]["motion"]["motion_file"] = "selected.npz"
-    assert json_value(playback) == expected
-
-
 def test_resume_cli_uses_saved_settings_and_restores_before_run(
     monkeypatch, tmp_path, manifest
 ):
@@ -689,3 +654,51 @@ def test_local_world_model_accepts_target_policy_changes(
     target["environment"]["decimation"] += 1
     with pytest.raises(ValueError, match="dynamics configuration"):
         load_world_model(tmp_path / file, target)
+
+
+@pytest.mark.parametrize("retired_task", [False, True])
+@pytest.mark.parametrize("source,target", [(1, 2), (2, 1)])
+@pytest.mark.parametrize("representation", ["GenCoord", "MaxCoord"])
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_cross_revision_play_loads_once_and_uses_target_robot(
+    tmp_path, monkeypatch, source, target, representation, retired_task
+):
+    from unittest.mock import patch
+    from mjlab.tasks.registry import load_env_cfg
+    from source.tasks.supermimic import play
+
+    task = f"Cyclo-SuperMimic-{representation}-K1-Rev{source}-001"
+    target_task = task.replace(f"Rev{source}", f"Rev{target}")
+    cfg = load_env_cfg(task)
+    cfg.commands["motion"].sampling_mode = "external"
+    cfg.sim.mujoco.timestep = 0.0025
+    cfg.decimation = 8
+    manifest = make_manifest(task, cfg, SuperMimicRunnerCfg(representation=representation.lower()),
+                             ["--env.sim.mujoco.timestep", "0.0025", "--env.decimation", "8"])
+    if retired_task:
+        manifest["task_id"] = task.replace("-001", "-retired")
+    snapshot = tmp_path / "model_1.pt"
+    torch.save(dict(format="cyclo.supermimic.checkpoint.v1", manifest=manifest, step=1,
+                    actor={}, world_model={}), snapshot)
+
+    class EnvironmentSelected(Exception):
+        pass
+
+    def check_environment(env_cfg, count, device):
+        expected = load_env_cfg(target_task, play=True)
+        assert env_cfg.scene.entities["robot"].spec_fn is expected.scene.entities["robot"].spec_fn
+        assert env_cfg.events["foot_friction"] == expected.events["foot_friction"]
+        assert env_cfg.sim.mujoco.timestep == expected.sim.mujoco.timestep
+        assert env_cfg.decimation == expected.decimation
+        assert env_cfg.episode_length_s == expected.episode_length_s
+        assert env_cfg.commands["motion"].motion_file == "reference.npz"
+        assert env_cfg.commands["motion"].sampling_mode == "start"
+        assert env_cfg.commands["motion"].pose_range == env_cfg.commands["motion"].velocity_range == {}
+        raise EnvironmentSelected
+
+    monkeypatch.setattr(play, "setup_device", lambda _: "cpu")
+    monkeypatch.setattr(play, "create_env", check_environment)
+    with patch.object(torch, "load", wraps=torch.load) as loads:
+        with pytest.raises(EnvironmentSelected):
+            play.play(target_task, play.PlayConfig("reference.npz", checkpoint=snapshot, export_policy=retired_task))
+        loads.assert_called_once()

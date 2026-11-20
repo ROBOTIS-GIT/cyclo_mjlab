@@ -5,7 +5,6 @@
 Local K1 bundle playback with the official actor and optional W&B playback.
 """
 
-import copy
 import json
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -14,12 +13,14 @@ from typing import Literal
 import mjlab
 import torch
 import tyro
+from mjlab.tasks.registry import load_env_cfg
+from supermimic.runners.run_config import load_runner_cfg
 from supermimic.runners.supermimic_runner import build_actor, build_world_model
 from supermimic.scripts.train_utils import create_env, setup_device
 from supermimic.tasks.task_spec import build_actor_obs_td
 
 from . import LOG_ROOT
-from .checkpoint_config import read_bundle
+from .config import TASKS, check_representation_matches
 from .checkpoint_archive import load_checkpoint
 
 
@@ -146,7 +147,7 @@ def resolve_playback_checkpoint(task, cfg):
         directory = download_model_dir(wandb.Api().run(cfg.wandb_path))
         return load_checkpoint(directory)
     return load_checkpoint(
-        cfg.checkpoint if cfg.checkpoint is not None else cfg.checkpoint_dir
+        cfg.checkpoint if cfg.checkpoint is not None else cfg.checkpoint_dir,
     )
 
 
@@ -191,34 +192,20 @@ def run_interactive_playback(env, wm, actor, cfg):
     playback.run()
 
 
-def playback_environment(training_cfg, task, motion_file):
-    """
-    Apply play reset/timing settings after validating the saved training setup.
-    """
-    from mjlab.tasks.registry import load_env_cfg
-
-    defaults = load_env_cfg(task, play=True)
-    cfg = copy.deepcopy(training_cfg)
-    cfg.scene.num_envs = 1
-    cfg.episode_length_s = defaults.episode_length_s
-    motion = cfg.commands["motion"]
-    play_motion = defaults.commands["motion"]
-    motion.motion_file = motion_file
-    motion.pose_range = copy.deepcopy(play_motion.pose_range)
-    motion.velocity_range = copy.deepcopy(play_motion.velocity_range)
-    motion.joint_position_range = play_motion.joint_position_range
-    motion.sampling_mode = play_motion.sampling_mode
-    return cfg
-
-
 def play(task, cfg):
     checkpoint = resolve_playback_checkpoint(task, cfg)
-    training_cfg, rcfg = read_bundle(checkpoint, task)
-    env_cfg = playback_environment(training_cfg, task, cfg.motion_file)
+    rcfg = load_runner_cfg(checkpoint.manifest)
+    check_representation_matches(task, rcfg.representation)
+    env_cfg = load_env_cfg(task, play=True)
+    env_cfg.commands["motion"].motion_file = cfg.motion_file
     if cfg.export_policy:
         from .export import export_play_policies
 
-        export_play_policies(checkpoint, task)
+        source_task = checkpoint.manifest["task_id"]
+        if source_task in TASKS:
+            export_play_policies(checkpoint, source_task)
+        else:
+            print(f"[INFO] Skipping automatic ONNX export: training task {source_task!r} is unregistered.")
     device = setup_device(cfg.device)
     env = create_env(env_cfg, 1, device)
     try:
@@ -234,8 +221,6 @@ def play(task, cfg):
 
 
 def main(argv=None):
-    from .config import TASKS
-
     task, remaining = tyro.cli(
         tyro.extras.literal_type_from_choices(TASKS),
         args=argv,

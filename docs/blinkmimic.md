@@ -246,7 +246,7 @@ by name and do not contain an independently verified physical-model fingerprint.
 
 Metadata is embedded in the ONNX graph and written beside it. It describes
 feature ordering/formulas, history/goal dimensions, frames, normalizers, action
-joint order/q0/scales, reference skip, upstream revision, checkpoint SHA256 and
+joint order/q0/scales, reference skip, upstream revision and
 source precision. The sidecar additionally contains the output ONNX SHA256.
 No motion clip, time-step lookup, selector, world model or critic is exported.
 A consumer maintains history and builds raw reference features externally; it

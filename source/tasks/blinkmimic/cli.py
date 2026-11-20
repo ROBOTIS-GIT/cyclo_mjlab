@@ -20,7 +20,6 @@ from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
 from .checkpoint import (
-    check_robot,
     checkpoint_recipe,
     link_evaluation_checkpoint,
     publish_completed_snapshots,
@@ -298,13 +297,18 @@ def resolve_playback_inputs(args):
             args.checkpoint, args.checkpoint_dir
         )
     if args.motion_dir is None:
-        args.motion_dir = training_motion_directory(args.checkpoint)
+        record = args.checkpoint.parent / "run-record.json"
+        if record.is_file():
+            source_task = json.loads(record.read_text()).get("task")
+            if source_task in (None, args.task):
+                args.motion_dir = training_motion_directory(args.checkpoint)
     if args.num_steps is not None and args.num_steps < 1:
         raise ValueError("--num-steps must be positive")
     if not 1 <= args.port <= 65535:
         raise ValueError("--port must be between 1 and 65535")
     print(f"[INFO] Selected checkpoint: {args.checkpoint}", flush=True)
-    print(f"[INFO] Motion directory: {args.motion_dir}", flush=True)
+    if args.motion_dir is not None:
+        print(f"[INFO] Motion directory: {args.motion_dir}", flush=True)
 
 
 def parse_arguments(parser, action, argv):
@@ -497,9 +501,12 @@ def run_training(args, extra):
 
 def run_playback(args, extra):
     if args.viewer == "viser":
+        if args.motion_dir is None:
+            from tempfile import TemporaryDirectory
+            with TemporaryDirectory() as tmp:
+                args.motion_dir = prepare_task_motions(args.task, Path(tmp) / "motions")
+                return run_gui(args)
         return run_gui(args)
-
-    import torch
 
     from .runtime import prepare
 
@@ -508,11 +515,11 @@ def run_playback(args, extra):
         args.run_dir = args.checkpoint.parent / "play" / stamp
     prepare()
     robot = TASKS[args.task].robot_factory()
-    saved = torch.load(args.checkpoint, map_location="meta", weights_only=True)
-    check_robot(saved["args"], robot.name, playback=True)
     out = args.run_dir.resolve()
     _, removed_systems_flags = execution_recipe(args.execution)
     out.mkdir(parents=True, exist_ok=False)
+    if args.motion_dir is None:
+        args.motion_dir = prepare_task_motions(args.task, out / "motions")
     link_evaluation_checkpoint(args.checkpoint, out)
     flags = [
         *extra,

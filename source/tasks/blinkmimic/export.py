@@ -12,7 +12,6 @@ from torch import nn
 
 from source.utils.export_notices import write_software_notices
 
-from .checkpoint import check_robot
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
 from .export_sim2real_cfg import (
     goal_fields,
@@ -50,7 +49,7 @@ class FlatPolicy(nn.Module):
         return self.policy(history, observations[:, self.history_size:])
 
 
-def validated_checkpoint(checkpoint, robot, *, playback=False):
+def validated_checkpoint(checkpoint):
     if not isinstance(checkpoint, dict):
         raise ValueError("Expected an official BlinkMimic checkpoint dictionary")
     args, state = checkpoint.get("args"), checkpoint.get("pi")
@@ -59,7 +58,6 @@ def validated_checkpoint(checkpoint, robot, *, playback=False):
             "Expected official BlinkMimic checkpoint with args and deployed pi"
         )
     required = (
-        "robot",
         "hist",
         "goal_frames",
         "enc_hidden",
@@ -68,7 +66,6 @@ def validated_checkpoint(checkpoint, robot, *, playback=False):
     )
     if any(key not in args for key in required):
         raise ValueError("Checkpoint is missing required policy configuration")
-    check_robot(args, robot.name, playback=playback)
     for key in ("hist", "goal_frames"):
         if type(args[key]) is not int or args[key] < 1:
             raise ValueError(f"Invalid checkpoint {key}")
@@ -101,7 +98,7 @@ def validate_policy_state(state, args, robot):
             raise ValueError(f"Negative normalizer variance: {name}")
 
 
-def load_policy(checkpoint, robot, *, playback=False):
+def load_policy(checkpoint, robot):
     """
     Rebuild the recorded architecture strictly; never substitute live weights.
     """
@@ -113,7 +110,7 @@ def load_policy(checkpoint, robot, *, playback=False):
         raise ValueError(
             "FP32 export requires an isolated process with AMP_DTYPE=None"
         )
-    args, state = validated_checkpoint(checkpoint, robot, playback=playback)
+    args, state = validated_checkpoint(checkpoint)
     check_pruned(args, nets_only=True)
 
     def widths(key):
@@ -279,15 +276,18 @@ def export_policy(checkpoint_path, output_dir, robot, *, overwrite=False):
     """
     Export on CPU without a simulator, dataset, selector or robot connection.
     """
-    import onnx
-
     checkpoint_path, output_dir = Path(checkpoint_path), Path(output_dir)
     checkpoint = torch.load(
         checkpoint_path, map_location="cpu", weights_only=True
     )
     wrapper = load_policy(checkpoint, robot)
+    return export_loaded_policy(output_dir, robot, checkpoint, wrapper, overwrite=overwrite)
+
+
+def export_loaded_policy(output_dir, robot, checkpoint, wrapper, *, overwrite):
+    import onnx
+
     metadata = contract(wrapper, checkpoint, robot)
-    metadata["checkpoint_sha256"] = sha256(checkpoint_path)
     output_dir.mkdir(parents=True, exist_ok=overwrite)
     metadata["software_notices"] = write_software_notices(
         output_dir,
