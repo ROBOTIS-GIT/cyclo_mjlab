@@ -77,7 +77,7 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
     assert metadata["weights_key"] == "pi"
     assert metadata["reference_skip"]["enabled"] == ref_skip
     assert not metadata["includes_motion"]
-    assert metadata["checkpoint_sha256"] == sha256(source)
+    assert "checkpoint_sha256" not in metadata
     assert metadata["onnx_sha256"] == sha256(path)
     expected_notices = {
         "licenses/Apache-2.0.txt": ROOT / "LICENSE",
@@ -123,7 +123,6 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
 @pytest.mark.parametrize(
     "failure",
     [
-        "robot",
         "hist",
         "missing_args",
         "missing_pi",
@@ -138,9 +137,7 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
 def test_incompatible_checkpoints_are_rejected(synthetic_policy, failure):
     robot, _, source = synthetic_policy
     ck = dict(source, args=dict(source["args"]), pi=dict(source["pi"]))
-    if failure == "robot":
-        ck["args"]["robot"] = "other"
-    elif failure == "hist":
+    if failure == "hist":
         ck["args"]["hist"] = 0
     elif failure == "missing_args":
         del ck["args"]["enc_hidden"]
@@ -158,3 +155,10 @@ def test_incompatible_checkpoints_are_rejected(synthetic_policy, failure):
         ck["args"]["pi_arch"] = "unsupported"
     with pytest.raises((ValueError, RuntimeError)):
         load_policy(ck, robot)
+
+
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_load_policy_ignores_checkpoint_robot(synthetic_policy):
+    robot, _, saved = synthetic_policy
+    checkpoint = dict(saved, args=dict(saved["args"], robot="another_robot"))
+    load_policy(checkpoint, robot)

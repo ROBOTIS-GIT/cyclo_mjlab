@@ -161,9 +161,7 @@ def test_full_width_motion_policy_onnx_parity(
     assert (
         path.parent / "licenses/RSL-RL-BSD-3-Clause.txt"
     ).read_bytes() == distribution_license("rsl-rl-lib").read_bytes()
-    assert metadata["source_sha256"]["actor.pt"] == sha256(
-        directory / "actor.pt"
-    )
+    assert "source_sha256" not in metadata
     model = onnx.load(path)
     onnx.checker.check_model(model, full_check=True)
     assert [i.name for i in model.graph.input] == ["obs"]
@@ -503,9 +501,7 @@ def test_play_exports_before_simulator_and_refreshes_existing_files(
                 continue
             metadata = json.loads((path.parent / "metadata.json").read_text())
             assert metadata["onnx_sha256"] == sha256(path)
-            assert metadata["source_sha256"]["actor.pt"] == sha256(
-                directory / "actor.pt"
-            )
+            assert "source_sha256" not in metadata
         assert params.read_text() == "training-owned yaml\n"
         path = next((directory / "exported").rglob("policy.onnx"))
         if iteration == 0:
@@ -741,7 +737,7 @@ def test_historical_archive_exports_saved_actor_without_split_files(
     )
     metadata = json.loads((outputs[0].parent / "metadata.json").read_text())
     assert metadata["checkpoint_step"] == 1000
-    assert metadata["source_sha256"] == {moved.name: sha256(moved)}
+    assert "source_sha256" not in metadata
 
 
 def test_play_export_loads_one_actor_for_all_encoders(

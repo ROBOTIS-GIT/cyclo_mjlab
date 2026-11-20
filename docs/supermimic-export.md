@@ -116,7 +116,7 @@ These software notices do not grant rights to training data or learned weights.
 
 The contract records task/encoder, mode, ordered
 observation terms and offsets, history/goal layout, normalization, affine action
-values, body/joint order, physical fingerprint, source file hashes and shared
+values, body/joint order, physical fingerprint and shared
 exporter revision/hash. No source directory, checkpoint tensors or motion arrays
 are copied into the JSON. The graph contains the selected policy weights only.
 

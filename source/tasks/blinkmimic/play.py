@@ -29,26 +29,20 @@ from .runtime import prepare
 class BlinkMimicPlayback:
     """Interactive playback with an environment reset on motion selection."""
 
-    def __init__(self, checkpoint_path, motion_dir, robot, device="cuda:0"):
+    def __init__(self, policy, policy_args, motion_dir, robot, device="cuda:0"):
         prepare()
         from blinkmimic import networks
         from blinkmimic.dr import XiLayout
         from blinkmimic.env import TrackingSim, make_sim
         from blinkmimic.kinematics import Kinematics
         from blinkmimic.mdp import MDP
-        from .export import load_policy
         from .motion import ExactMotionLib
 
-        checkpoint = torch.load(
-            checkpoint_path, map_location="cpu", weights_only=True
-        )
-        self.policy = load_policy(checkpoint, robot, playback=True).policy.to(device).eval()
+        self.policy = policy.to(device).eval()
         networks.AMP_DTYPE = (
-            torch.bfloat16
-            if checkpoint["args"].get("amp", "none") == "bf16"
-            else None
+            torch.bfloat16 if policy_args.get("amp", "none") == "bf16" else None
         )
-        self.future_frames = checkpoint["args"]["goal_frames"]
+        self.future_frames = policy_args["goal_frames"]
         kin = Kinematics(robot, device)
         self.motion = ExactMotionLib.from_dir(motion_dir, robot, kin, device)
         mdp = MDP(
@@ -124,22 +118,23 @@ def main(argv=None, *, robot=None):
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--num-steps", type=int)
     args = parser.parse_args(argv)
-    from .export import export_policy
+    from .export import export_loaded_policy, load_policy
 
     if robot is None:
         prepare()
         robot = TASKS[args.task].robot_factory()
 
-    # A cross-revision preview must not overwrite the training run's export.
-    metadata = torch.load(args.checkpoint, map_location="meta", weights_only=True)
-    if metadata["args"]["robot"] == robot.name:
-        path = export_policy(
-            args.checkpoint, args.checkpoint.parent, robot, overwrite=True
-        )
-        print(f"[INFO] Exported policy: {path}", flush=True)
+    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
+    wrapper = load_policy(checkpoint, robot)
+    policy_args = checkpoint["args"]
+    path = export_loaded_policy(
+        args.checkpoint.parent, robot, checkpoint, wrapper, overwrite=True
+    )
+    print(f"[INFO] Exported policy: {path}", flush=True)
+    del checkpoint
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.manual_seed(0)
-    playback = BlinkMimicPlayback(args.checkpoint, args.motion_dir, robot)
+    playback = BlinkMimicPlayback(wrapper.policy, policy_args, args.motion_dir, robot)
     from .viewer import run_viewer
 
     run_viewer(

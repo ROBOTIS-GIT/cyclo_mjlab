@@ -382,15 +382,6 @@ def export_encoder(
     wrapper = _SingleEncoderOnnx(
         bundle.actor, encoder, bundle.term_widths
     ).eval()
-    source = checkpoint.source
-    metadata["source_sha256"] = (
-        {
-            name: sha256(source / name)
-            for name in ("manifest.json", "actor.pt", "world_model.pt")
-        }
-        if source.is_dir()
-        else {source.name: sha256(source)}
-    )
     if checkpoint.step is not None:
         metadata["checkpoint_step"] = checkpoint.step
     metadata["shared_core_commit"] = subprocess.check_output(
