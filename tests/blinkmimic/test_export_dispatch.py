@@ -36,7 +36,7 @@ def test_common_export_routes_to_selected_family(monkeypatch, algorithm):
     assert called == [[task, *flags]]
 
 
-def test_blink_rejects_another_family_task(monkeypatch, capsys):
+def test_blinkmimic_rejects_another_family_task(monkeypatch, capsys):
     monkeypatch.setattr(
         sys,
         "argv",
@@ -51,7 +51,7 @@ def test_blink_rejects_another_family_task(monkeypatch, capsys):
     assert "invalid choice" in capsys.readouterr().err
 
 
-def test_blink_export_accepts_positional_task(monkeypatch):
+def test_blinkmimic_export_accepts_positional_task(monkeypatch):
     from source.tasks.blinkmimic import export
     from source.tasks.blinkmimic.config import TASKS
 

@@ -18,7 +18,7 @@
 # This file includes modifications by ROBOTIS CO., LTD. to code derived
 # from mujocolab/mjlab.
 
-"""RSL-RL PPO configuration for K1 Rev.1 Mimic."""
+"""RSL-RL PPO configuration for K1 Rev.1 BeyondMimic."""
 
 from mjlab.rl import (
   RslRlModelCfg,
@@ -28,7 +28,7 @@ from mjlab.rl import (
 
 
 def k1_rev1_mimic_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Create the PPO runner configuration for K1 Rev.1 Mimic."""
+  """Create the PPO runner configuration for K1 Rev.1 BeyondMimic."""
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
       hidden_dims=(512, 256, 128),

@@ -39,7 +39,7 @@ import mujoco
 import mujoco.viewer
 
 from mjlab.entity import Entity, EntityCfg
-from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
 
 ROBOT_BUILDERS: dict[str, Callable[[], EntityCfg]] = {

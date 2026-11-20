@@ -19,7 +19,9 @@ from mjlab.envs import ManagerBasedRlEnvCfg
 from source import SRC_PATH
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 
-from .base_env_cfg import k1_rev1_mimic_env_cfg
+from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
+
+from ..base_env_cfg import k1_mimic_env_cfg
 
 TRAJECTORY_FILE = (
   SRC_PATH / "assets" / "motions" / "K1_rev1" / "dance2" / "dance2.npz"
@@ -28,7 +30,7 @@ TRAJECTORY_FILE = (
 
 def k1_rev1_dance2_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create the K1 Rev.1 Dance 2 Mimic configuration."""
-  cfg = k1_rev1_mimic_env_cfg(play=play)
+  cfg = k1_mimic_env_cfg(get_k1_rev1_cfg(), play=play)
   reference_trajectory = cfg.commands["reference_trajectory"]
   assert isinstance(reference_trajectory, ReferenceTrajectoryCommandCfg)
   reference_trajectory.trajectory_file = str(TRAJECTORY_FILE)

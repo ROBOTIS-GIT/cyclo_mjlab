@@ -21,24 +21,29 @@ TRACKED_BODIES = (
 
 
 def robot_cfg():
-    from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+    from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
-    cfg = get_k1_rev1_cfg()
+    return tracking_pose(get_k1_rev1_cfg())
+
+
+def tracking_pose(cfg):
     # Task-local nominal elbow. Independent deepcopy; shared defaults stay intact.
     cfg.init_state.joint_pos[".*_elbow_joint"] = 0.6
     return cfg
 
 
 def make_robot():
-    # Task registration does not need the simulator or upstream robot module.
+    from source.assets.robots.ai_sapiens.k1_rev1 import K1_REV1_XML_PATH
+
+    return make_k1_spec("k1", K1_REV1_XML_PATH, robot_cfg)
+
+
+def make_k1_spec(name, xml_path, cfg_factory):
     import mujoco
     from blinkmimic.robot import RobotSpec
-    from source.assets.robots.robotis_k1.k1_rev1 import (
-        K1_REV1_ACTION_SCALE,
-        K1_REV1_XML_PATH,
-    )
+    from source.assets.robots.ai_sapiens.k1_rev1 import K1_REV1_ACTION_SCALE
 
-    model = mujoco.MjModel.from_xml_path(str(K1_REV1_XML_PATH))
+    model = mujoco.MjModel.from_xml_path(str(xml_path))
     names = tuple(
         model.joint(i).name
         for i in range(model.njnt)
@@ -49,15 +54,15 @@ def make_robot():
         for n in names
     }
     return RobotSpec(
-        name="k1",
-        mjcf_path=str(K1_REV1_XML_PATH),
+        name=name,
+        mjcf_path=str(xml_path),
         joint_names=names,
         tracked_bodies=TRACKED_BODIES,
-        default_joint_pos=robot_cfg().init_state.joint_pos,
+        default_joint_pos=cfg_factory().init_state.joint_pos,
         action_scale=scales,
         com_body="torso_link",
         com_range=((-0.025, 0.025), (-0.05, 0.05), (-0.05, 0.05)),
-        robot_cfg=robot_cfg,
+        robot_cfg=cfg_factory,
         motion_dir="",
         motion_glob="*.npz",
         load_motion=None,

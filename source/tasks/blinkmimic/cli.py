@@ -20,6 +20,7 @@ from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
 from .checkpoint import (
+    check_robot,
     checkpoint_recipe,
     link_evaluation_checkpoint,
     publish_completed_snapshots,
@@ -147,7 +148,8 @@ def prepare_task_motions(task, output):
     prepare()
     from .prepare import prepare_library
 
-    prepare_library(files, output, TASKS[task].robot_factory().joint_names)
+    robot = TASKS[task].robot_factory()
+    prepare_library(files, output, robot.joint_names, mjcf_path=robot.mjcf_path)
     return output
 
 
@@ -497,6 +499,8 @@ def run_playback(args, extra):
     if args.viewer == "viser":
         return run_gui(args)
 
+    import torch
+
     from .runtime import prepare
 
     if args.run_dir is None:
@@ -504,6 +508,8 @@ def run_playback(args, extra):
         args.run_dir = args.checkpoint.parent / "play" / stamp
     prepare()
     robot = TASKS[args.task].robot_factory()
+    saved = torch.load(args.checkpoint, map_location="meta", weights_only=True)
+    check_robot(saved["args"], robot.name, playback=True)
     out = args.run_dir.resolve()
     _, removed_systems_flags = execution_recipe(args.execution)
     out.mkdir(parents=True, exist_ok=False)

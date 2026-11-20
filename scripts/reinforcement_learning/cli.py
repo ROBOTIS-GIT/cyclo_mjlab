@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 
 from scripts.reinforcement_learning.dispatch import task_family
@@ -11,12 +10,16 @@ FAMILIES = ("blinkmimic", "beyondmimic", "supermimic")
 
 
 def task_names(family):
-    if family == "beyondmimic":
-        import source.tasks  # noqa: F401
-        from mjlab.tasks.registry import list_tasks
+    if family == "blinkmimic":
+        from source.tasks.blinkmimic.config import TASKS
 
-        return tuple(task for task in list_tasks() if task.startswith("Cyclo-BeyondMimic-"))
-    return tuple(import_module(f"source.tasks.{family}.config").TASKS)
+        return tuple(TASKS)
+
+    import source.tasks  # noqa: F401
+    from mjlab.tasks.registry import list_tasks
+
+    return tuple(task for task in list_tasks() if task_family(task) == family)
+
 
 
 def require_runtime():
@@ -52,7 +55,7 @@ def prepare_args(action, argv=None):
             if args.algorithm is None or args.algorithm == family:
                 print(f"{family}: " + ", ".join(task_names(family)))
         if args.algorithm is None:
-            print("velocity: Cyclo-Velocity-Flat-K1-Rev1-v0")
+            print("velocity: Cyclo-Velocity-Flat-K1-Rev1-v0, Cyclo-Velocity-Flat-K1-Rev2-v0")
         print(
             "BeyondMimic and SuperMimic share the locked MJLab 1.6.1 / Python 3.12 runtime."
         )

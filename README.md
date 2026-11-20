@@ -263,7 +263,7 @@ reference-data and external-weight rights are described separately in
 - **HybridRobotics/whole_body_tracking**: MIT License; see
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 - **ROBOTIS AI Sapiens K1 Rev.1 assets**: Apache License 2.0; see
-  [LICENSE.ai_sapiens](source/assets/robots/robotis_k1/LICENSE.ai_sapiens)
+  [LICENSE.ai_sapiens](source/assets/robots/ai_sapiens/LICENSE.ai_sapiens)
 - **HybridRobotics/SuperMimic**: Apache License 2.0 with BSD-3-Clause math notices;
   original license, acknowledgements and modification record in
   [third_party/supermimic/PATCHES.md](third_party/supermimic/PATCHES.md)

@@ -27,6 +27,7 @@ import mjlab
 import mjlab.tasks  # noqa: F401
 import source.tasks
 from mjlab.tasks.registry import list_tasks
+from source.tasks.blinkmimic.config import TASKS as BLINKMIMIC_TASKS
 
 
 def list_environments(keyword: str | None = None):
@@ -39,22 +40,13 @@ def list_environments(keyword: str | None = None):
   table.title = "Available Environments in mjlab"
   table.align["Task ID"] = "l"
 
-  supported_task_prefixes = ("Cyclo-Velocity-", "Cyclo-BeyondMimic-")
-  all_tasks = [
-    task_id for task_id in list_tasks() if task_id.startswith(supported_task_prefixes)
-  ]
-  idx = 0
-  for task_id in all_tasks:
-    try:
-      # Optionally filter by keyword.
-      if keyword and keyword.lower() not in task_id.lower():
-        continue
+  tasks = {name for name in list_tasks() if name.startswith("Cyclo-")}
+  tasks.update(BLINKMIMIC_TASKS)
+  matches = sorted(name for name in tasks if not keyword or keyword.lower() in name.lower())
+  for index, task_id in enumerate(matches, start=1):
+    table.add_row([index, task_id])
 
-      table.add_row([idx + 1, task_id])
-      idx += 1
-    except Exception:
-      continue
-
+  idx = len(matches)
   print(table)
   if idx == 0:
     msg = "[INFO] No tasks matched"

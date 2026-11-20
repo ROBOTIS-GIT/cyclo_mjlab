@@ -62,21 +62,21 @@ def verify_manifest(path, verify_sources=False):
     return manifest
 
 
-@lru_cache(maxsize=1)
-def reference_model():
+@lru_cache(maxsize=2)
+def reference_model(mjcf_path):
     import mujoco
-    from source.assets.robots.robotis_k1.k1_rev1 import K1_REV1_XML_PATH
-
-    return mujoco.MjModel.from_xml_path(str(K1_REV1_XML_PATH))
+    return mujoco.MjModel.from_xml_path(str(mjcf_path))
 
 
-def load_exact(path, joint_names):
+def load_exact(path, joint_names, *, mjcf_path=None):
     from source.utils.k1_motion_npz_adapter import BODY_FIELDS, adapt_motion
 
     with np.load(path, allow_pickle=False) as archive:
         data = dict(archive)
     if any(key in data for key in BODY_FIELDS):
-        data = adapt_motion(data, joint_names, reference_model())
+        if mjcf_path is None:
+            raise ValueError(f"{path}: mjcf_path is required to validate body-state fields")
+        data = adapt_motion(data, joint_names, reference_model(mjcf_path))
     return validate_exact(data, joint_names, path)
 
 
@@ -134,7 +134,7 @@ class ExactMotionLib(MotionLib):
         self.device = device
         rows = manifest["clips"]
         self.names = [r["song"] for r in rows]
-        clips = [load_exact(r["derived"], robot.joint_names) for r in rows]
+        clips = [load_exact(r["derived"], robot.joint_names, mjcf_path=robot.mjcf_path) for r in rows]
         lens = [len(c[0]) for c in clips]
         if lens != [r["frames"] for r in rows]:
             raise ValueError("Manifest frame lengths differ")

@@ -50,6 +50,13 @@ def reference(path, names, frames=4, reverse=False, **changes):
     return data
 
 
+def test_body_state_requires_explicit_model(tmp_path):
+    path = tmp_path / "motion.npz"
+    np.savez(path, body_pos_w=np.zeros((1, 1, 3)))
+    with pytest.raises(ValueError, match="mjcf_path"):
+        load_exact(path, [])
+
+
 def test_preparation_and_relocation_preserve_order_states_and_boundaries(tmp_path):
     robot = make_robot()
     a, b = tmp_path / "second.npz", tmp_path / "first.npz"

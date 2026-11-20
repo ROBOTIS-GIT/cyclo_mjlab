@@ -8,7 +8,7 @@ import sys
 
 def convert_motion_command(argv):
     from .motion import convert_motion, model_joint_names
-    from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+    from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
     parser = argparse.ArgumentParser()
     parser.add_argument("input")
@@ -86,11 +86,10 @@ def prepare_task_motion_arguments(arguments, parser):
 
 
 def run_task(command, arguments, parser):
-    from .config import TASKS, register_tasks
+    from .config import TASKS
 
     if not arguments or arguments[0] not in TASKS:
         parser.error("Pass a Cyclo task ID: " + ", ".join(TASKS))
-    register_tasks()
     if not any(arg in arguments for arg in ("--help", "-h")):
         prepare_task_motion_arguments(arguments, parser)
     if command == "train":

@@ -176,8 +176,12 @@ K1_REV1_ARTICULATION_CFG = EntityArticulationInfoCfg(
 
 
 def _load_k1_rev1_spec() -> mujoco.MjSpec:
+  return load_k1_spec(K1_REV1_XML_PATH)
+
+
+def load_k1_spec(xml_path: Path) -> mujoco.MjSpec:
   """Load the upstream K1 MJCF and add MJLab runtime-only elements."""
-  spec = mujoco.MjSpec.from_file(str(K1_REV1_XML_PATH))
+  spec = mujoco.MjSpec.from_file(str(xml_path))
 
   # MJLab supplies position actuators below. Drop the upstream torque motors
   # so the robot still exposes exactly the 23 policy-controlled actuators.

@@ -15,7 +15,7 @@ from source.tasks.supermimic.motion import (
 from source.tasks.supermimic.native_motion import (
     NativeMotionLoader as MotionLoader,
 )
-from source.assets.robots.robotis_k1.k1_rev1 import get_k1_rev1_cfg
+from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
 
 @pytest.fixture(scope="module")

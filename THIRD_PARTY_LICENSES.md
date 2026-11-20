@@ -99,7 +99,7 @@ title or non-infringement. Apache redistribution conditions are in
 
 | Material | Checked scope | Remaining limits |
 | --- | --- | --- |
-| K1 MJCF, meshes and robot assets | Existing `ROBOTIS-GIT/ai_sapiens` submodule at `611a070fad83d2a9ef9c1bc82213988450cf471c`; its Apache-2.0 LICENSE is byte-identical to `source/assets/robots/robotis_k1/LICENSE.ai_sapiens` | Upstream license declaration was checked; independent CAD/mesh authorship and third-party permissions were not audited |
+| K1 MJCF, meshes and robot assets | Existing `ROBOTIS-GIT/ai_sapiens` submodule at `611a070fad83d2a9ef9c1bc82213988450cf471c`; its Apache-2.0 LICENSE is byte-identical to `source/assets/robots/ai_sapiens/LICENSE.ai_sapiens` | Upstream license declaration was checked; independent CAD/mesh authorship and third-party permissions were not audited |
 | Historical COM profile | Numeric offsets from tracked Cyclo `874c7bd:source/assets/robots/robotis_k1/xmls/k1.xml`; source/copyright recorded in `reference_profiles.py` | This profile changes reference interpretation only, not asset ownership or simulation inertias |
 | Dance1/2 CSV and NPZ | Pre-existing `source/assets/motions/K1_rev1` files, unchanged by this feature; used for compatibility tests | No dataset-specific provenance, capture-consent or separate redistribution-permission record was found with these files; the root software license alone does not document those facts |
 | Trained/pretrained weights | No `.pt`, `.pth`, `.onnx` or `.ckpt` files are tracked or added by the feature; local smoke outputs stay ignored | User-provided W&B bundles and external datasets/weights were not inspected or cleared by this review; their terms are separate from the code license |
