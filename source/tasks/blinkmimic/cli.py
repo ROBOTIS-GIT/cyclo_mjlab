@@ -16,6 +16,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+from source.utils.export_git_state import optional_git_metadata
+
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
@@ -556,9 +558,7 @@ def build_run_record(
         command=command,
         cwd=str(ROOT),
         started_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        repository_commit=subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-        ).strip(),
+        repository_commit=optional_git_metadata(ROOT, "rev-parse", "HEAD"),
         upstream=UPSTREAM_REVISION,
         manifest=str(args.motion_dir.resolve() / "manifest.json"),
         checkpoint=str(args.checkpoint.resolve()) if args.checkpoint else None,
@@ -577,9 +577,7 @@ def build_run_record(
         },
         python=sys.version,
         compiler_cache=str(cache),
-        source_status=subprocess.check_output(
-            ["git", "status", "--short"], cwd=ROOT, text=True
-        ),
+        source_status=optional_git_metadata(ROOT, "status", "--short"),
         recipe=recipe(),
         execution=args.execution,
         removed_systems_flags=removed_systems_flags,

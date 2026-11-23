@@ -28,6 +28,7 @@ docker/.cache/
 **/.pytest_cache/
 **/.ruff_cache/
 .supermimic-data/
+.blinkmimic-data/
 # Python package build outputs.
 build/
 dist/

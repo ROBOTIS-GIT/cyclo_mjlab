@@ -5,7 +5,6 @@ Motion-independent SuperMimic policy export using the shared encoder slice.
 import argparse
 import hashlib
 import json
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +21,7 @@ from supermimic.runners.exporter import _export_module, _SingleEncoderOnnx
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 from supermimic.tasks.task_spec import resolve_task_specs
 
+from source.utils.export_git_state import optional_git_metadata
 from source.utils.export_notices import (
     distribution_license,
     write_software_notices,
@@ -384,16 +384,9 @@ def export_encoder(
     ).eval()
     if checkpoint.step is not None:
         metadata["checkpoint_step"] = checkpoint.step
-    metadata["shared_core_commit"] = subprocess.check_output(
-        [
-            "git",
-            "-C",
-            str(REPO_ROOT / "third_party/supermimic"),
-            "rev-parse",
-            "HEAD",
-        ],
-        text=True,
-    ).strip()
+    metadata["shared_core_commit"] = optional_git_metadata(
+        REPO_ROOT / "third_party/supermimic", "rev-parse", "HEAD"
+    )
     metadata["shared_exporter_sha256"] = sha256(
         REPO_ROOT / "third_party/supermimic/src/supermimic/runners/exporter.py"
     )
