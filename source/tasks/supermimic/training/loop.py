@@ -21,6 +21,7 @@ Adapted from supermimic.runners.supermimic_runner.SuperMimicRunner.run.
 Collection and learner updates remain upstream methods; no upstream edits.
 """
 
+import os
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 
@@ -38,6 +39,7 @@ from source.utils.wandb_models import model_upload_requested
 
 def run_training_loop(runner, start_iteration=0) -> None:
     log_dir = runner._create_log_dir()
+    os.environ.setdefault("WANDB_MODE", "online" if model_upload_requested() else "disabled")
     runner._init_wandb(log_dir)
 
     runner.env.reset()
