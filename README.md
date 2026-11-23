@@ -98,15 +98,15 @@ The Docker image includes:
 - Runtime dependencies pinned with hashes in `requirements.lock`
 
 The default image/container names are `cyclo-mjlab:latest` and `cyclo_mjlab`.
-The image carries `LABEL version="1.0.0"` to identify its release. This label is
-metadata; compatibility checks use the actual installed runtime versions.
+The Docker image's `version` label identifies its release. Compatibility checks use
+the installed runtime versions.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.
 
 ### Upgrading an existing Docker environment
 
-Release 1.0.0 requires Python 3.12 and MJLab 1.6.1. Images built for the previous
+The project requires Python 3.12 and MJLab 1.6.1. Images built for the previous
 Python 3.11/MJLab 1.2 environment are incompatible. Updating the checkout does not
 update an existing image, even when its tag is `latest`.
 

@@ -2,6 +2,15 @@
 Changelog for package cyclo_mjlab
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.0 (2026-11-23)
+------------------
+* Added SuperMimic support for world-model training and motion tracking with GenCoord and MaxCoord policies.
+* Added BlinkMimic support for training and playing back motion-tracking policies from 50 Hz K1 reference clips.
+* Added export of ONNX policies and ``sim2real.yaml`` deployment configurations for SuperMimic and BlinkMimic.
+* Added K1 Rev.2 support across Velocity, BeyondMimic, SuperMimic, and BlinkMimic,
+  and refreshed the Dance1 and Dance2 reference motions for both K1 revisions.
+* Contributors: Kiwoong Park, Woojin Wie. Insu Park
+
 1.0.0 (2026-11-16)
 ------------------
 * Updated the runtime to MJLab 1.6.1 and Python 3.12.
