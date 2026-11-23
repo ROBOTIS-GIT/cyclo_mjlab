@@ -32,11 +32,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Select the task family before importing any version-specific simulator APIs.
 if __name__ == "__main__":
-  from scripts.reinforcement_learning.cli import prepare_args
-  from scripts.reinforcement_learning.dispatch import dispatch
+  from scripts.reinforcement_learning.cli import route_command
 
-  cli_args = prepare_args("play")
-  if cli_args is None or dispatch("play", cli_args):
+  cli_args = route_command("play")
+  if cli_args is None:
     raise SystemExit(0)
 
 import torch

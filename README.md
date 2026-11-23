@@ -21,12 +21,10 @@ The repository currently provides:
 - Automatic generation of `params/sim2real.yaml` when Velocity or Mimic training starts
 - Automatic export of `exported/policy.onnx` and `exported/policy.pt` during Velocity or Mimic play
 - **SuperMimic**: differentiable world-model motion tracking with native MuJoCo/mjlab tasks
-- **BlinkMimic**: isolated released recipe with a K1 Rev.1 exact-state reference adapter;
-  see [recipe, commands and validation scope](docs/blinkmimic.md)
+- **BlinkMimic**: isolated released recipe with a K1 Rev.1 exact-state reference adapter
 
 > [!IMPORTANT]
 > This repository currently uses MJLab 1.6.1, MuJoCo 3.11.0, and Python 3.12.
-> See the [SuperMimic guide](docs/supermimic.md) for its algorithm-specific setup.
 
 ### Locomotion
 
@@ -170,7 +168,6 @@ python scripts/reinforcement_learning/play.py Cyclo-Velocity-Flat-K1-Rev1-v0 \
 
 These commands use BeyondMimic/PPO. Tasks are registered directly as
 `Cyclo-BeyondMimic-K1-Rev1-Dance1` and `Dance2`.
-See the [BeyondMimic guide](docs/beyondmimic.md) for details.
 
 #### Train Dance1
 
@@ -216,8 +213,8 @@ iteration to use.
 
 ### SuperMimic
 
-Both algorithms use the same Python 3.12 / MJLab 1.6.1 environment. Follow the
-[SuperMimic guide](docs/supermimic.md) to initialize its shared source submodule.
+Both algorithms use the same Python 3.12 / MJLab 1.6.1 environment. Initialize
+the SuperMimic source with `git submodule update --init --recursive third_party/supermimic`.
 Use the same supported 50 Hz K1 reference NPZ; the internal adapter preserves
 the original file:
 
@@ -236,8 +233,7 @@ python scripts/reinforcement_learning/play.py \
 Replace `<timestamp>` with the training run directory. Select
 `Cyclo-SuperMimic-MaxCoord-K1-Rev1-001` for maximal-coordinate tracking. Local inference
 bundles use `--checkpoint-dir` without requiring W&B sync; they are not PPO
-checkpoint files. Export/support limits and [validation scope](docs/validation.md)
-are documented in the guide.
+checkpoint files.
 
 ## Motion Utilities
 

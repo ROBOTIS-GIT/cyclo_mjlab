@@ -2,14 +2,12 @@ import sys
 
 import pytest
 
-from scripts.reinforcement_learning import cli, dispatch as router
+from scripts.reinforcement_learning import cli
 
 
-def test_task_family_names():
-    assert router.task_family("Cyclo-Mimic-K1-Rev1-Dance1") is None
-    assert router.task_family("Cyclo-BeyondMimic-K1-Rev1-Dance1") == "beyondmimic"
-    assert router.task_family("Cyclo-SuperMimic-MaxCoord-K1-Rev1-001") == "supermimic"
-    assert router.task_family("Cyclo-Velocity-Flat-K1-Rev1-v0") is None
+def test_legacy_mimic_name_does_not_match_specialized_families():
+    task = "Cyclo-Mimic-K1-Rev1-Dance1"
+    assert cli.route_command("train", [task]) == [task]
 
 
 def test_mismatched_algorithm_rejected_before_import(monkeypatch):
@@ -19,14 +17,14 @@ def test_mismatched_algorithm_rejected_before_import(monkeypatch):
         ["train.py", "--algorithm", "beyondmimic", "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"],
     )
     with pytest.raises(SystemExit) as error:
-        cli.prepare_args("train")
+        cli.route_command("train")
     assert error.value.code == 2
 
 
 def test_wrong_runtime_has_setup_hint(monkeypatch):
     monkeypatch.setattr(cli, "version", lambda name: "1.6.0")
-    with pytest.raises(SystemExit, match="locked Python 3.12 runtime"):
-        cli.require_runtime()
+    with pytest.raises(SystemExit, match="requires mjlab 1.6.1; found 1.6.0"):
+        cli.route_command("train", ["Cyclo-SuperMimic-GenCoord-K1-Rev1-001"])
 
 
 def test_common_runtime_registers_existing_tasks():
@@ -47,7 +45,7 @@ def test_supermimic_wrong_python_rejected(monkeypatch):
     with monkeypatch.context() as patch:
         patch.setattr(sys, "version_info", (3, 13))
         with pytest.raises(SystemExit, match="requires Python 3.12"):
-            cli.require_runtime()
+            cli.route_command("play", ["Cyclo-SuperMimic-GenCoord-K1-Rev1-001"])
 
 
 def test_shared_runtime_is_accepted(monkeypatch):
@@ -63,7 +61,7 @@ def test_blinkmimic_listing_reads_registered_configs(monkeypatch, capsys):
     name = f"Cyclo-{family}-Custom"
     monkeypatch.setitem(registry, name, next(iter(registry.values())))
     monkeypatch.setattr(sys, "argv", ["train.py", "--list-tasks", "--algorithm", family])
-    assert cli.prepare_args("train") is None
+    assert cli.route_command("train") is None
     assert name in capsys.readouterr().out
 
 
@@ -78,7 +76,7 @@ def test_listing_includes_new_registered_tasks(family, monkeypatch, capsys):
         registry._REGISTRY["Cyclo-BeyondMimic-K1-Rev1-Dance1"],
     )
     monkeypatch.setattr(sys, "argv", ["train.py", "--list-tasks", "--algorithm", family.lower()])
-    assert cli.prepare_args("train") is None
+    assert cli.route_command("train") is None
     assert name in capsys.readouterr().out
 
 
@@ -97,7 +95,7 @@ def test_dispatch_forwards_arguments_without_mutating_argv(action, family, monke
     module.main = lambda *args: calls.append(args)
     monkeypatch.setitem(sys.modules, module.__name__, module)
 
-    assert router.dispatch(action, arguments)
+    assert cli.route_command(action, arguments) is None
     expected = (action, arguments) if family == "blinkmimic" else ([action, *arguments],)
     assert calls == [expected]
     assert arguments == original
@@ -114,10 +112,9 @@ def test_shared_options_removed_before_default_backend(task, monkeypatch):
     original = list(options)
     monkeypatch.setattr(sys, "argv", ["train.py", *options])
     process_args = sys.argv
-    remaining = cli.prepare_args("train", options)
+    remaining = cli.route_command("train", options)
 
     assert remaining == [task, "--help"]
-    assert not router.dispatch("train", remaining)
     assert options == original
     assert sys.argv is process_args
     assert sys.argv == ["train.py", *options]
