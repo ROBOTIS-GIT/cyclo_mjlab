@@ -43,7 +43,7 @@ def make_env_cfg(representation="gencoord", play=False):
     from mjlab.managers import TerminationTermCfg
     from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
 
-    from ...native_motion import NativeMotionCommandCfg, motion_end
+    from ...native_motion import NativeMotionCommandCfg, heading_velocity_tracking, motion_end
     from source.assets.robots.ai_sapiens.k1_rev1 import (
         K1_REV1_ACTION_SCALE,
         K1_REV1_FOOT_COLLISION_GEOM_PATTERN,
@@ -62,6 +62,9 @@ def make_env_cfg(representation="gencoord", play=False):
     )
     cfg.scene.sensors = ()  # The upstream self-collision sensor is unused by this task.
     cfg.actions["joint_pos"].scale = K1_REV1_ACTION_SCALE
+    cfg.rewards["motion_body_lin_vel"].func = heading_velocity_tracking
+    cfg.rewards["motion_body_ang_vel"].func = heading_velocity_tracking
+    cfg.rewards["motion_body_ang_vel"].params["angular"] = True
     cfg.commands["motion"].anchor_body_name = "pelvis"
     cfg.commands["motion"].body_names = TRACKED_BODIES
     cfg.terminations["motion_end"] = TerminationTermCfg(

@@ -111,3 +111,26 @@ def test_k1_maxcoord_ik_roundtrip_and_gradient():
     angles.square().sum().backward()
     assert torch.isfinite(rotations.grad).all()
     assert rotations.grad.abs().sum() > 0
+
+
+def test_heading_aligned_velocity_terms():
+    from types import SimpleNamespace
+
+    rewards = make_env_cfg().rewards
+    terms = (rewards["motion_body_lin_vel"], rewards["motion_body_ang_vel"])
+    h = 0.5**0.5
+    command = SimpleNamespace(
+        anchor_quat_w=torch.tensor([[1., 0., 0., 0.]]),
+        robot_anchor_quat_w=torch.tensor([[h, 0., 0., h]]),
+        body_lin_vel_w=torch.tensor([[[1., 0., 2.]]]),
+        robot_body_lin_vel_w=torch.tensor([[[0., 1., 2.]]]),
+        body_ang_vel_w=torch.tensor([[[0., 1., 3.]]]),
+        robot_body_ang_vel_w=torch.tensor([[[-1., 0., 3.]]]),
+    )
+    env = SimpleNamespace(command_manager=SimpleNamespace(get_term=lambda name: command))
+    for term in terms:
+        torch.testing.assert_close(term.func(env, **term.params), torch.ones(1))
+    command.robot_anchor_quat_w = command.anchor_quat_w
+    for term in terms:
+        expected = torch.exp(torch.tensor([-2.0 / term.params["std"]**2]))
+        torch.testing.assert_close(term.func(env, **term.params), expected)
