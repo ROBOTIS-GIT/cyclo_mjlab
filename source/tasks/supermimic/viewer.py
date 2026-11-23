@@ -17,6 +17,17 @@
 """Adapt SuperMimic's ghost rendering calls to the installed mjlab viewer."""
 
 
+from supermimic.scripts.viewers import SuperMimicViserViewer
+
+
+class ClipPlaybackViewer(SuperMimicViserViewer):
+    def _apply_selected_clip(self):
+        command = self.env.unwrapped.command_manager.get_term("motion")
+        index = self._selected_clip_idx
+        command.playback_clip_start = 0 if index == 0 else int(command.motion.motion_ends[index - 1])
+        super()._apply_selected_clip()
+
+
 class _GhostVisualizer:
     def __init__(
         self, visualizer, show_reference=True, show_prediction=True, *,

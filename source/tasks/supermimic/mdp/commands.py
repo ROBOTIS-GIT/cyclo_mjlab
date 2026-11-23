@@ -40,6 +40,7 @@ class NativeMotionCommand(MotionCommand):
             device=self.device,
         )
         self.motion = NativeMotionLoader(cfg.motion_file, fk, self.device)
+        self.playback_clip_start: int | None = None
         self.time_steps = torch.zeros(
             self.num_envs, dtype=torch.long, device=self.device
         )
@@ -150,6 +151,8 @@ class NativeMotionCommand(MotionCommand):
         return (lo + jitter).clamp_(max=total)
 
     def _sample_frames(self, env_ids):
+        if self.playback_clip_start is not None:
+            return torch.full_like(env_ids, self.playback_clip_start)
         if self.cfg.sampling_mode == "start":
             return torch.zeros_like(env_ids)
         if self.cfg.sampling_mode == "uniform":

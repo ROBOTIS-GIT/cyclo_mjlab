@@ -154,14 +154,15 @@ def resolve_playback_checkpoint(task, cfg):
 def run_interactive_playback(env, wm, actor, cfg):
     from supermimic.scripts.viewers import (
         SuperMimicNativeViewer,
-        SuperMimicViserViewer,
         create_wm_vis_model,
     )
+
+    from .viewer import ClipPlaybackViewer, adapt_ghost_visualizer
 
     viewer = (
         SuperMimicNativeViewer
         if cfg.viewer == "native"
-        else SuperMimicViserViewer
+        else ClipPlaybackViewer
     )
     import glob
 
@@ -186,8 +187,6 @@ def run_interactive_playback(env, wm, actor, cfg):
         initial_task=cfg.initial_task,
         **options,
     )
-    from .viewer import adapt_ghost_visualizer
-
     adapt_ghost_visualizer(playback)
     playback.run()
 
