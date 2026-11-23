@@ -25,12 +25,15 @@ import sys
 def convert_motion_command(argv):
     from .reference.motion import convert_motion, model_joint_names
     from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
+    from source.assets.robots.ai_sapiens.k1_rev2 import get_k1_rev2_cfg
 
+    robots = {"k1_rev1": get_k1_rev1_cfg, "k1_rev2": get_k1_rev2_cfg}
     parser = argparse.ArgumentParser()
+    parser.add_argument("--robot", choices=robots, default="k1_rev2", help="K1 model for motion validation (default: k1_rev2)")
     parser.add_argument("input")
     parser.add_argument("output")
     files = parser.parse_args(argv)
-    model = get_k1_rev1_cfg().spec_fn().compile()
+    model = robots[files.robot]().spec_fn().compile()
     print(
         convert_motion(
             files.input, files.output, model_joint_names(model), model=model

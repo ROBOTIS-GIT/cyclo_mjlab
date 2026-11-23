@@ -5,6 +5,23 @@ import pytest
 from source.tasks.supermimic import cli
 
 
+@pytest.mark.parametrize("revision, options", [
+    ("K1_rev1", ["--robot", "k1_rev1"]),
+    ("K1_rev2", ["--robot", "k1_rev2"]),
+    ("K1_rev2", []),
+])
+def test_convert_dance_clip(revision, options, tmp_path):
+    import numpy as np
+    from source.tasks.supermimic import REPO_ROOT
+
+    source = REPO_ROOT / "source/assets/motions" / revision / "dance1/dance1.npz"
+    output = tmp_path / "dance1.npz"
+    cli.main(["convert", *options, str(source), str(output)])
+    with np.load(source) as reference, np.load(output) as converted:
+        np.testing.assert_array_equal(converted["joint_pos"], reference["joint_pos"])
+        assert converted["velocity_point"].item() == "link_origin"
+
+
 @pytest.mark.parametrize("action", ["train", "play"])
 @pytest.mark.parametrize("use_task_motion", [False, True])
 def test_direct_body_reference_is_adapted_before_upstream(

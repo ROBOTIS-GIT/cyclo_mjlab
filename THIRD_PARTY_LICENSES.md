@@ -57,9 +57,7 @@ SOFTWARE.
 ## HybridRobotics/SuperMimic
 
 - Official algorithm source: https://github.com/HybridRobotics/supermimic
-- Official base: `698ea39bc901d8fe733b3c8621df3199d241f7e4`.
-- Shared fork: https://github.com/ROBOTIS-GIT/supermimic, gitlink revision
-  `2784f180ee78ac9b157acafda0e9f570ed0fc153`.
+- Shared fork: https://github.com/ROBOTIS-GIT/supermimic in `third_party/supermimic`.
 - Copyright 2026 The SuperMimic Authors; original Apache License 2.0 retained at
   [third_party/supermimic/LICENSE](third_party/supermimic/LICENSE).
 - Portable math extracted from official `mjlab_research` retains its Isaac Lab
@@ -89,9 +87,7 @@ license and README attribution, with explicit setup corrections for optional
 research dependencies. Core modifications are recorded in its patch record.
 
 `source/tasks/supermimic/train.py` retains the SuperMimic Authors copyright and
-Apache identifier for its adapted launcher. `robot.py` imports the existing
-Cyclo asset and retains the ROBOTIS/Insu Park notice. `reference_profiles.py`
-identifies its exact historical Cyclo XML source (`874c7bd`) and Apache notice.
+Apache identifier for its adapted launcher.
 These checks preserve notices; they do not guarantee
 title or non-infringement. Apache redistribution conditions are in
 [section 4 of the license](https://www.apache.org/licenses/LICENSE-2.0).
@@ -100,15 +96,10 @@ title or non-infringement. Apache redistribution conditions are in
 
 | Material | Checked scope | Remaining limits |
 | --- | --- | --- |
-| K1 MJCF, meshes and robot assets | Existing `ROBOTIS-GIT/ai_sapiens` submodule at `611a070fad83d2a9ef9c1bc82213988450cf471c`; its Apache-2.0 LICENSE is byte-identical to `source/assets/robots/ai_sapiens/LICENSE.ai_sapiens` | Upstream license declaration was checked; independent CAD/mesh authorship and third-party permissions were not audited |
-| Historical COM profile | Numeric offsets from tracked Cyclo `874c7bd:source/assets/robots/robotis_k1/xmls/k1.xml`; source/copyright recorded in `reference_profiles.py` | This profile changes reference interpretation only, not asset ownership or simulation inertias |
-| Dance1/2 CSV and NPZ | Pre-existing `source/assets/motions/K1_rev1` files, unchanged by this feature; used for compatibility tests | No dataset-specific provenance, capture-consent or separate redistribution-permission record was found with these files; the root software license alone does not document those facts |
+| K1 MJCF, meshes and robot assets | [ai_sapiens](https://github.com/ROBOTIS-GIT/ai_sapiens) materials in `third_party/ai_sapiens`; see the [upstream license](third_party/ai_sapiens/LICENSE) and [local notice](source/assets/robots/ai_sapiens/LICENSE.ai_sapiens) | Upstream license declaration was checked; independent CAD/mesh authorship and third-party permissions were not audited |
 | Trained/pretrained weights | No `.pt`, `.pth`, `.onnx` or `.ckpt` files are tracked or added by the feature; local smoke outputs stay ignored | User-provided W&B bundles and external datasets/weights were not inspected or cleared by this review; their terms are separate from the code license |
 
-The existing references remain because they are used by both tasks and tests.
-Their uncertain provenance is reported rather than treating them as newly
-licensed data or deleting existing user assets. No new dataset or external model
-weights were fetched or redistributed as part of this integration.
+Reference motions are subject to the terms of their source datasets.
 
 ## Installed dependency licenses
 
@@ -138,11 +129,10 @@ rights have been independently cleared.
 ## BlinkMimic
 
 `third_party/blinkmimic` pins the [ROBOTIS BlinkMimic fork](https://github.com/ROBOTIS-GIT/blinkmimic),
-based on Fuyi Chen's [MIT BlinkMimic revision d264658](https://github.com/fuyichen0725/blinkmimic/tree/d264658d6c9ce61fb52f9f0f8985a369f3ccc409).
-Its LICENSE and
-THIRD_PARTY_NOTICES.md retain the Fuyi Chen, InstantTrack / Huy-Quang-Dao,
+based on Fuyi Chen's [BlinkMimic](https://github.com/fuyichen0725/blinkmimic).
+Its [MIT license](third_party/blinkmimic/LICENSE) and
+[third-party notices](third_party/blinkmimic/THIRD_PARTY_NOTICES.md) retain the Fuyi Chen, InstantTrack / Huy-Quang-Dao,
 and supermimic_vibed / ETH Zurich, Chong Zhang notices.
-The fork diff records the contact-foot adaptation.
 The K1 exact-state motion adapter follows the upstream MotionLib indexing API.
 The existing HybridRobotics SuperMimic core has separate Apache/BSD code provenance;
 algorithmic lineage does not make these codebases or licenses identical.
