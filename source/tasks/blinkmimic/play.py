@@ -1,4 +1,6 @@
 # Copyright 2026 ROBOTIS CO., LTD.
+# Playback history and action selection adapt blinkmimic/evaluate.py.
+# See third_party/blinkmimic/LICENSE for the upstream MIT copyright notices.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
