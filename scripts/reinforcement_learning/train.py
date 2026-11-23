@@ -36,7 +36,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 if __name__ == "__main__":
   from scripts.reinforcement_learning.cli import route_command
 
-  cli_args = route_command("train")
+  from scripts.tools.permission_hint import training_permission_hint
+
+  with training_permission_hint():
+    cli_args = route_command("train")
   if cli_args is None:
     raise SystemExit(0)
 
@@ -263,4 +266,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-  main(cli_args)
+  with training_permission_hint():
+    main(cli_args)
