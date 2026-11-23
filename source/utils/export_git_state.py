@@ -25,6 +25,18 @@ _GIT_DIFF_PATCH_FILENAME = "git_diff.patch"
 _CONTAINER_REPO_ROOT = "/workspace/cyclo_mjlab"
 
 
+def optional_git_metadata(repo: Path, *args: str) -> str | None:
+  """Read metadata for this checkout without falling back to a parent repository."""
+  try:
+    if not (repo / ".git").exists():
+      return None
+    return subprocess.check_output(
+      ["git", *args], cwd=repo, text=True, stderr=subprocess.DEVNULL
+    ).rstrip("\n")
+  except (OSError, subprocess.CalledProcessError):
+    return None
+
+
 def _run_git(repo_path: Path, *args: str) -> str:
   env = os.environ.copy()
   env["GIT_DISCOVERY_ACROSS_FILESYSTEM"] = "1"

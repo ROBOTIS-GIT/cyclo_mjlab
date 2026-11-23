@@ -18,7 +18,7 @@
 # This file includes modifications by ROBOTIS CO., LTD. to code derived
 # from mujocolab/mjlab.
 
-"""Cyclo K1 Rev.1 flat velocity environment configuration."""
+"""Cyclo K1 flat velocity environment configuration."""
 
 from source.assets.robots import (
   K1_REV1_ACTION_SCALE,
@@ -40,7 +40,7 @@ from source.tasks.velocity.velocity_env_cfg import (
 
 
 def cyclo_k1_rev1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create the Cyclo K1 Rev.1 flat-terrain velocity configuration."""
+  """Create the Cyclo K1 flat-terrain velocity configuration."""
   env_cfg = make_locomotion_velocity_env_cfg()
 
   env_cfg.sim.njmax = 300

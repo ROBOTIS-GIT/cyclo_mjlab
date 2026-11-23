@@ -32,6 +32,17 @@ from typing import Literal, cast
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Select the task family before importing any version-specific simulator APIs.
+if __name__ == "__main__":
+  from scripts.reinforcement_learning.cli import route_command
+
+  from scripts.tools.permission_hint import training_permission_hint
+
+  with training_permission_hint():
+    cli_args = route_command("train")
+  if cli_args is None:
+    raise SystemExit(0)
+
 import tyro
 
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
@@ -42,7 +53,7 @@ from mjlab.utils.os import dump_yaml, get_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
+from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 from source.utils import export_sim2real_cfg
 
 
@@ -222,18 +233,21 @@ def launch_training(task_id: str, args: TrainConfig | None = None):
     ).run(run_train, task_id, args, log_dir)
 
 
-def main():
+def main(argv=None):
   # Parse first argument to choose the task.
   # Import tasks to populate the registry.
   import mjlab.tasks  # noqa: F401
   import source.tasks
 
-  k1_task_prefixes = ("Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-")
+  supported_task_prefixes = (
+    "Cyclo-Velocity-", "Cyclo-BeyondMimic-"
+  )
   all_tasks = [
-    task_id for task_id in list_tasks() if task_id.startswith(k1_task_prefixes)
+    task_id for task_id in list_tasks() if task_id.startswith(supported_task_prefixes)
   ]
   chosen_task, remaining_args = tyro.cli(
     tyro.extras.literal_type_from_choices(all_tasks),
+    args=argv,
     add_help=False,
     return_unknown_args=True,
     config=mjlab.TYRO_FLAGS,
@@ -252,4 +266,5 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  with training_permission_hint():
+    main(cli_args)

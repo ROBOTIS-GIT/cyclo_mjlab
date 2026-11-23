@@ -17,9 +17,11 @@ motion-imitation policies for the ROBOTIS K1 humanoid robot.
 The repository currently provides:
 
 - **Velocity**: flat-ground velocity-tracking locomotion
-- **Mimic**: Dance1 and Dance2 reference-motion tracking
-- Automatic generation of `params/sim2real.yaml` when training starts
-- Automatic export of `exported/policy.onnx` and `exported/policy.pt` during play
+- **Mimic (BeyondMimic/PPO)**: Dance1 and Dance2 reference-motion tracking
+- Automatic generation of `params/sim2real.yaml` when Velocity or Mimic training starts
+- Automatic export of `exported/policy.onnx` and `exported/policy.pt` during Velocity or Mimic play
+- **SuperMimic**: differentiable world-model motion tracking with native MuJoCo/mjlab tasks
+- **BlinkMimic**: isolated released recipe with a K1 Rev.1 exact-state reference adapter
 
 > [!IMPORTANT]
 > This repository currently uses MJLab 1.6.1, MuJoCo 3.11.0, and Python 3.12.
@@ -72,7 +74,7 @@ environment are not required.
    ./docker/container.sh enter
    ```
 
-After entering the container, the training and playback commands below can be
+After entering the container, the Velocity and Mimic commands below can be
 run directly from `/workspace/cyclo_mjlab`.
 
 ### Docker commands
@@ -96,15 +98,15 @@ The Docker image includes:
 - Runtime dependencies pinned with hashes in `requirements.lock`
 
 The default image/container names are `cyclo-mjlab:latest` and `cyclo_mjlab`.
-The image carries `LABEL version="1.0.0"` to identify its release. This label is
-metadata; compatibility checks use the actual installed runtime versions.
+The Docker image's `version` label identifies its release. Compatibility checks use
+the installed runtime versions.
 
 The project source and `logs/` directory are shared with the host, so training
 results remain available after the container is removed.
 
 ### Upgrading an existing Docker environment
 
-Release 1.0.0 requires Python 3.12 and MJLab 1.6.1. Images built for the previous
+The project requires Python 3.12 and MJLab 1.6.1. Images built for the previous
 Python 3.11/MJLab 1.2 environment are incompatible. Updating the checkout does not
 update an existing image, even when its tag is `latest`.
 
@@ -141,6 +143,10 @@ These checks verify the runtime, not training convergence or individual tasks.
 
 ## Try Examples
 
+Both motion-tracking algorithms use `scripts/reinforcement_learning/train.py`
+and `play.py`. Task IDs select the algorithm; optional
+`--algorithm beyondmimic` or `--algorithm supermimic` makes the choice explicit.
+
 ### Velocity
 
 #### Train
@@ -160,24 +166,27 @@ python scripts/reinforcement_learning/play.py Cyclo-Velocity-Flat-K1-Rev1-v0 \
 
 ### Mimic
 
+These commands use BeyondMimic/PPO. Tasks are registered directly as
+`Cyclo-BeyondMimic-K1-Rev1-Dance1` and `Dance2`.
+
 #### Train Dance1
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --env.scene.num-envs 4096
 ```
 
 #### Train Dance2
 
 ```bash
-python scripts/reinforcement_learning/train.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/train.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --env.scene.num-envs 4096
 ```
 
 #### Play Dance1
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```
@@ -185,7 +194,7 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 To display the reference trajectory next to the trained policy during playback:
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance1 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1 \
   --reference-ghost-offset 1.4,0,0
@@ -194,13 +203,37 @@ python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance1 \
 #### Play Dance2
 
 ```bash
-python scripts/reinforcement_learning/play.py Cyclo-Mimic-K1-Rev1-Dance2 \
+python scripts/reinforcement_learning/play.py Cyclo-BeyondMimic-K1-Rev1-Dance2 \
   --checkpoint-file logs/rsl_rl/k1_mimic/<run>/model_<iteration>.pt \
   --num-envs 1
 ```
 
 Replace `<run>` and `<iteration>` with the timestamped run directory and model
 iteration to use.
+
+### SuperMimic
+
+Both algorithms use the same Python 3.12 / MJLab 1.6.1 environment. Initialize
+the SuperMimic source with `git submodule update --init --recursive third_party/supermimic`.
+Use the same supported 50 Hz K1 reference NPZ; the internal adapter preserves
+the original file:
+
+```bash
+WANDB_MODE=offline python \
+  scripts/reinforcement_learning/train.py --algorithm supermimic \
+  Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
+  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz --num-envs 64
+
+python scripts/reinforcement_learning/play.py \
+  --algorithm supermimic Cyclo-SuperMimic-GenCoord-K1-Rev1-001 \
+  --motion-file source/assets/motions/K1_rev1/dance1/dance1.npz \
+  --checkpoint-dir logs/supermimic/Cyclo-SuperMimic-GenCoord-K1-Rev1-001/<timestamp> --viewer viser
+```
+
+Replace `<timestamp>` with the training run directory. Select
+`Cyclo-SuperMimic-MaxCoord-K1-Rev1-001` for maximal-coordinate tracking. Local inference
+bundles use `--checkpoint-dir` without requiring W&B sync; they are not PPO
+checkpoint files.
 
 ## Motion Utilities
 
@@ -214,8 +247,10 @@ python scripts/tools/motion/replay_npz.py --help
 
 ## License
 
-This repository is licensed under the
-[Apache License 2.0](LICENSE).
+Software in this repository is distributed under the
+[Apache License 2.0](LICENSE), subject to the component notices below. Asset,
+reference-data and external-weight rights are described separately in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ### Third-party components
 
@@ -224,4 +259,9 @@ This repository is licensed under the
 - **HybridRobotics/whole_body_tracking**: MIT License; see
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
 - **ROBOTIS AI Sapiens K1 Rev.1 assets**: Apache License 2.0; see
-  [LICENSE.ai_sapiens](source/assets/robots/robotis_k1/LICENSE.ai_sapiens)
+  [LICENSE.ai_sapiens](source/assets/robots/ai_sapiens/LICENSE.ai_sapiens)
+- **HybridRobotics/SuperMimic**: Apache License 2.0 with BSD-3-Clause math notices;
+  original license, acknowledgements and modification record in
+  [third_party/supermimic/PATCHES.md](third_party/supermimic/PATCHES.md)
+- **fuyichen0725/blinkmimic**: [MIT](third_party/blinkmimic/LICENSE), with original
+  [InstantTrack / supermimic_vibed notices](third_party/blinkmimic/THIRD_PARTY_NOTICES.md).

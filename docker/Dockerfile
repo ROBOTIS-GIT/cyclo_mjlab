@@ -3,7 +3,7 @@
 ARG PYTHON_BASE_IMAGE=python:3.12-slim-bookworm
 FROM ${PYTHON_BASE_IMAGE}
 
-LABEL version="1.0.0"
+LABEL version="1.1.0"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -32,7 +32,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       ca-certificates \
       ffmpeg \
       git \
-      gosu \
       less \
       libegl1 \
       libgl1 \
@@ -73,7 +72,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 WORKDIR ${PROJECT_PATH}
 COPY . .
-RUN python -m pip install --no-cache-dir --no-deps -e . \
+RUN python -m pip install --no-cache-dir --no-deps -e third_party/supermimic -e . \
     && chown -R cyclo:0 "${PROJECT_PATH}" \
     && chmod -R g=u "${PROJECT_PATH}"
 
@@ -84,7 +83,12 @@ RUN chmod +x /usr/local/bin/cyclo-entrypoint \
       'export MUJOCO_GL=${MUJOCO_GL:-egl}' \
       'cd "${PROJECT_PATH}"' \
       >> /home/cyclo/.bashrc \
-    && chown cyclo:0 /home/cyclo/.bashrc
+    && chown cyclo:0 /home/cyclo/.bashrc \
+    && git config --system --replace-all safe.directory "${PROJECT_PATH}" \
+    && chown -R "cyclo:$(id -gn cyclo)" /home/cyclo/.cache
+
+# Apply the host-mapped user to both container startup and docker exec.
+USER cyclo
 
 ENTRYPOINT ["/usr/local/bin/cyclo-entrypoint"]
 CMD ["sleep", "infinity"]

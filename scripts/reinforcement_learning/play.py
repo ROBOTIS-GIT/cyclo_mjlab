@@ -30,6 +30,14 @@ from typing import Literal
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Select the task family before importing any version-specific simulator APIs.
+if __name__ == "__main__":
+  from scripts.reinforcement_learning.cli import route_command
+
+  cli_args = route_command("play")
+  if cli_args is None:
+    raise SystemExit(0)
+
 import torch
 import tyro
 
@@ -42,7 +50,7 @@ from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
-from source.tasks.mimic.mdp import ReferenceTrajectoryCommandCfg
+from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
 
 
 @dataclass(frozen=True)
@@ -462,18 +470,21 @@ def run_play(task_id: str, cfg: PlayConfig):
   env.close()
 
 
-def main():
+def main(argv=None):
   # Parse first argument to choose the task.
   # Import tasks to populate the registry.
   import mjlab.tasks  # noqa: F401
   import source.tasks
 
-  k1_task_prefixes = ("Cyclo-Velocity-", "Cyclo-Mimic-K1-Rev1-")
+  supported_task_prefixes = (
+    "Cyclo-Velocity-", "Cyclo-BeyondMimic-"
+  )
   all_tasks = [
-    task_id for task_id in list_tasks() if task_id.startswith(k1_task_prefixes)
+    task_id for task_id in list_tasks() if task_id.startswith(supported_task_prefixes)
   ]
   chosen_task, remaining_args = tyro.cli(
     tyro.extras.literal_type_from_choices(all_tasks),
+    args=argv,
     add_help=False,
     return_unknown_args=True,
     config=mjlab.TYRO_FLAGS,
@@ -495,4 +506,4 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  main(cli_args)

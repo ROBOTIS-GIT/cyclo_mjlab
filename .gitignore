@@ -14,6 +14,10 @@ deploy/robots/r1/build
 deploy/robots/a2/build
 simulate/build
 
+# Local Python environments and generated motion data
+.venv/
+.supermimic-data/
+.blinkmimic-data/
 # Python package build outputs.
 build/
 dist/

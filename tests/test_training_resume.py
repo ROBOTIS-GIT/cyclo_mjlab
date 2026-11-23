@@ -1,0 +1,83 @@
+# Copyright 2026 ROBOTIS CO., LTD.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+import pytest
+
+from source.utils.training_resume import (
+    ResumeOptions,
+    parse_resume_options,
+    select_resume_checkpoint,
+)
+
+
+def test_resume_flags_match_beyondmimic():
+    options = parse_resume_options(
+        [
+            "--agent.resume",
+            "True",
+            "--agent.load-run",
+            "2026.*",
+            "--agent.load-checkpoint",
+            "model_.*.pt",
+            "--num-envs",
+            "8",
+        ]
+    )
+    assert options == ResumeOptions(True, "2026.*", "model_.*.pt")
+
+
+def test_latest_saved_run_and_nested_numeric_checkpoints(tmp_path):
+    for run in ("2026-01", "2026-02", "2026-03"):
+        (tmp_path / run).mkdir()
+    (tmp_path / "2026-01/last.pt").touch()
+    (tmp_path / "2026-02/last.pt").touch()
+    assert (
+        select_resume_checkpoint(tmp_path, ResumeOptions(True))
+        == tmp_path / "2026-02/last.pt"
+    )
+    models = tmp_path / "2026-02/checkpoints"
+    models.mkdir()
+    for name in ("model_9000.pt", "model_10000.pt", "model_2000.pt"):
+        (models / name).touch()
+    assert (
+        select_resume_checkpoint(
+            tmp_path, ResumeOptions(True, "2026-02", "model_.*.pt")
+        )
+        == models / "model_10000.pt"
+    )
+    assert (
+        select_resume_checkpoint(
+            tmp_path,
+            ResumeOptions(True, "2026-02", "checkpoints/model_2000.pt"),
+        )
+        == models / "model_2000.pt"
+    )
+    assert (
+        select_resume_checkpoint(
+            tmp_path,
+            ResumeOptions(True, load_checkpoint=str(models / "model_9000.pt")),
+        )
+        == models / "model_9000.pt"
+    )
+
+
+def test_missing_explicit_run_is_not_replaced(tmp_path):
+    (tmp_path / "other").mkdir()
+    (tmp_path / "other/last.pt").touch()
+    with pytest.raises(ValueError, match="No resume checkpoint"):
+        select_resume_checkpoint(tmp_path, ResumeOptions(True, "missing"))
+    with pytest.raises(ValueError, match="requires --agent.resume"):
+        select_resume_checkpoint(tmp_path, ResumeOptions(False, "other"))
+    assert select_resume_checkpoint(tmp_path, ResumeOptions()) is None

@@ -21,6 +21,14 @@ docker/.cache/
 *.swp
 *~
 
+# Generated research environments and local motion derivatives.
+**/.venv/
+**/__pycache__/
+**/*.egg-info/
+**/.pytest_cache/
+**/.ruff_cache/
+.supermimic-data/
+.blinkmimic-data/
 # Python package build outputs.
 build/
 dist/
