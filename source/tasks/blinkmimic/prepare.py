@@ -11,7 +11,7 @@ from .runtime import prepare
 
 
 def prepare_library(inputs, output, joint_names, *, mjcf_path=None):
-    from .motion import digest, load_exact
+    from .reference.motion import digest, load_exact
 
     paths = [Path(p).resolve() for p in inputs]
     if not paths or len(set(paths)) != len(paths):

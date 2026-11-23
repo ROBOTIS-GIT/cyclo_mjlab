@@ -12,7 +12,7 @@ from blinkmimic.mdp import MDP
 from blinkmimic.motion import MotionLib
 from blinkmimic.rotations import quat_to_mat, yaw_mat
 
-from source.tasks.blinkmimic.export_sim2real_cfg import native_dimensions, observation_config
+from source.tasks.blinkmimic.config.sim2real import native_dimensions, observation_config
 
 
 def pack_terms(group, values):

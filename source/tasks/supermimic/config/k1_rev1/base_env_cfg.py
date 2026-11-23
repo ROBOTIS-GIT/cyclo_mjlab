@@ -43,7 +43,9 @@ def make_env_cfg(representation="gencoord", play=False):
     from mjlab.managers import TerminationTermCfg
     from supermimic.tasks.env_cfgs import gencoord_env_cfg, maxcoord_env_cfg
 
-    from ...native_motion import NativeMotionCommandCfg, heading_velocity_tracking, motion_end
+    from ...mdp.commands import NativeMotionCommandCfg
+    from ...mdp.rewards import heading_velocity_tracking
+    from ...mdp.terminations import motion_end
     from source.assets.robots.ai_sapiens.k1_rev1 import (
         K1_REV1_ACTION_SCALE,
         K1_REV1_FOOT_COLLISION_GEOM_PATTERN,

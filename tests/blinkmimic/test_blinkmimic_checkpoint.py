@@ -10,10 +10,10 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from source.tasks.blinkmimic.checkpoint_adapter import (
+from source.tasks.blinkmimic.training.checkpoint.snapshots import (
     include_critic_in_snapshots,
 )
-from source.tasks.blinkmimic.checkpoint import publish_completed_snapshots
+from source.tasks.blinkmimic.training.checkpoint.selection import publish_completed_snapshots
 from source.tasks.blinkmimic.runtime import VENDOR
 
 
@@ -91,7 +91,7 @@ def test_native_resume_restores_models_and_next_update(
 
     prepare()
     from blinkmimic.optim import MuonAdam
-    from source.tasks.blinkmimic.resume import (
+    from source.tasks.blinkmimic.training.checkpoint.resume import (
         allow_model_only_resume,
         read_resume_checkpoint,
     )
@@ -189,7 +189,7 @@ def test_native_resume_restores_models_and_next_update(
 
 
 def test_resume_adapter_restores_hooks_on_failure(tmp_path):
-    from source.tasks.blinkmimic.resume import allow_model_only_resume
+    from source.tasks.blinkmimic.training.checkpoint.resume import allow_model_only_resume
 
     original_load, original_adam = torch.load, torch.optim.Adam.load_state_dict
     path = tmp_path / "broken.pt"
@@ -204,7 +204,7 @@ def test_resume_adapter_restores_hooks_on_failure(tmp_path):
 
 
 def test_saved_training_arguments_are_authoritative():
-    from source.tasks.blinkmimic.resume import training_arguments
+    from source.tasks.blinkmimic.training.checkpoint.resume import training_arguments
 
     saved = {
         "args": dict(

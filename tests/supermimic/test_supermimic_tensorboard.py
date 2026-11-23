@@ -2,7 +2,7 @@ import pytest
 import torch
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from supermimic.utils.logger import Logger
-from source.tasks.supermimic.tensorboard import SuperMimicTensorBoardLogger
+from source.tasks.supermimic.training.tensorboard import SuperMimicTensorBoardLogger
 
 
 def test_tensorboard_preserves_upstream_episode_statistics_and_wandb(tmp_path, monkeypatch):

@@ -1,9 +1,9 @@
 """Load vendored BlinkMimic only on explicit selection, in a separate process."""
 
 import sys
-from pathlib import Path
+from source import SRC_PATH
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = SRC_PATH.parent
 VENDOR = ROOT / "third_party/blinkmimic"
 UPSTREAM_REVISION = "d264658d6c9ce61fb52f9f0f8985a369f3ccc409"
 
@@ -19,7 +19,7 @@ def install_robot(robot):
     import blinkmimic.motion
     import blinkmimic.robot
 
-    from .motion import ExactMotionLib
+    from ..reference.motion import ExactMotionLib
 
     module = types.ModuleType(f"blinkmimic.{robot.name}.{robot.name}_constants")
     module.SPEC = robot

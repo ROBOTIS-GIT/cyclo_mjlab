@@ -28,10 +28,10 @@ from source.utils.export_notices import (
 )
 
 from . import LOG_ROOT, REPO_ROOT
-from .checkpoint_config import json_value, read_bundle
-from .checkpoint_archive import load_checkpoint
+from .training.checkpoint.manifest import json_value, read_bundle
+from .training.checkpoint.archive import load_checkpoint
 from .config import TASKS
-from .export_sim2real_cfg import (
+from .config.sim2real import (
     observation_config,
     observation_terms,
     resolve_action_settings,

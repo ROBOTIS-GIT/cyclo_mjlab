@@ -23,7 +23,7 @@ from blinkmimic.networks import (  # noqa: E402
 from blinkmimic.rotations import quat_to_mat  # noqa: E402
 
 from source.tasks.blinkmimic.cli import execution_recipe, recipe  # noqa: E402
-from source.tasks.blinkmimic.motion import load_exact  # noqa: E402
+from source.tasks.blinkmimic.reference.motion import load_exact  # noqa: E402
 from source.tasks.blinkmimic.config.k1_rev1.robot_spec import (  # noqa: E402
     make_robot,
 )

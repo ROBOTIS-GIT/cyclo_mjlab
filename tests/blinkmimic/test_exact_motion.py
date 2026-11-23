@@ -13,7 +13,7 @@ from source.tasks.blinkmimic.runtime import prepare
 prepare()
 from blinkmimic.kinematics import Kinematics
 
-from source.tasks.blinkmimic.motion import (
+from source.tasks.blinkmimic.reference.motion import (
     ExactMotionLib,
     digest,
     load_exact,

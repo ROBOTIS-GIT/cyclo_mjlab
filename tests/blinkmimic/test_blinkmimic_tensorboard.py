@@ -5,7 +5,7 @@ from tensorboard.backend.event_processing.event_accumulator import (
     EventAccumulator,
 )
 
-from source.tasks.blinkmimic.tensorboard import BlinkMimicTensorBoard
+from source.tasks.blinkmimic.runtime.tensorboard import BlinkMimicTensorBoard
 
 
 def make_run(tmp_path):

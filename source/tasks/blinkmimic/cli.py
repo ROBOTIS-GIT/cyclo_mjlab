@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
-from .checkpoint import (
+from .training.checkpoint.selection import (
     checkpoint_recipe,
     link_evaluation_checkpoint,
     publish_completed_snapshots,
@@ -95,7 +95,7 @@ def export_training_config_when_ready(child, run_dir, robot):
                 pass
 
     prepare()
-    from .export_sim2real_cfg import export_sim2real_cfg
+    from .config.sim2real import export_sim2real_cfg
 
     if settings["robot"] != robot.name:
         raise ValueError(
@@ -201,7 +201,7 @@ def wait_for_training(child, run_dir, upload_run=None):
     """
     Collect training outputs while the child runs, including its final writes.
     """
-    from .tensorboard import BlinkMimicTensorBoard
+    from .runtime.tensorboard import BlinkMimicTensorBoard
 
     metrics = BlinkMimicTensorBoard(run_dir)
     try:
@@ -415,7 +415,7 @@ def resume_motion_arguments(args, resume_path):
 
 
 def resolve_training_resume(args, extra, robot, resume_path):
-    from .resume import read_resume_checkpoint, training_arguments
+    from .training.checkpoint.resume import read_resume_checkpoint, training_arguments
 
     saved = read_resume_checkpoint(resume_path)
     effective_recipe, removed_systems_flags = execution_recipe(

@@ -19,7 +19,7 @@ from supermimic.tasks.task_spec import build_actor_obs_td
 
 from source.utils.export_notices import distribution_license
 from source.tasks.supermimic import REPO_ROOT
-from source.tasks.supermimic.checkpoint_config import make_manifest
+from source.tasks.supermimic.training.checkpoint.manifest import make_manifest
 from source.tasks.supermimic.export import (
     export_policy,
     load_policy_bundle,
@@ -28,7 +28,7 @@ from source.tasks.supermimic.export import (
     pack_input,
     sha256,
 )
-from source.tasks.supermimic.motion import model_joint_names
+from source.tasks.supermimic.reference.motion import model_joint_names
 from source.tasks.supermimic.config import TASKS, register_tasks
 from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
@@ -301,7 +301,7 @@ def test_training_start_writes_deployment_configs(
     active_encoders,
 ):
     import yaml
-    from source.tasks.supermimic.checkpoint import LocalBundleRunner
+    from source.tasks.supermimic.training.runner import LocalBundleRunner
     from source.tasks.supermimic.export import policy_contract
 
     directory, task, _ = synthetic_bundles[representation, mode]
@@ -410,7 +410,7 @@ def test_observation_preprocessing_uses_resolved_training_settings(
 ):
     import yaml
     from source.tasks.supermimic.export import policy_contract
-    from source.tasks.supermimic.export_sim2real_cfg import export_sim2real_cfg
+    from source.tasks.supermimic.config.sim2real import export_sim2real_cfg
 
     directory, task, _ = synthetic_bundles["gencoord", "proprio"]
     bundle = load_policy_bundle(directory, task)
@@ -702,7 +702,7 @@ def test_historical_archive_exports_saved_actor_without_split_files(
     synthetic_bundles, tmp_path
 ):
     import onnxruntime as ort
-    from source.tasks.supermimic.checkpoint_archive import (
+    from source.tasks.supermimic.training.checkpoint.archive import (
         save_checkpoint,
         load_checkpoint,
     )

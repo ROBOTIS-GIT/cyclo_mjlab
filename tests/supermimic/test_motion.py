@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from source.tasks.supermimic.motion import (
+from source.tasks.supermimic.reference.motion import (
     ROOT_CONTRACT,
     convert_motion,
     validate_motion,

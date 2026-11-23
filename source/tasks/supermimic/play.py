@@ -21,7 +21,7 @@ from supermimic.tasks.task_spec import build_actor_obs_td
 
 from . import LOG_ROOT
 from .config import TASKS, check_representation_matches
-from .checkpoint_archive import load_checkpoint
+from .training.checkpoint.archive import load_checkpoint
 
 
 @dataclass

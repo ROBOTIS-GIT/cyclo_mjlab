@@ -90,7 +90,7 @@ def restore_training_state(runner, checkpoint):
                 optimizers, checkpoint.optimizers[name], strict=True
             ):
                 restore_optimizer(optimizer, saved)
-    from .sampler_checkpoint import restore_sampler
+    from .sampler import restore_sampler
 
     restore_sampler(runner, checkpoint.sampler)
     runner._checkpoint_step = checkpoint.step

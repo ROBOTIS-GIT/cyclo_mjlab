@@ -21,7 +21,7 @@ from blinkmimic.mdp import MDP, unflatten_state
 from blinkmimic.networks import Policy, WorldModel, policy_kwargs
 from blinkmimic.optim import MuonAdam
 
-from source.tasks.blinkmimic.motion import ExactMotionLib, verify_manifest
+from source.tasks.blinkmimic.reference.motion import ExactMotionLib, verify_manifest
 from source.tasks.blinkmimic.config.k1_rev1.robot_spec import make_robot
 
 

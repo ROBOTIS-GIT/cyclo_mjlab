@@ -28,12 +28,12 @@ from supermimic.scripts.train_utils import (  # noqa: E402
 )
 
 from source.tasks.supermimic import REPO_ROOT  # noqa: E402
-from source.tasks.supermimic.checkpoint import LocalBundleRunner  # noqa: E402
-from source.tasks.supermimic.checkpoint_config import (  # noqa: E402
+from source.tasks.supermimic.training.runner import LocalBundleRunner  # noqa: E402
+from source.tasks.supermimic.training.checkpoint.manifest import (  # noqa: E402
     make_manifest,
     read_bundle,
 )
-from source.tasks.supermimic.motion import prepare_motion_files  # noqa: E402
+from source.tasks.supermimic.reference.motion import prepare_motion_files  # noqa: E402
 from source.tasks.supermimic.play import (  # noqa: E402
     PlayConfig,
     load_models,

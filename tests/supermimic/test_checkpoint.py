@@ -6,7 +6,7 @@ import pytest
 import torch
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 
-from source.tasks.supermimic.checkpoint_config import (
+from source.tasks.supermimic.training.checkpoint.manifest import (
     make_manifest,
     validate_manifest,
 )
@@ -214,7 +214,7 @@ def test_real_runner_loop_saves_final_parameters(
         logger=SimpleNamespace(log=lambda **kw: None),
     )
     if local_archive:
-        from source.tasks.supermimic.checkpoint import LocalBundleRunner
+        from source.tasks.supermimic.training.runner import LocalBundleRunner
 
         local = LocalBundleRunner.__new__(LocalBundleRunner)
         local.__dict__.update(vars(runner))
@@ -243,7 +243,7 @@ def test_real_runner_loop_saves_final_parameters(
             raise RuntimeError("final artifact failed")
 
     monkeypatch.setattr(module, "log_model_artifact", log)
-    from source.tasks.supermimic import training_loop
+    from source.tasks.supermimic.training import loop as training_loop
 
     monkeypatch.setattr(training_loop, "log_model_artifact", log)
     run = (
@@ -266,7 +266,7 @@ def test_real_runner_loop_saves_final_parameters(
         saved = torch.load(tmp_path / (name + ".pt"), weights_only=True)
         assert torch.equal(saved["weight"], model.weight)
     if local_archive:
-        from source.tasks.supermimic.checkpoint_archive import load_checkpoint
+        from source.tasks.supermimic.training.checkpoint.archive import load_checkpoint
 
         snapshot = load_checkpoint(
             tmp_path / "checkpoints" / f"model_{iterations - 1}.pt"
@@ -308,7 +308,7 @@ def test_real_runner_loop_saves_final_parameters(
     "optimizer_type", [torch.optim.Adam, torch.optim.Muon]
 )
 def test_optimizer_snapshot_restores_next_update(tmp_path, optimizer_type):
-    from source.tasks.supermimic.checkpoint_archive import (
+    from source.tasks.supermimic.training.checkpoint.archive import (
         load_checkpoint,
         save_checkpoint,
     )
@@ -346,7 +346,7 @@ def test_optimizer_snapshot_restores_next_update(tmp_path, optimizer_type):
 def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
     from mjlab.entity import Entity
 
-    from source.tasks.supermimic.checkpoint_config import robot_contract
+    from source.tasks.supermimic.training.checkpoint.manifest import robot_contract
 
     cfg = make_env_cfg()
     action = cfg.actions["joint_pos"]
@@ -444,7 +444,7 @@ def test_play_resolves_latest_only_without_explicit_checkpoint(
 def test_archive_retention_and_preserves_existing_file_on_failure(
     tmp_path, monkeypatch
 ):
-    from source.tasks.supermimic.checkpoint_archive import save_checkpoint
+    from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
 
     for step in range(0, 16000, 1000):
         save_checkpoint(
@@ -513,7 +513,7 @@ def test_resume_cli_uses_saved_settings_and_restores_before_run(
     monkeypatch, tmp_path, manifest
 ):
     from source.tasks.supermimic import train
-    from source.tasks.supermimic.checkpoint_archive import save_checkpoint
+    from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
 
     save_checkpoint(
         tmp_path,
@@ -567,7 +567,7 @@ def test_resume_configuration_failure_precedes_gpu(
     monkeypatch, tmp_path, manifest
 ):
     from source.tasks.supermimic import train
-    from source.tasks.supermimic.checkpoint_archive import save_checkpoint
+    from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
 
     save_checkpoint(
         tmp_path,
@@ -599,7 +599,7 @@ def test_resume_configuration_failure_precedes_gpu(
 def test_cross_task_resume_keeps_target_clips_and_checks_contract(
     manifest, monkeypatch
 ):
-    from source.tasks.supermimic import checkpoint_config
+    from source.tasks.supermimic.training.checkpoint import manifest as checkpoint_config
 
     source = manifest["task_id"]
     target = source + "-new-clips"
@@ -633,7 +633,7 @@ def test_local_world_model_accepts_target_policy_changes(
     manifest, tmp_path, file
 ):
     import json
-    from source.tasks.supermimic.checkpoint_archive import (
+    from source.tasks.supermimic.training.checkpoint.archive import (
         load_world_model,
         save_checkpoint,
     )

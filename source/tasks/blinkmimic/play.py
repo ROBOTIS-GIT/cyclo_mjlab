@@ -36,7 +36,7 @@ class BlinkMimicPlayback:
         from blinkmimic.env import TrackingSim, make_sim
         from blinkmimic.kinematics import Kinematics
         from blinkmimic.mdp import MDP
-        from .motion import ExactMotionLib
+        from .reference.motion import ExactMotionLib
 
         self.policy = policy.to(device).eval()
         networks.AMP_DTYPE = (

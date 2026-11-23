@@ -8,7 +8,7 @@ import torch
 
 from source.tasks.blinkmimic import cli
 from source.tasks.blinkmimic.runtime import prepare
-from source.tasks.blinkmimic.resume import (
+from source.tasks.blinkmimic.training.checkpoint.resume import (
     allow_model_only_resume,
     initialize_world_model,
 )

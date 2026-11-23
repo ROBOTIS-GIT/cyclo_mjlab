@@ -69,13 +69,13 @@ def main():
 
             play(robot=robot)
         elif args.mode == "train":
-            from .checkpoint_adapter import include_critic_in_snapshots
+            from .training.checkpoint.snapshots import include_critic_in_snapshots
 
             if "--ckpt_light" in remaining:
                 raise ValueError(
                     "--ckpt_light is incompatible with critic snapshots"
                 )
-            from .resume import allow_model_only_resume, initialize_world_model
+            from .training.checkpoint.resume import allow_model_only_resume, initialize_world_model
 
             with (
                 include_critic_in_snapshots(),

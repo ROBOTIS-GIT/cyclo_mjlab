@@ -6,12 +6,12 @@ import pytest
 import torch
 from supermimic.runners.supermimic_runner import SuperMimicRunnerCfg
 
-from source.tasks.supermimic.checkpoint import LocalBundleRunner
+from source.tasks.supermimic.training.runner import LocalBundleRunner
 from supermimic.scripts.train_utils import create_env
 
 from source.tasks.supermimic import REPO_ROOT
 from source.tasks.supermimic.export import nominal_action_contract
-from source.tasks.supermimic.motion import prepare_motion_files
+from source.tasks.supermimic.reference.motion import prepare_motion_files
 from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 
 pytestmark = pytest.mark.skipif(

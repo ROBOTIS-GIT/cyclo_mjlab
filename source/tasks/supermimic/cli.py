@@ -7,7 +7,7 @@ import sys
 
 
 def convert_motion_command(argv):
-    from .motion import convert_motion, model_joint_names
+    from .reference.motion import convert_motion, model_joint_names
     from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg
 
     parser = argparse.ArgumentParser()
@@ -60,7 +60,7 @@ def resolve_motion_argument(arguments, env_cfg, parser):
 def prepare_task_motion_arguments(arguments, parser):
     from mjlab.tasks.registry import load_env_cfg
     from . import REPO_ROOT
-    from .motion import prepare_motion_files
+    from .reference.motion import prepare_motion_files
 
     env_cfg = load_env_cfg(arguments[0])
     try:

@@ -19,12 +19,12 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from source.tasks.supermimic.checkpoint_archive import (
+from source.tasks.supermimic.training.checkpoint.archive import (
     ModelCheckpoint,
     save_checkpoint,
     load_checkpoint,
 )
-from source.tasks.supermimic.resume import (
+from source.tasks.supermimic.training.checkpoint.resume import (
     restore_training_state,
     validate_resume_configuration,
 )
@@ -109,7 +109,7 @@ def test_resume_restores_all_three_models_and_optimizer_updates(
 
 
 def test_restore_preserves_capturable_learning_rate_tensor():
-    from source.tasks.supermimic.resume import restore_optimizer
+    from source.tasks.supermimic.training.checkpoint.resume import restore_optimizer
 
     model = torch.nn.Linear(3, 3)
     old = torch.optim.Adam(model.parameters(), lr=torch.tensor(0.001))
@@ -154,8 +154,8 @@ def test_resume_contract_allows_target_change_only():
 def test_resumed_loop_continues_global_iteration_and_saves(
     tmp_path, monkeypatch
 ):
-    from source.tasks.supermimic import training_loop
-    from source.tasks.supermimic.checkpoint import LocalBundleRunner
+    from source.tasks.supermimic.training import loop as training_loop
+    from source.tasks.supermimic.training.runner import LocalBundleRunner
 
     runner, models, optimizers = make_runner()
     original_models = {
@@ -216,7 +216,7 @@ def test_resumed_loop_continues_global_iteration_and_saves(
 
 
 def test_sampler_remaps_concatenated_clip_bins_and_keeps_new_bins_fresh():
-    from source.tasks.supermimic.sampler_checkpoint import remap_bins
+    from source.tasks.supermimic.training.checkpoint.sampler import remap_bins
 
     old = dict(bins=2, clips=[("a", 5), ("b", 5)], tensors=dict(
         count=torch.tensor([10., 20.]), value=torch.tensor([2., 4.]),
@@ -240,7 +240,7 @@ def test_sampler_remaps_concatenated_clip_bins_and_keeps_new_bins_fresh():
 
 
 def test_sampler_snapshot_round_trip(tmp_path):
-    from source.tasks.supermimic.sampler_checkpoint import (
+    from source.tasks.supermimic.training.checkpoint.sampler import (
         restore_sampler,
         sampler_snapshot,
     )

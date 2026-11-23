@@ -13,7 +13,7 @@ from torch import nn
 from source.utils.export_notices import write_software_notices
 
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR, prepare
-from .export_sim2real_cfg import (
+from .config.sim2real import (
     goal_fields,
     native_dimensions,
     observation_config,

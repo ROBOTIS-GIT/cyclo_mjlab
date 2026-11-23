@@ -48,8 +48,8 @@ scripts. Install pytest and ruff separately when running the
 replay, learners and representation mathematics. Changes and licenses are recorded
 in [PATCHES.md](../third_party/supermimic/PATCHES.md).
 
-The native `forward_kinematics.py` and `native_motion.py` adapters supply the
-named-joint FK, clip boundaries and external reset distribution required by
+The native `reference/forward_kinematics.py`, `reference/loader.py` and `mdp/commands.py`
+adapters supply the named-joint FK, clip boundaries and external reset distribution required by
 SuperMimic, using stable MJLab simulation. Their primary source is official
 `HybridRobotics/mjlab_research` at `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd`.
 Research MJLab is not installed into the Cyclo runtime. K1 assets, motion

@@ -5,11 +5,11 @@ from datetime import datetime
 
 from supermimic.runners.supermimic_runner import SuperMimicRunner
 
-from . import LOG_ROOT
-from .checkpoint_archive import save_checkpoint
-from .resume import optimizer_groups
-from .sampler_checkpoint import sampler_snapshot
-from .training_loop import run_training_loop
+from .. import LOG_ROOT
+from .checkpoint.archive import save_checkpoint
+from .checkpoint.resume import optimizer_groups
+from .checkpoint.sampler import sampler_snapshot
+from .loop import run_training_loop
 
 
 class LocalBundleRunner(SuperMimicRunner):
@@ -108,7 +108,7 @@ class LocalBundleRunner(SuperMimicRunner):
         return directory
 
     def _export_deployment_configs(self, directory):
-        from .export_sim2real_cfg import (
+        from ..config.sim2real import (
             export_sim2real_cfg,
             validate_policy_config,
         )

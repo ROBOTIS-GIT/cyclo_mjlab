@@ -71,15 +71,16 @@ SOFTWARE.
 
 ## Native adapter provenance and NOTICE scope
 
-`source/tasks/supermimic/forward_kinematics.py` preserves the implementation of
+`source/tasks/supermimic/reference/forward_kinematics.py` preserves the implementation of
 `HybridRobotics/mjlab_research` revision
 `dd51a9fcc98791a2f0b018b3c7f71a3eefd5ecdd:src/mjlab/utils/forward_kinematics.py`.
-`native_motion.py` adapts that revision's tracking command/termination interfaces
-to stable MJLab 1.6.1, including FK-backed body state, concatenated clip boundaries
-and external reset sampling. It adds strict compact-input validation, stable
+`reference/loader.py`, `mdp/commands.py` and `mdp/terminations.py` adapt that revision's
+tracking command/termination interfaces to stable MJLab 1.6.1, including FK-backed
+body state, concatenated clip boundaries and external reset sampling. The adapters
+add strict compact-input validation, stable
 manager reset dispatch and pending-forward handling. The original Apache license
 is retained at [LICENSE.mjlab_research](source/tasks/supermimic/LICENSE.mjlab_research),
-and source/copyright/modification notices are in both files. Research MJLab is
+and the adapted files retain their copyright notices. Research MJLab is
 not a dependency of this native runtime.
 
 The official SuperMimic and research MJLab revisions contain Apache-2.0 licenses

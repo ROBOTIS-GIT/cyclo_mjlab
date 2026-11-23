@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from supermimic.utils.analytic_ik import AnalyticIK
 
-from source.tasks.supermimic.motion import model_joint_names
+from source.tasks.supermimic.reference.motion import model_joint_names
 from source.tasks.supermimic.config import TASKS, register_tasks
 from source.tasks.supermimic.config.k1_rev1.base_env_cfg import make_env_cfg
 from source.tasks.supermimic.config.k1_rev1.base_env_cfg import TRACKED_BODIES
@@ -68,7 +68,7 @@ def test_k1_maxcoord_ik_roundtrip_and_gradient():
     local_angles, local_rates = ik(local_rotations, local_angular)
     torch.testing.assert_close(local_angles, angles)
     torch.testing.assert_close(local_rates, rates)
-    from source.tasks.supermimic.forward_kinematics import ForwardKinematics
+    from source.tasks.supermimic.reference.forward_kinematics import ForwardKinematics
 
     fk = ForwardKinematics(
         model,

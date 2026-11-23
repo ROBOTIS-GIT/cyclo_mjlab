@@ -39,11 +39,11 @@ from source.utils.training_resume import (
     select_resume_checkpoint,
 )
 from . import LOG_ROOT
-from .checkpoint_archive import load_checkpoint, load_world_model
-from .resume import restore_training_state, validate_resume_configuration
+from .training.checkpoint.archive import load_checkpoint, load_world_model
+from .training.checkpoint.resume import restore_training_state, validate_resume_configuration
 from .config import TASKS, check_representation_matches
-from .checkpoint import LocalBundleRunner as SuperMimicRunner
-from .checkpoint_config import (
+from .training.runner import LocalBundleRunner as SuperMimicRunner
+from .training.checkpoint.manifest import (
     environment_options,
     make_manifest,
     validate_control_rate,

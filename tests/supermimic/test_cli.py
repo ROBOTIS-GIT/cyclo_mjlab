@@ -75,7 +75,7 @@ def test_direct_body_reference_is_adapted_before_upstream(
 )
 def test_duplicate_motion_options_cannot_bypass_adapter(monkeypatch, options):
     from source.tasks.supermimic import cli as native_cli
-    from source.tasks.supermimic import motion
+    from source.tasks.supermimic.reference import motion
 
     def must_not_adapt(*args, **kwargs):
         raise AssertionError("duplicate options must fail before adaptation")

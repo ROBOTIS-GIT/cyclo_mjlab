@@ -32,8 +32,8 @@ import tyro
 from mjlab.tasks.registry import load_env_cfg
 from supermimic.runners.run_config import load_runner_cfg
 
-from .checkpoint_archive import load_checkpoint
-from .motion import model_joint_names
+from .archive import load_checkpoint
+from ...reference.motion import model_joint_names
 from source.assets.robots.ai_sapiens.k1_rev1 import K1_REV1_XML_PATH
 
 SCHEMA_VERSION = 1
@@ -74,7 +74,13 @@ def json_value(value):
         prefix = "source.assets.robots.ai_sapiens."
         if module.startswith(prefix):
             module = "source.assets.robots.robotis_k1." + module.removeprefix(prefix)
-        return {"callable": module + "." + value.__qualname__}
+        name = module + "." + value.__qualname__
+        if name in (
+            "source.tasks.supermimic.mdp.rewards.heading_velocity_tracking",
+            "source.tasks.supermimic.mdp.terminations.motion_end",
+        ):
+            name = "source.tasks.supermimic.native_motion." + value.__qualname__
+        return {"callable": name}
     if isinstance(value, enum.Enum):
         return value.value
     if isinstance(value, dict):
@@ -202,7 +208,7 @@ def make_manifest(task, cfg, runner_cfg, options):
 
 
 def validate_manifest(manifest, task, *, for_resume=False):
-    from .config import TASKS, check_representation_matches
+    from ...config import TASKS, check_representation_matches
 
     if manifest.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported local checkpoint manifest version")

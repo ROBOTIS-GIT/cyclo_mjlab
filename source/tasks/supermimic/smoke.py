@@ -23,7 +23,7 @@ def main(argv=None):
     )
     from supermimic.tasks.task_spec import build_actor_obs_td
 
-    from .motion import model_joint_names
+    from .reference.motion import model_joint_names
     from .config.k1_rev1.base_env_cfg import make_env_cfg
 
     torch.manual_seed(7)

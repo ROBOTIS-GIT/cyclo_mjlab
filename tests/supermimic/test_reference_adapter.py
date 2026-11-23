@@ -6,13 +6,13 @@ import pytest
 import torch
 
 from source.tasks.supermimic import REPO_ROOT
-from source.tasks.supermimic.forward_kinematics import ForwardKinematics
-from source.tasks.supermimic.motion import (
+from source.tasks.supermimic.reference.forward_kinematics import ForwardKinematics
+from source.tasks.supermimic.reference.motion import (
     adapt_motion,
     model_joint_names,
     prepare_motion_files,
 )
-from source.tasks.supermimic.native_motion import (
+from source.tasks.supermimic.reference.loader import (
     NativeMotionLoader as MotionLoader,
 )
 from source.assets.robots.ai_sapiens.k1_rev1 import get_k1_rev1_cfg

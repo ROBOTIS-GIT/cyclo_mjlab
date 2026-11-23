@@ -94,7 +94,7 @@ def allow_model_only_resume(
             and Path(file).resolve() == Path(checkpoint).resolve()
         ):
             if source is not None:
-                from .resume_sampler import transfer_sampler
+                from .sampler import transfer_sampler
 
                 saved["ctrl"] = transfer_sampler(
                     saved.get("ctrl"), source, target,
