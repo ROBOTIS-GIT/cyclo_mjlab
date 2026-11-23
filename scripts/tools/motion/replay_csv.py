@@ -27,10 +27,10 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from source.assets.robots import K1_REV1_XML_PATH
+from source.assets.robots.ai_sapiens.k1_rev2 import K1_REV2_XML_PATH
 
 
-DEFAULT_K1_XML = K1_REV1_XML_PATH
+DEFAULT_K1_XML = K1_REV2_XML_PATH
 
 K1_REV1_MOTION_CSV_JOINT_NAMES = (
     "left_hip_pitch_joint",
