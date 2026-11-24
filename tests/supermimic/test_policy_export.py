@@ -58,6 +58,7 @@ def synthetic_bundles(tmp_path_factory):
             representation=representation,
             actor_obs=mode,
             history_length=history,
+            slot_mix={"motion": 0.5, "velocity": 0.5},
         )
         model = Entity(cfg.scene.entities["robot"]).spec.compile()
         names = list(model_joint_names(model))
@@ -95,7 +96,7 @@ def synthetic_bundles(tmp_path_factory):
             f"synthetic-{representation}-{mode}"
         )
         (directory / "manifest.json").write_text(
-            json.dumps(make_manifest(task, cfg, rcfg, []))
+            json.dumps(make_manifest(task, cfg, rcfg))
         )
         torch.save(actor.state_dict(), directory / "actor.pt")
         torch.save(
@@ -144,6 +145,9 @@ def test_full_width_motion_policy_onnx_parity(
         expected_width = 753
     assert metadata["input"]["shape"] == [1, expected_width]
     assert metadata["actor_obs"] == mode
+    defaults = nominal_action_contract(bundle.env_cfg, bundle.action["joint_order"])
+    for name in ("q0", "qdot0"):
+        assert metadata["action"][name] == defaults[name]
     assert metadata["onnx_sha256"] == sha256(path)
     assert set(metadata["software_notices"]) == {
         "NOTICE.txt",
@@ -237,15 +241,58 @@ def test_external_goal_indices_layout_and_actual_root(synthetic_bundles):
     )
 
 
+@pytest.mark.filterwarnings("error::UserWarning")
+@pytest.mark.parametrize("mode", ["proprio", "rep_state"])
+def test_export_accepts_training_only_changes(tmp_path, synthetic_bundles, mode):
+    directory, task, _ = synthetic_bundles["gencoord", mode]
+    manifest = json.loads((directory / "manifest.json").read_text())
+    manifest["environment"]["observations"]["full_state"]["terms"].pop("joint_vel")
+    manifest["environment"]["observations"].pop("critic")
+    if mode == "rep_state":
+        manifest["environment"]["observations"].pop("actor")
+    else:
+        actor = manifest["environment"]["observations"]["actor"]
+        assert actor["enable_corruption"] is False
+        actor["terms"]["joint_vel"]["noise"] = {"n_min": -0.1, "n_max": 0.1}
+    del manifest["runner_cfg"]["tasks"]
+    del manifest["runner_cfg"]["wandb_project"]
+    del manifest["runner_cfg"]["dynamics_hidden_dims"]
+    manifest["runner_cfg"]["old_logging_option"] = True
+    manifest["robot"]["xml_sha256"] = "previous-xml"
+    manifest["q0"] = [0.25] * len(manifest["robot"]["joint_order"])
+    manifest["qdot0"] = [0.125] * len(manifest["robot"]["joint_order"])
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+    (tmp_path / "actor.pt").symlink_to(directory / "actor.pt")
+    wm = torch.load(directory / "world_model.pt", weights_only=True)
+    wm["dynamics"]["action_scale"] *= 2
+    wm["dynamics"]["action_offset"] += 0.125
+    torch.save(wm, tmp_path / "world_model.pt")
+    output = tmp_path / "out"
+    export_policy(tmp_path, task, output)
+    with pytest.raises(ValueError, match="velocity command ranges"):
+        export_policy(tmp_path, task, tmp_path / "velocity", encoder="velocity")
+    metadata = json.loads((output / "metadata.json").read_text())
+    assert "xml_sha256" not in metadata["robot"]
+    import onnx
+
+    props = {prop.key: prop.value for prop in onnx.load(output / "policy.onnx").metadata_props}
+    embedded = json.loads(props["cyclo.policy_contract"])
+    assert embedded["action"] == metadata["action"]
+    assert embedded["action"]["q0"] == manifest["q0"]
+    assert embedded["action"]["qdot0"] == manifest["qdot0"]
+    for field in ("scale", "offset"):
+        expected = wm["dynamics"][f"action_{field}"].flatten().tolist()
+        assert embedded["action"][field] == metadata["action"][field] == expected
+
+
 @pytest.mark.parametrize(
     "failure",
     [
         "partial_cfg",
-        "unknown_cfg",
         "wrong_history",
         "wrong_state",
         "negative_std",
-        "wrong_scale",
+        "wrong_scale_width",
     ],
 )
 def test_mismatched_bundle_is_rejected(tmp_path, synthetic_bundles, failure):
@@ -255,8 +302,6 @@ def test_mismatched_bundle_is_rejected(tmp_path, synthetic_bundles, failure):
     manifest = json.loads((tmp_path / "manifest.json").read_text())
     if failure == "partial_cfg":
         del manifest["runner_cfg"]["actor_hidden_dims"]
-    elif failure == "unknown_cfg":
-        manifest["runner_cfg"]["unexpected"] = True
     elif failure == "wrong_history":
         manifest["runner_cfg"]["history_length"] = 9
     elif failure in ("wrong_state", "negative_std"):
@@ -271,7 +316,7 @@ def test_mismatched_bundle_is_rejected(tmp_path, synthetic_bundles, failure):
         torch.save(
             {
                 "dynamics": {
-                    "action_scale": torch.ones(1, 23),
+                    "action_scale": torch.ones(1, 22),
                     "action_offset": torch.zeros(1, 23),
                 }
             },
@@ -306,6 +351,13 @@ def test_training_start_writes_deployment_configs(
 
     directory, task, _ = synthetic_bundles[representation, mode]
     bundle = load_policy_bundle(directory, task)
+    removed_term, _ = bundle.env_cfg.observations["full_state"].terms.popitem()
+    bundle.env_cfg.observations.pop("critic")
+    if mode == "rep_state":
+        bundle.env_cfg.observations.pop("actor")
+    else:
+        from mjlab.utils.noise.noise_cfg import UniformNoiseCfg
+        bundle.env_cfg.observations["actor"].terms["joint_vel"].noise = UniformNoiseCfg(n_min=-0.1, n_max=0.1)
     runner = object.__new__(LocalBundleRunner)
     runner.manifest = bundle.manifest
     runner._active_task_specs = [
@@ -338,6 +390,9 @@ def test_training_start_writes_deployment_configs(
     )
 
     run_dir = runner._create_log_dir()
+    env_params = yaml.safe_load((run_dir / "params/env.yaml").read_text())
+    assert env_params["sim"]["mujoco"]["timestep"] == bundle.env_cfg.sim.mujoco.timestep
+    assert removed_term not in env_params["observations"]["full_state"]["terms"]
     assert run_dir.parent == Path("logs/supermimic") / task
     assert not (run_dir / "actor.pt").exists()
     assert not (run_dir / "world_model.pt").exists()
@@ -766,3 +821,56 @@ def test_play_export_loads_one_actor_for_all_encoders(
         directory / "exported/policy.onnx",
         directory / "exported/velocity/policy.onnx",
     ]
+
+
+@pytest.mark.parametrize("active,inactive", [("motion", "velocity"), ("velocity", "motion")])
+def test_default_export_and_play_select_only_the_trained_encoder(tmp_path, synthetic_bundles, monkeypatch, active, inactive):
+    from source.tasks.supermimic import export, play
+
+    original, task, _ = synthetic_bundles["gencoord", "proprio"]
+    run = tmp_path / task / "2026-11-24"
+    run.mkdir(parents=True)
+    manifest = json.loads((original / "manifest.json").read_text())
+    manifest["runner_cfg"]["slot_mix"] = {active: 1.0, inactive: 0.0}
+    (run / "manifest.json").write_text(json.dumps(manifest))
+    for name in ("actor.pt", "world_model.pt"):
+        (run / name).symlink_to(original / name)
+
+    monkeypatch.setattr(export, "LOG_ROOT", tmp_path)
+    export.main([task])
+    destination = run / "exported" if active == "motion" else run / "exported" / active
+    assert json.loads((destination / "metadata.json").read_text())["encoder"] == active
+    with pytest.raises(ValueError, match="no training slots"):
+        export.main([task, "--encoder", inactive])
+
+    cfg = play.PlayConfig("unused.npz", checkpoint_dir=run, export_policy=False)
+    monkeypatch.setattr(play, "create_env", lambda *_: SimpleNamespace(close=lambda: None))
+    monkeypatch.setattr(play, "setup_device", lambda *_: "cpu")
+    monkeypatch.setattr(play, "load_models", lambda *_: (None, None))
+    selected = []
+    monkeypatch.setattr(play, "run_interactive_playback", lambda *args: selected.append(args[-1]))
+    play.play(task, cfg)
+    assert selected == [active]
+    cfg.initial_task = inactive
+    with pytest.raises(ValueError, match="no training slots"):
+        play.play(task, cfg)
+
+
+@pytest.mark.parametrize("active", [("motion",), ("velocity",), ("motion", "velocity")])
+def test_training_export_only_exposes_active_specs_to_native_exporter(synthetic_bundles, tmp_path, monkeypatch, active):
+    from source.tasks.supermimic.training import loop
+
+    _, _, actor = synthetic_bundles["gencoord", "proprio"]
+    runner = SimpleNamespace(
+        policy_learner=SimpleNamespace(actor=actor), env=SimpleNamespace(unwrapped=None),
+        motion=SimpleNamespace(time_step_total=10), _num_actions=23,
+        _representation=SimpleNamespace(actor_obs_mode="proprio", proprio_term_widths=lambda _: [75]),
+        _active_task_specs=[spec for spec in actor.task_specs if spec.name in active],
+    )
+    def exported_specs(**kwargs):
+        assert kwargs["actor"].decoder is actor.decoder
+        return [spec.name for spec in kwargs["actor"].task_specs]
+
+    monkeypatch.setattr(loop, "export_actor_as_onnx", exported_specs)
+    assert loop.export_training_policies(runner, tmp_path, "test") == list(active)
+    assert [spec.name for spec in actor.task_specs] == ["motion", "velocity"]

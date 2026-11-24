@@ -70,3 +70,18 @@ def test_wait_records_final_row_after_trainer_exit(tmp_path):
         .step
         == 10
     )
+
+
+def test_detached_resume_logs_include_first_and_second_update(tmp_path):
+    from source.tasks.blinkmimic.cli import initialize_resume_log
+
+    csv = make_run(tmp_path)
+    initialize_resume_log(tmp_path)
+    with csv.open("a") as stream:
+        for iteration in (5010, 5020):
+            stream.write(f"{iteration}," + ",".join(["0"] * 18) + "\n")
+    metrics = BlinkMimicTensorBoard(tmp_path)
+    metrics.update()
+    metrics.close()
+    events = EventAccumulator(str(tmp_path)).Reload()
+    assert [event.step for event in events.Scalars("Train/mean_reward")] == [5010, 5020]

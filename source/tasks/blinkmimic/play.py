@@ -127,11 +127,24 @@ def main(argv=None, *, robot=None):
         robot = TASKS[args.task].robot_factory()
 
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
-    wrapper = load_policy(checkpoint, robot)
     policy_args = checkpoint["args"]
-    path = export_loaded_policy(
-        args.checkpoint.parent, robot, checkpoint, wrapper, overwrite=True
-    )
+    output_dir = args.checkpoint.parent
+    retargeted = False
+    if policy_args.get("pi_ref_skip"):
+        from .training.checkpoint.resume import policy_state_for_robot
+
+        state = policy_state_for_robot(checkpoint["pi"], robot)
+        retargeted = state is not checkpoint["pi"]
+        if retargeted:
+            checkpoint["pi"] = state
+            output_dir /= Path("play") / args.checkpoint.stem / robot.name
+    wrapper = load_policy(checkpoint, robot)
+    path = export_loaded_policy(output_dir, robot, checkpoint, wrapper, overwrite=True)
+    if retargeted:
+        from types import SimpleNamespace
+        from .config.sim2real import export_sim2real_cfg
+
+        export_sim2real_cfg(output_dir, SimpleNamespace(**policy_args), robot)
     print(f"[INFO] Exported policy: {path}", flush=True)
     del checkpoint
     torch.backends.cuda.matmul.allow_tf32 = True

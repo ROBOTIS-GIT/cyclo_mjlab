@@ -54,7 +54,7 @@ from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
-from source.utils import export_sim2real_cfg
+from source.utils import export_git_state, export_sim2real_cfg
 
 
 @dataclass(frozen=True)
@@ -125,6 +125,7 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   if rank == 0:
     print(f"[INFO] Logging experiment in directory: {log_dir}")
+    export_git_state(log_dir, PROJECT_ROOT)
 
   env = ManagerBasedRlEnv(
     cfg=cfg.env, device=device, render_mode="rgb_array" if cfg.video else None
@@ -139,10 +140,15 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   resume_path: Path | None = None
   if cfg.agent.resume:
-      # Load checkpoint from local filesystem.
-      resume_path = get_checkpoint_path(
-        log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint
+    if is_tracking_task:
+      from source.tasks.beyondmimic.checkpoint import tracking_checkpoint_path
+
+      task_motion = load_env_cfg(task_id).commands["reference_trajectory"].trajectory_file
+      resume_path = tracking_checkpoint_path(
+        log_root_path, task_id, task_motion, cfg.agent.load_run, cfg.agent.load_checkpoint
       )
+    else:
+      resume_path = get_checkpoint_path(log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint)
 
   # Only record videos on rank 0 to avoid multiple workers writing to the same files.
   if cfg.video and rank == 0:
@@ -190,6 +196,8 @@ def launch_training(task_id: str, args: TrainConfig | None = None):
   log_root_path = Path("logs") / "rsl_rl" / args.agent.experiment_name
   log_root_path.resolve()
   log_dir_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+  if task_id.startswith("Cyclo-BeyondMimic-"):
+    log_dir_name += f"_{task_id}"
   if args.agent.run_name:
     log_dir_name += f"_{args.agent.run_name}"
   log_dir = log_root_path / log_dir_name

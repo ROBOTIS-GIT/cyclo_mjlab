@@ -76,12 +76,12 @@ def resolve_motion_argument(arguments, env_cfg, parser):
     return index, source, inline
 
 
-def prepare_task_motion_arguments(arguments, parser):
+def prepare_task_motion_arguments(arguments, parser, *, play):
     from mjlab.tasks.registry import load_env_cfg
     from . import REPO_ROOT
     from .reference.motion import prepare_motion_files
 
-    env_cfg = load_env_cfg(arguments[0])
+    env_cfg = load_env_cfg(arguments[0], play=play)
     try:
         index, source, inline = resolve_motion_argument(
             arguments, env_cfg, parser
@@ -110,7 +110,7 @@ def run_task(command, arguments, parser):
     if not arguments or arguments[0] not in TASKS:
         parser.error("Pass a Cyclo task ID: " + ", ".join(TASKS))
     if not any(arg in arguments for arg in ("--help", "-h")):
-        prepare_task_motion_arguments(arguments, parser)
+        prepare_task_motion_arguments(arguments, parser, play=command == "play")
     if command == "train":
         from .train import main as task_main
     else:

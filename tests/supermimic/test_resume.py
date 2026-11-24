@@ -39,6 +39,10 @@ def make_runner(optimizer_type=torch.optim.Adam, lr=0.001):
         name: optimizer_type(model.parameters(), lr=lr)
         for name, model in models.items()
     }
+    dynamics = models["world_model"]
+    dynamics.register_buffer("action_scale", torch.ones(3))
+    dynamics.register_buffer("action_offset", torch.zeros(3))
+    ctx = SimpleNamespace(mean=torch.zeros(1), scale=torch.ones(1))
     runner = SimpleNamespace(
         policy_learner=SimpleNamespace(
             actor=models["actor"],
@@ -49,7 +53,10 @@ def make_runner(optimizer_type=torch.optim.Adam, lr=0.001):
         world_model_learner=SimpleNamespace(
             optimizers=[optimizers["world_model"]]
         ),
-        _wm=SimpleNamespace(load_bundle=models["world_model"].load_state_dict),
+        _wm=SimpleNamespace(
+            dynamics=dynamics, sim_context=ctx,
+            load_bundle=lambda state: dynamics.load_state_dict(state["dynamics"]),
+        ),
         _checkpoint_step=-1,
     )
     return runner, models, optimizers
@@ -78,7 +85,8 @@ def test_resume_restores_all_three_models_and_optimizer_updates(
         manifest={},
         actor=models["actor"].state_dict(),
         critic=models["critic"].state_dict(),
-        world_model=models["world_model"].state_dict(),
+        world_model={"dynamics": models["world_model"].state_dict(),
+                     "sim_context": vars(original._wm.sim_context)},
         optimizers={
             name: [opt.state_dict()] for name, opt in optimizers.items()
         },
@@ -88,7 +96,9 @@ def test_resume_restores_all_three_models_and_optimizer_updates(
     restored, restored_models, restored_opts = make_runner(
         optimizer_type, lr=0.004
     )
+    restored._wm.dynamics.action_scale.fill_(2)
     restore_training_state(restored, checkpoint)
+    assert torch.all(restored._wm.dynamics.action_scale == 2)
     assert restored._checkpoint_step == 1000
     for name in models:
         torch.testing.assert_close(
@@ -134,9 +144,12 @@ def test_missing_critic_or_partial_optimizers_fail_before_loading():
 def test_resume_contract_allows_target_change_only():
     manifest = dict(
         task_id="task",
-        environment={},
-        robot={},
+        schema_version=1, representation="gencoord",
+        environment=dict(commands={"motion": {"body_names": [], "anchor_body_name": "root"}},
+                         observations={"full_state": {}}, sim={}, decimation=4, events={}, actions={}, scene={"entities": {}}),
+        robot={"joint_order": [], "action_joint_order": []},
         runner_cfg={
+            "dynamics_hidden_dims": [32],
             "max_iterations": 100,
             "history_length": 10,
             "log_interval": 10,
@@ -144,7 +157,9 @@ def test_resume_contract_allows_target_change_only():
     )
     checkpoint = ModelCheckpoint(Path("last.pt"), manifest, {}, {}, step=99)
     resumed = copy.deepcopy(manifest)
-    resumed["runner_cfg"].update(max_iterations=200, log_interval=20)
+    resumed["runner_cfg"].update(max_iterations=200, log_interval=20, wandb_project="new-project", headless=False)
+    manifest["runner_cfg"]["retired_logging_flag"] = True
+    resumed["runner_cfg"]["latent_dim"] = 32  # Older runs omitted the current default.
     validate_resume_configuration(checkpoint, resumed)
     resumed["runner_cfg"]["history_length"] = 5
     with pytest.raises(ValueError, match="learner configuration"):
@@ -165,7 +180,7 @@ def test_resumed_loop_continues_global_iteration_and_saves(
         Path("last.pt"),
         {},
         original_models["actor"],
-        original_models["world_model"],
+        {"dynamics": original_models["world_model"], "sim_context": vars(runner._wm.sim_context)},
         original_models["critic"],
         999,
         {name: [opt.state_dict()] for name, opt in optimizers.items()},

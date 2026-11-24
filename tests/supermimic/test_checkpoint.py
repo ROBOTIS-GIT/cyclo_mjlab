@@ -28,13 +28,13 @@ def manifest():
         "Cyclo-SuperMimic-GenCoord-K1-Rev1-001",
         cfg,
         SuperMimicRunnerCfg(),
-        ["--env.sim.mujoco.timestep", "0.0025", "--env.decimation", "8"],
     )
 
 
-def test_manifest_restores_exact_substeps(manifest):
+def test_legacy_manifest_uses_current_substeps(manifest):
+    manifest.update(schema_version=1, environment_options=["--env.decimation", "1"])
     cfg, rcfg = validate_manifest(manifest, manifest["task_id"])
-    assert cfg.sim.mujoco.timestep == 0.0025 and cfg.decimation == 8
+    assert cfg.decimation == make_env_cfg().decimation
     assert rcfg.actor_obs == "rep_state"
 
 
@@ -45,7 +45,6 @@ def test_manifest_restores_exact_substeps(manifest):
         ("task_id", "wrong"),
         ("actor_obs", "proprio"),
         ("representation", "maxcoord"),
-        ("environment_options", []),
         ("robot", {}),
         ("environment", {}),
     ],
@@ -55,6 +54,64 @@ def test_manifest_rejects_incompatible_contract(manifest, field, value):
     manifest[field] = value
     with pytest.raises(ValueError):
         validate_manifest(manifest, task)
+
+
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_manifest_accepts_changed_physics_for_export(manifest):
+    manifest["robot"]["physical_model_sha256"] = "previous-model"
+    manifest["environment_options"] = []
+    validate_manifest(manifest, manifest["task_id"])
+
+
+def test_full_state_is_recorded_and_excluded_from_compatibility_checks(manifest, tmp_path):
+    from source.tasks.supermimic.training.checkpoint.archive import load_world_model, save_checkpoint
+    from source.tasks.supermimic.training.checkpoint.resume import validate_resume_configuration
+
+    saved_obs = manifest["environment"]["observations"]
+    assert "terms" in saved_obs["full_state"]
+    target = copy.deepcopy(manifest)
+    saved_obs["full_state"]["terms"].pop("joint_vel")
+    saved_obs.pop("critic")
+    checkpoint = SimpleNamespace(manifest=manifest, step=1)
+    weights = {"dynamics": {}, "sim_context": {}}
+    save_checkpoint(tmp_path, step=1, manifest=manifest, actor={}, world_model=weights)
+
+    validate_resume_configuration(checkpoint, target)
+    assert load_world_model(tmp_path, target) == weights
+    validate_manifest(manifest, manifest["task_id"])
+    saved_obs.pop("actor")
+    validate_resume_configuration(checkpoint, target)
+    validate_manifest(manifest, manifest["task_id"])  # rep_state bypasses sensor observations.
+    manifest["actor_obs"] = manifest["runner_cfg"]["actor_obs"] = "proprio"
+    with pytest.raises(ValueError, match="observation configuration"):
+        validate_manifest(manifest, manifest["task_id"])
+    with pytest.raises(ValueError, match="actor observation"):
+        validate_resume_configuration(checkpoint, target)
+
+
+def test_resume_ignores_only_inactive_term_noise(manifest):
+    from source.tasks.supermimic.training.checkpoint.resume import validate_resume_configuration
+
+    manifest["actor_obs"] = manifest["runner_cfg"]["actor_obs"] = "proprio"
+    target = copy.deepcopy(manifest)
+    saved_actor = manifest["environment"]["observations"]["actor"]
+    target_actor = target["environment"]["observations"]["actor"]
+    term = saved_actor["terms"]["joint_vel"]
+    saved_actor["terms"] = dict(reversed(saved_actor["terms"].items()))
+    with pytest.raises(ValueError, match="actor observation"):
+        validate_resume_configuration(SimpleNamespace(manifest=manifest, step=1), target)
+    saved_actor["terms"] = dict(reversed(saved_actor["terms"].items()))
+    term["noise"] = {"n_min": -0.1, "n_max": 0.1}
+    checkpoint = SimpleNamespace(manifest=manifest, step=1)
+    validate_resume_configuration(checkpoint, target)
+    assert term["noise"]["n_max"] == 0.1
+    saved_actor["enable_corruption"] = target_actor["enable_corruption"] = True
+    with pytest.raises(ValueError, match="actor observation"):
+        validate_resume_configuration(checkpoint, target)
+    saved_actor["enable_corruption"] = target_actor["enable_corruption"] = False
+    term["scale"] = 0.5
+    with pytest.raises(ValueError, match="actor observation"):
+        validate_resume_configuration(checkpoint, target)
 
 
 @pytest.mark.parametrize(
@@ -237,7 +294,7 @@ def test_real_runner_loop_saves_final_parameters(
         SimpleNamespace(name="local", settings=SimpleNamespace(mode=mode)),
     )
 
-    def log(files):
+    def log(files, run_dir=None):
         logged.append(torch.load(files[0], weights_only=True)["weight"].item())
         if upload_failure and len(logged) == 2:
             raise RuntimeError("final artifact failed")
@@ -370,7 +427,7 @@ def test_unsupported_native_action_contract_rejected(variant, monkeypatch):
 
 def test_latest_saved_bundle_skips_incomplete_and_other_tasks(tmp_path):
     import json
-    from source.tasks.supermimic.play import latest_checkpoint_directory
+    from source.tasks.supermimic.play import latest_playback_checkpoint
 
     task = "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"
 
@@ -380,17 +437,23 @@ def test_latest_saved_bundle_skips_incomplete_and_other_tasks(tmp_path):
         (directory / "manifest.json").write_text(
             json.dumps({"task_id": saved_task})
         )
-        (directory / "actor.pt").touch()
+        torch.save({}, directory / "actor.pt")
         if complete:
-            (directory / "world_model.pt").touch()
+            torch.save({}, directory / "world_model.pt")
         return directory
 
     expected = run(task, "2026-11-17_13-00-00", task)
     run(task, "2026-11-17_14-00-00", task, complete=False)
     run(task, "2026-11-17_15-00-00", "another-task")
-    assert latest_checkpoint_directory(tmp_path, task) == expected
+    assert latest_playback_checkpoint(tmp_path, task).source == expected
+    from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
+    newer = tmp_path / task / "2026-11-18"
+    save_checkpoint(newer, step=15, manifest={"task_id": task}, actor={}, world_model={})
+    assert latest_playback_checkpoint(tmp_path, task).step == 15
+    (newer / "manifest.json").write_text('{"task_id":"stale"}')
+    assert latest_playback_checkpoint(tmp_path, task).source == newer / "last.pt"
     with pytest.raises(ValueError, match="No saved checkpoint bundle"):
-        latest_checkpoint_directory(tmp_path, "missing-task")
+        latest_playback_checkpoint(tmp_path, "missing-task")
 
 
 def test_play_resolves_latest_only_without_explicit_checkpoint(
@@ -401,9 +464,9 @@ def test_play_resolves_latest_only_without_explicit_checkpoint(
     task = "Cyclo-SuperMimic-GenCoord-K1-Rev1-001"
     directory = tmp_path / "saved"
     selected = []
-    monkeypatch.setattr(
-        play, "latest_checkpoint_directory", lambda root, name: directory
-    )
+    auto = SimpleNamespace(source=directory)
+    monkeypatch.setattr(play, "latest_playback_checkpoint", lambda root, name: auto)
+    assert play.resolve_playback_checkpoint(task, play.PlayConfig("reference.npz")) is auto
 
     class BeforeLoading(Exception):
         pass
@@ -413,13 +476,10 @@ def test_play_resolves_latest_only_without_explicit_checkpoint(
         raise BeforeLoading
 
     monkeypatch.setattr(play, "load_checkpoint", load_checkpoint)
-    with pytest.raises(BeforeLoading):
-        play.play(task, play.PlayConfig(motion_file="reference.npz"))
-    assert selected == [(directory, task)]
     explicit = tmp_path / "explicit"
     monkeypatch.setattr(
         play,
-        "latest_checkpoint_directory",
+        "latest_playback_checkpoint",
         lambda *args: pytest.fail("unexpected search"),
     )
     with pytest.raises(BeforeLoading):
@@ -490,7 +550,7 @@ def test_play_accepts_archive_and_rejects_conflicting_sources(
     monkeypatch.setattr(play, "load_checkpoint", load)
     monkeypatch.setattr(
         play,
-        "latest_checkpoint_directory",
+        "latest_playback_checkpoint",
         lambda *a: pytest.fail("searched latest"),
     )
     path = tmp_path / "model_1000.pt"
@@ -515,6 +575,11 @@ def test_resume_cli_uses_saved_settings_and_restores_before_run(
     from source.tasks.supermimic import train
     from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
 
+    manifest.update(schema_version=1, num_envs=999, environment_options=["--env.decimation", "999"])
+    manifest["environment"]["sim"] = {"mujoco": {"timestep": 0.1}}
+    manifest["robot"]["xml_sha256"] = "old-xml"
+    task = manifest["task_id"]
+    manifest["task_id"] = "retired-training-task"
     save_checkpoint(
         tmp_path,
         step=1000,
@@ -523,21 +588,26 @@ def test_resume_cli_uses_saved_settings_and_restores_before_run(
         critic={},
         world_model={},
     )
-    task = manifest["task_id"]
     calls = []
     monkeypatch.setattr(train, "setup_device", lambda _: "cpu")
     env = SimpleNamespace(close=lambda: calls.append("close"))
-    monkeypatch.setattr(train, "create_env", lambda cfg, count, device: env)
+    def create_current_env(cfg, count, device):
+        assert cfg.decimation == make_env_cfg().decimation
+        assert count == 8
+        return env
+
+    monkeypatch.setattr(train, "create_env", create_current_env)
 
     def build(**kwargs):
         assert (
             kwargs["cfg"].actor_obs == "rep_state"
         )  # current default is proprio
-        assert (
-            kwargs["manifest"]["environment_options"]
-            == manifest["environment_options"]
-        )
-        assert kwargs["manifest"]["num_envs"] == 8
+        assert "environment_options" not in kwargs["manifest"]
+        assert "sim" not in kwargs["manifest"]["environment"]
+        assert set(kwargs["manifest"]["robot"]) == {"name", "joint_order", "action_joint_order"}
+        assert "num_envs" not in kwargs["manifest"]
+        assert kwargs["cfg"].wandb_project == "new-project"
+        assert kwargs["manifest"]["task_id"] == task
         assert kwargs["cfg"].max_iterations == 2000
         return SimpleNamespace(run=lambda: calls.append("run"))
 
@@ -556,11 +626,30 @@ def test_resume_cli_uses_saved_settings_and_restores_before_run(
             "unused.npz",
             "--runner.max-iterations",
             "2000",
+            "--runner.wandb-project",
+            "new-project",
             "--num-envs",
             "8",
         ]
     )
     assert calls == ["restore", "run", "close"]
+
+
+@pytest.mark.parametrize("separator", ["-", "_"])
+def test_resume_cli_loads_requested_snapshot_not_latest_run(tmp_path, monkeypatch, manifest, separator):
+    from source.tasks.supermimic import train
+    from source.tasks.supermimic.training.checkpoint.archive import save_checkpoint
+
+    task = manifest["task_id"]
+    monkeypatch.setattr(train, "LOG_ROOT", tmp_path)
+    for name, step in (("older", 9), ("recent", 19)):
+        save_checkpoint(tmp_path / task / name, step=step, manifest=manifest, actor={}, world_model={})
+    _, cfg, checkpoint = train.parse_training_configuration([
+        task, "--agent.resume", "True", f"--agent.load{separator}run", "older",
+        f"--agent.load{separator}checkpoint", "model_9.pt",
+    ])
+    assert cfg.agent.load_run == "older"
+    assert checkpoint.step == 9 and checkpoint.source.name == "model_9.pt"
 
 
 def test_resume_configuration_failure_precedes_gpu(
@@ -622,13 +711,17 @@ def test_cross_task_resume_keeps_target_clips_and_checks_contract(
             manifest, source.replace("GenCoord", "MaxCoord"), for_resume=True
         )
     manifest["robot"]["action_joint_order"].reverse()
-    with pytest.raises(ValueError, match="joint-order"):
-        validate_manifest(manifest, target, for_resume=True)
+    from source.tasks.supermimic.training.checkpoint.resume import validate_resume_configuration
+    manifest["task_id"] = "retired-training-task"
+    cfg, runner_cfg = validate_manifest(manifest, target, for_resume=True)
+    destination = make_manifest(target, cfg, runner_cfg)
+    validate_resume_configuration(SimpleNamespace(manifest=manifest, step=0), destination)
 
 
 @pytest.mark.parametrize(
-    "file", ["last.pt", "checkpoints/model_1000.pt", "world_model.pt"]
+    "file", ["last.pt", "checkpoints/model_1000.pt", "world_model.pt", "wm_100k.pt"]
 )
+@pytest.mark.filterwarnings("error::UserWarning")
 def test_local_world_model_accepts_target_policy_changes(
     manifest, tmp_path, file
 ):
@@ -643,6 +736,7 @@ def test_local_world_model_accepts_target_policy_changes(
         tmp_path, step=1000, manifest=manifest, actor={}, world_model=weights
     )
     torch.save(weights, tmp_path / "world_model.pt")
+    (tmp_path / "wm_100k.pt").hardlink_to(tmp_path / "world_model.pt")
     (tmp_path / "manifest.json").write_text(json.dumps(manifest))
     target = copy.deepcopy(manifest)
     target["task_id"] += "-other"
@@ -651,9 +745,53 @@ def test_local_world_model_accepts_target_policy_changes(
         load_world_model(tmp_path / file, target)["dynamics"]["w"],
         weights["dynamics"]["w"],
     )
-    target["environment"]["decimation"] += 1
-    with pytest.raises(ValueError, match="dynamics configuration"):
-        load_world_model(tmp_path / file, target)
+    target["environment"]["decimation"] = 8
+    load_world_model(tmp_path / file, target)
+    target["robot"]["joint_order"].reverse()
+    load_world_model(tmp_path / file, target)
+    bodies = target["environment"]["commands"]["motion"]["body_names"]
+    bodies[1], bodies[2] = bodies[2], bodies[1]
+    target["environment"]["commands"]["motion"]["anchor_body_name"] = "torso_link"
+    load_world_model(tmp_path / file, target)
+
+
+def test_maxcoord_world_model_rejects_reordered_bodies(manifest, tmp_path):
+    from source.tasks.supermimic.training.checkpoint.archive import load_world_model, save_checkpoint
+
+    manifest["representation"] = manifest["runner_cfg"]["representation"] = "maxcoord"
+    weights = {"dynamics": {}, "sim_context": {}}
+    save_checkpoint(tmp_path, step=1, manifest=manifest, actor={}, world_model=weights)
+    target = copy.deepcopy(manifest)
+    bodies = target["environment"]["commands"]["motion"]["body_names"]
+    bodies[1], bodies[2] = bodies[2], bodies[1]
+    with pytest.raises(ValueError, match="body_names"):
+        load_world_model(tmp_path, target)
+
+
+@pytest.mark.parametrize("source_rev,target_rev", [(1, 2), (2, 1)])
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_training_transfer_across_revisions(tmp_path, source_rev, target_rev):
+    from mjlab.tasks.registry import load_env_cfg
+    from source.tasks.supermimic.training.checkpoint.archive import load_world_model, save_checkpoint
+    from source.tasks.supermimic.training.checkpoint.resume import validate_resume_configuration
+
+    def revision(rev):
+        task = f"Cyclo-SuperMimic-GenCoord-K1-Rev{rev}-001"
+        cfg = load_env_cfg(task)
+        cfg.commands["motion"].sampling_mode = "external"
+        return make_manifest(task, cfg, SuperMimicRunnerCfg())
+
+    weights = {"dynamics": {"w": torch.ones(1)}, "sim_context": {}}
+    source, target = revision(source_rev), revision(target_rev)
+    save_checkpoint(tmp_path, step=1, manifest=source, actor={}, world_model=weights)
+    assert load_world_model(tmp_path, target) == weights
+    task = target["task_id"]
+    cfg, runner = validate_manifest(source, task, for_resume=True)
+    resumed = make_manifest(task, cfg, runner)
+    assert resumed["robot"] == target["robot"]
+    validate_resume_configuration(
+        SimpleNamespace(manifest=source, step=1), resumed
+    )
 
 
 @pytest.mark.parametrize("retired_task", [False, True])
@@ -673,8 +811,7 @@ def test_cross_revision_play_loads_once_and_uses_target_robot(
     cfg.commands["motion"].sampling_mode = "external"
     cfg.sim.mujoco.timestep = 0.0025
     cfg.decimation = 8
-    manifest = make_manifest(task, cfg, SuperMimicRunnerCfg(representation=representation.lower()),
-                             ["--env.sim.mujoco.timestep", "0.0025", "--env.decimation", "8"])
+    manifest = make_manifest(task, cfg, SuperMimicRunnerCfg(representation=representation.lower()))
     if retired_task:
         manifest["task_id"] = task.replace("-001", "-retired")
     snapshot = tmp_path / "model_1.pt"
@@ -702,3 +839,68 @@ def test_cross_revision_play_loads_once_and_uses_target_robot(
         with pytest.raises(EnvironmentSelected):
             play.play(target_task, play.PlayConfig("reference.npz", checkpoint=snapshot, export_policy=retired_task))
         loads.assert_called_once()
+
+
+@pytest.mark.parametrize("via_wandb", [False, True])
+@pytest.mark.parametrize("cyclo_manifest", [False, True])
+def test_transfer_keeps_target_transforms(tmp_path, monkeypatch, manifest, cyclo_manifest, via_wandb):
+    import json
+    import wandb
+    from supermimic.utils import wandb_artifacts
+    from source.tasks.supermimic import train
+
+    target = SimpleNamespace(dynamics=torch.nn.Linear(1, 1), sim_context=torch.nn.Module())
+    for module, names in ((target.dynamics, ("action_scale", "action_offset")),
+                          (target.sim_context, ("mean", "scale"))):
+        for name in names:
+            module.register_buffer(name, torch.tensor([4.0]))
+    weights = {
+        group: {k: torch.zeros_like(v) for k, v in getattr(target, group).state_dict().items()}
+        for group in ("dynamics", "sim_context")
+    }
+    torch.save(weights, tmp_path / "world_model.pt")
+    if cyclo_manifest:
+        del manifest["environment"]["observations"]
+        (tmp_path / "manifest.json").write_text(json.dumps(manifest))
+
+    def load_bundle(bundle):
+        for group, state in bundle.items():
+            getattr(target, group).load_state_dict(state)
+    target.load_bundle = load_bundle
+    run_path = "team/project/run"
+    monkeypatch.setattr(wandb, "Api", lambda: SimpleNamespace(run=lambda path: path))
+    def download(run):
+        assert run == run_path
+        return tmp_path
+    monkeypatch.setattr(wandb_artifacts, "download_model_dir", download)
+    monkeypatch.setattr(train, "setup_device", lambda _: "cpu")
+    monkeypatch.setattr(train, "create_env", lambda *_: SimpleNamespace(close=lambda: None))
+    def build(**kwargs):
+        assert kwargs["cfg"].wandb_run_path is None
+        assert kwargs["manifest"]["world_model_from"] == (run_path if via_wandb else str(tmp_path / "world_model.pt"))
+        return SimpleNamespace(_wm=target, run=lambda: None)
+    monkeypatch.setattr(train, "SuperMimicRunner", build)
+    source = ["--runner.wandb-run-path", run_path] if via_wandb else ["--world-model-checkpoint", str(tmp_path / "world_model.pt")]
+    train.main([manifest["task_id"], "--motion-file", "test.npz", *source])
+    assert target.dynamics.weight.item() == 0
+    for module in (target.dynamics, target.sim_context):
+        assert all(value.item() == 4 for value in module.buffers())
+
+
+def test_mixed_task_artifact_preserves_paths(tmp_path, monkeypatch):
+    from source.tasks.supermimic.training import loop
+
+    files = ["actor.pt", "world_model.pt", "params/sim2real.yaml", "params/velocity/sim2real.yaml"]
+    for name in files:
+        file = tmp_path / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(name)
+    logged = []
+    run = SimpleNamespace(id="local", entity="team", project="test", log_artifact=logged.append)
+    monkeypatch.setattr(loop.wandb, "run", run)
+    monkeypatch.setattr(loop.wandb, "Api", lambda: SimpleNamespace(artifacts=lambda *_: []))
+    loop.log_model_artifact([str(tmp_path / name) for name in files], tmp_path)
+    assert len(logged) == 1
+    entries = logged[0].manifest.entries
+    assert set(entries) == set(files)
+    assert entries[files[-1]].digest != entries[files[-2]].digest

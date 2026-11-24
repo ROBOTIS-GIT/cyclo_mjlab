@@ -19,26 +19,37 @@ Restore training models and optimizer states before the first learner update.
 """
 
 
+from dataclasses import asdict
+
+from supermimic.runners.run_config import load_runner_cfg
+
+from .archive import check_training_contract, initialize_world_model
+from .manifest import check_actor_observations
+
+
 def validate_resume_configuration(checkpoint, manifest):
     if checkpoint.step is None:
         raise ValueError(
             "Training resume requires last.pt or a numbered combined"
             " checkpoint"
         )
-    for name in ("environment", "robot"):
-        if checkpoint.manifest[name] != manifest[name]:
-            raise ValueError(f"Resume {name} differs from the checkpoint")
+    check_training_contract(checkpoint.manifest, manifest)
+    saved, current = (asdict(load_runner_cfg(value)) for value in (checkpoint.manifest, manifest))
+    if saved["actor_obs"] == "proprio":
+        check_actor_observations(
+            checkpoint.manifest["environment"].get("observations", {}).get("actor"),
+            manifest["environment"]["observations"].get("actor"),
+        )
     # Logging cadence and the total iteration target may change. Architecture,
     # losses and optimizer settings remain those of the saved training run.
-    saved, current = (
-        dict(value["runner_cfg"]) for value in (checkpoint.manifest, manifest)
-    )
     for name in (
+        "headless",
         "max_iterations",
         "run_name",
         "log_interval",
         "save_interval",
         "wandb_run_path",
+        "wandb_project",
     ):
         saved.pop(name, None)
         current.pop(name, None)
@@ -75,7 +86,7 @@ def restore_training_state(runner, checkpoint):
                 raise ValueError(
                     f"Checkpoint {name} optimizer count does not match"
                 )
-    runner._wm.load_bundle(checkpoint.world_model)
+    initialize_world_model(runner._wm, checkpoint.world_model)
     runner.policy_learner.actor.load_state_dict(checkpoint.actor)
     if critic is not None:
         critic.load_state_dict(checkpoint.critic)

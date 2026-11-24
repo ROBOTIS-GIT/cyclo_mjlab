@@ -51,30 +51,35 @@ def publish_completed_snapshots(run_dir):
     )
 
 
+def directory_checkpoint(directory, *, include_symlinks=True):
+    """Prefer a numbered snapshot for directory evaluation, then fall back to last.pt."""
+    numbered = []
+    last = None
+    for path in directory.iterdir():
+        if not include_symlinks and path.is_symlink():
+            continue
+        match = re.fullmatch(r"(?:model_|ckpt_)([0-9]+)\.pt", path.name)
+        if match and path.is_file():
+            numbered.append((int(match[1]), path))
+        elif path.name == "last.pt" and path.is_file():
+            last = path
+    return max(numbered)[1] if numbered else last
+
+
 def select_checkpoint(checkpoint, checkpoint_dir):
     if checkpoint is None:
         if checkpoint_dir is None or not checkpoint_dir.is_dir():
             raise ValueError(
                 "play requires --checkpoint or an existing --checkpoint-dir"
             )
-        candidates = [
-            path
-            for path in checkpoint_dir.iterdir()
-            if path.is_file()
-            and re.fullmatch(r"(?:model_|ckpt_)[0-9]+\.pt", path.name)
-        ]
-        if not candidates:
-            raise ValueError(
-                f"No model_<iteration>.pt checkpoints in {checkpoint_dir}"
-            )
-        checkpoint = max(
-            candidates, key=lambda path: int(path.stem.split("_", 1)[1])
-        )
+        checkpoint = directory_checkpoint(checkpoint_dir)
+        if checkpoint is None:
+            raise ValueError(f"No model_<iteration>.pt or last.pt in {checkpoint_dir}")
     if not checkpoint.is_file() or not re.fullmatch(
-        r"(?:model_|ckpt_)[0-9]+\.pt", checkpoint.name
+        r"(?:last|(?:model_|ckpt_)[0-9]+)\.pt", checkpoint.name
     ):
         raise ValueError(
-            "Expected an existing model_<iteration>.pt checkpoint:"
+            "Expected an existing last.pt, model_<iteration>.pt or ckpt_<iteration>.pt:"
             f" {checkpoint}"
         )
     return checkpoint.resolve()

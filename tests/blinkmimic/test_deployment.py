@@ -52,6 +52,9 @@ with patch('blinkmimic.kinematics.Kinematics', side_effect=ReachedGpuInitializat
             child.kill()
             child.wait()
     assert child.returncode == 0, stdout + stderr
+    env_cfg = yaml.safe_load((tmp_path / "params/env.yaml").read_text())
+    assert env_cfg["robot"]["joint_names"] == list(make_robot().joint_names)
+    assert env_cfg["robot"]["robot_cfg"]["spec_fn"].endswith("._load_k1_rev1_spec")
     assert config_path == tmp_path / "params/sim2real.yaml"
     cfg = yaml.safe_load((tmp_path / "params/sim2real.yaml").read_text())
     robot = make_robot()

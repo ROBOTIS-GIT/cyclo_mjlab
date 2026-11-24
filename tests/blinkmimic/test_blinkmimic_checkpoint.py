@@ -29,7 +29,8 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
         textwrap.dedent(source[start:end]), "upstream_save_block", "exec"
     )
     original_save = torch.save
-    with include_critic_in_snapshots():
+    clips = [("dance2", "digest2", 50), ("dance1", "digest1", 80)]
+    with include_critic_in_snapshots(clips=clips):
         for iteration in (1000, 2000):
             ck = {
                 key: {"weight": torch.tensor([iteration + offset])}
@@ -37,6 +38,7 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
             }
             ck.update(
                 iteration=iteration,
+                ctrl={"decay_at": 10},
                 wall_time=1,
                 sim_steps=10,
                 args={},
@@ -60,6 +62,8 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
                 tmp_path / f"model_{iteration}.pt", weights_only=True
             )
             last = torch.load(tmp_path / "last.pt", weights_only=True)
+            assert last["ctrl"] == model["ctrl"] == {"decay_at": 10, "clips": clips}
+            assert "joint_order" not in last and "joint_order" not in model
             for key in ("pi", "pi_live", "wm", "critic"):
                 assert torch.equal(model[key]["weight"], ck[key]["weight"])
             for key in ("opt_pi", "opt_v", "opt_wm"):
@@ -218,15 +222,13 @@ def test_saved_training_arguments_are_authoritative():
             ckpt_light=True,
         )
     }
-    assert training_arguments(saved, "k1") == [
+    assert training_arguments(saved) == [
         "--hist",
         "7",
         "--lr",
         "0.004",
         "--no_sync",
     ]
-    with pytest.raises(ValueError, match="robot"):
-        training_arguments(saved, "other")
 
 
 def test_training_launcher_forwards_resume_and_saved_arguments(
@@ -270,10 +272,11 @@ def test_training_launcher_forwards_resume_and_saved_arguments(
         "TASKS",
         {
             task: SimpleNamespace(
-                robot_factory=lambda: SimpleNamespace(name="k1")
+                robot_factory=lambda: SimpleNamespace(name="k1", joint_names=["a"])
             )
         },
     )
+    monkeypatch.setattr(cli, "prepare_task_motions", lambda task, directory: directory)
     received = []
     monkeypatch.setattr(
         cli, "run_worker", lambda args, **kw: received.append((args, kw))
@@ -289,6 +292,6 @@ def test_training_launcher_forwards_resume_and_saved_arguments(
     flags = kw["flags"]
     assert flags[flags.index("--resume") + 1] == str(run / "last.pt")
     assert flags[flags.index("--hist") + 1] == "7"
-    assert forwarded.motion_dir == motions
+    assert forwarded.motion_dir == forwarded.run_dir / "motions"
     assert forwarded.run_dir != run
     assert (run / "last.pt").read_bytes() == original

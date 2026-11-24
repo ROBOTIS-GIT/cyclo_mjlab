@@ -28,6 +28,7 @@ from supermimic.scripts.train_utils import (  # noqa: E402
 )
 
 from source.tasks.supermimic import REPO_ROOT  # noqa: E402
+from source.tasks.supermimic.training.checkpoint.archive import load_checkpoint  # noqa: E402
 from source.tasks.supermimic.training.runner import LocalBundleRunner  # noqa: E402
 from source.tasks.supermimic.training.checkpoint.manifest import (  # noqa: E402
     make_manifest,
@@ -153,7 +154,6 @@ def main():
         task,
         cfg,
         rcfg,
-        ["--env.sim.mujoco.timestep", "0.0025", "--env.decimation", "8"],
     )
     env = create_env(cfg, 2, args.device)
     updates = {"wm": 0, "actor": 0}
@@ -287,10 +287,16 @@ def main():
         )
         restored, restored_runner = read_bundle(bundle, task)
         assert (
-            restored.decimation == 8 and restored.sim.mujoco.timestep == 0.0025
+            restored.decimation * restored.sim.mujoco.timestep == 0.02
         )
+        # Simulate a checkpoint trained with different action and context transforms.
+        checkpoint = load_checkpoint(bundle)
+        for group, keys in (("dynamics", ("action_scale", "action_offset")),
+                            ("sim_context", ("mean", "scale"))):
+            for key in keys:
+                checkpoint.world_model[group][key].add_(1)
         with torch.inference_mode():
-            wm, actor = load_models(bundle, restored_runner, env, args.device)
+            wm, actor = load_models(checkpoint, restored_runner, env, args.device)
         equal_tree(wm.bundle(), runner._wm.bundle())
         equal_tree(
             actor.state_dict(), runner.policy_learner.actor.state_dict()

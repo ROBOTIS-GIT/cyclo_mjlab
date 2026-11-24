@@ -50,11 +50,9 @@ def read_resume_checkpoint(path):
     return saved
 
 
-def training_arguments(saved, robot_name):
+def training_arguments(saved):
     settings = saved["args"]
-    if settings.get("robot") != robot_name:
-        raise ValueError("Resume checkpoint belongs to a different robot")
-    ignored = {"resume", "log_dir", "motion_dir", "robot", "ckpt_light"}
+    ignored = {"resume", "log_dir", "motion_dir", "num_envs", "robot", "ckpt_light"}
     arguments = []
     for name, value in settings.items():
         if name in ignored or value is None or value is False:
@@ -65,19 +63,52 @@ def training_arguments(saved, robot_name):
     return arguments
 
 
+def policy_state_for_robot(state, robot, *, prefix=""):
+    """Use the target's reference-action transform, retaining the learned correction."""
+    result = state
+    for name, values in (("ref_q0", robot.default_joint_pos_list()), ("ref_alpha", robot.action_scale_list())):
+        key = prefix + name
+        buffer = state.get(key)
+        if not isinstance(buffer, torch.Tensor) or buffer.shape != (len(values),):
+            raise ValueError(f"Checkpoint {key} shape differs from the target robot")
+        target = buffer.new_tensor(values)
+        if not torch.equal(buffer, target):
+            if result is state:
+                result = state.copy()
+            result[key] = target
+    return result
+
+
+@contextmanager
+def evaluation_reference_buffers(robot):
+    """Adapt the native evaluator's policy load in its isolated worker."""
+    from blinkmimic.networks import Policy
+
+    native_load = Policy.load_state_dict
+
+    def load(policy, state, *args, **kwargs):
+        if policy.ref_off is not None:
+            state = policy_state_for_robot(state, robot)
+        return native_load(policy, state, *args, **kwargs)
+
+    with patch.object(Policy, "load_state_dict", load):
+        yield
+
+
 @contextmanager
 def allow_model_only_resume(
-    checkpoint, source=None, target=None, *, allow_removed=False
+    checkpoint, target_clips=None, *, target_robot=None
 ):
     """
     Scope the upstream optimizer fallback to this worker and this input file.
 
-    Native resume handles full last.pt files unchanged. Numbered snapshots omit
+    Native resume restores the learned parameters. Numbered snapshots omit
     optimizer state: their explicit marker keeps the newly created optimizers.
     No module globals or training frames are inspected to obtain live objects.
     """
+    history = {}
     if checkpoint is None:
-        yield
+        yield history
         return
     from blinkmimic.optim import MuonAdam
 
@@ -93,12 +124,21 @@ def allow_model_only_resume(
             isinstance(file, (str, Path))
             and Path(file).resolve() == Path(checkpoint).resolve()
         ):
-            if source is not None:
-                from .sampler import transfer_sampler
+            if target_robot is not None and saved.get("args", {}).get("pi_ref_skip"):
+                for key, prefix in (("pi", ""), ("pi_live", ""), ("pi_avg", "module.")):
+                    if saved.get(key) is not None:
+                        saved[key] = policy_state_for_robot(saved[key], target_robot, prefix=prefix)
+            for clip, bins in saved.pop("inactive_sampler", {}).items():
+                history[clip] = {key: value.cpu() for key, value in bins.items()}
+            control = saved.get("ctrl")
+            if control is not None and target_clips is not None:
+                from .sampler import legacy_sampler_clips, transfer_sampler
 
+                source_clips = control.get("clips")
+                if source_clips is None:
+                    source_clips = legacy_sampler_clips(checkpoint)
                 saved["ctrl"] = transfer_sampler(
-                    saved.get("ctrl"), source, target,
-                    allow_removed=allow_removed,
+                    control, source_clips, target_clips, history,
                 )
             keys = {"opt_pi", "opt_wm", "opt_v"}
             if not keys.intersection(saved):
@@ -125,7 +165,7 @@ def allow_model_only_resume(
     for cls, original in optimizer_loaders:
         cls.load_state_dict = loader(original)
     try:
-        yield
+        yield history
     finally:
         torch.load = original_load
         for cls, original in optimizer_loaders:
@@ -133,7 +173,7 @@ def allow_model_only_resume(
 
 
 @contextmanager
-def initialize_world_model(checkpoint, robot_name):
+def initialize_world_model(checkpoint):
     """Seed the native world model before optimizer construction."""
     if checkpoint is None:
         yield
@@ -142,7 +182,7 @@ def initialize_world_model(checkpoint, robot_name):
 
     saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
     settings = saved.get("args", {})
-    if settings.get("robot") != robot_name or "wm" not in saved:
+    if "wm" not in saved:
         raise ValueError(
             "Expected a BlinkMimic world model for the target robot"
         )

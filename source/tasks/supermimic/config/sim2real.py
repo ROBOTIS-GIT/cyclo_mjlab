@@ -134,18 +134,18 @@ def validate_proprio_observations(terms):
 def validate_policy_config(cfg, rcfg, task):
     """Apply the same interface checks to training YAML and checkpoint ONNX."""
     from mjlab.tasks.registry import load_env_cfg
-    from ..training.checkpoint.manifest import json_value
+    from ..training.checkpoint.manifest import effective_observation_group, json_value
 
     if type(rcfg.history_length) is not int or rcfg.history_length < 1:
         raise ValueError("Invalid history_length")
     if rcfg.actor_obs == "rep_state":
         if rcfg.history_length != 1:
             raise ValueError("rep_state export requires history_length=1")
+        return
     reference = load_env_cfg(task)
-    if json_value(cfg.observations) != json_value(reference.observations):
-        raise ValueError(
-            "Custom observation groups are not supported by this exporter"
-        )
+    actor = effective_observation_group(json_value(cfg.observations["actor"]))
+    if actor != effective_observation_group(json_value(reference.observations["actor"])):
+        raise ValueError("Custom actor observations are not supported by this exporter")
 
 
 def observation_terms(env_cfg, runner_cfg, representation, num_joints):
@@ -184,7 +184,6 @@ def observation_config(
         "joint_vel": "joint_vel_rel",
         "actions": "last_action",
     }
-    actor_terms = env_cfg.observations["actor"].terms
     input_terms = observation_terms(
         env_cfg, runner_cfg, representation, num_joints
     )
@@ -194,7 +193,7 @@ def observation_config(
     for term in input_terms:
         # rep_state is assembled by the representation, not the actor
         # observation group.
-        source = actor_terms[term["name"]] if is_proprio else None
+        source = env_cfg.observations["actor"].terms[term["name"]] if is_proprio else None
         scale = (
             source.scale
             if source is not None and source.scale is not None

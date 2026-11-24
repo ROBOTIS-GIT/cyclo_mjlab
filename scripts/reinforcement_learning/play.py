@@ -51,6 +51,7 @@ from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
+from source.utils.onnx_action_clipping import clip_onnx_actions
 
 
 @dataclass(frozen=True)
@@ -137,6 +138,7 @@ def run_play(task_id: str, cfg: PlayConfig):
   if is_tracking_task:
     motion_cmd = env_cfg.commands["reference_trajectory"]
     assert isinstance(motion_cmd, ReferenceTrajectoryCommandCfg)
+    task_motion = motion_cmd.trajectory_file
 
     selected_motion_file = cfg.motion_file or motion_cmd.trajectory_file
     if not selected_motion_file:
@@ -175,11 +177,12 @@ def run_play(task_id: str, cfg: PlayConfig):
         f"[INFO]: Loading checkpoint: {checkpoint_name} (run: {run_id}, {cached_str})"
       )
     else:
-      resume_path = get_checkpoint_path(
-        log_root_path,
-        run_dir=r".*",
-        checkpoint=r"model_\d+\.pt",
-      )
+      if is_tracking_task:
+        from source.tasks.beyondmimic.checkpoint import tracking_checkpoint_path
+
+        resume_path = tracking_checkpoint_path(log_root_path, task_id, task_motion, ".*", r"model_\d+\.pt")
+      else:
+        resume_path = get_checkpoint_path(log_root_path, run_dir=r".*", checkpoint=r"model_\d+\.pt")
       print(f"[INFO]: Auto-selected latest checkpoint: {resume_path}")
     log_dir = resume_path.parent
 
@@ -442,6 +445,7 @@ def run_play(task_id: str, cfg: PlayConfig):
       onnx_path = export_model_dir / "policy.onnx"
       jit_path = export_model_dir / "policy.pt"
       runner.export_policy_to_onnx(str(export_model_dir), onnx_path.name)
+      clip_onnx_actions(onnx_path, agent_cfg.clip_actions)
       runner.export_policy_to_jit(str(export_model_dir), jit_path.name)
       metadata = get_base_metadata(manager_env, log_dir.name)
       attach_metadata_to_onnx(str(onnx_path), metadata)

@@ -50,5 +50,43 @@ class BeyondMimicRegistration(unittest.TestCase):
             )
 
 
+def test_tracking_checkpoint_selection_in_shared_experiment(tmp_path):
+    import pytest
+    from source import SRC_PATH
+    from source.tasks.beyondmimic.checkpoint import tracking_checkpoint_path
+
+    task = "Cyclo-BeyondMimic-K1-Rev2-Dance1"
+    other = task.replace("Dance1", "Dance2")
+    motion = SRC_PATH / "assets/motions/K1_rev2/dance1/dance1.npz"
+
+    def run(name, legacy_motion=None):
+        directory = tmp_path / name
+        directory.mkdir()
+        if legacy_motion:
+            (directory / "params").mkdir()
+            (directory / "params/env.yaml").write_text(
+                f"commands:\n  reference_trajectory:\n    trajectory_file: {legacy_motion}\n"
+            )
+        path = directory / "model_20.pt"
+        path.touch()
+        return path
+
+    old = run("2026-11-21_10-00-00", "/workspace/cyclo_mjlab/source/assets/motions/K1_rev2/dance1/dance1.npz")
+    run("2026-11-22_10-00-00", str(motion).replace("dance1", "dance2"))
+    run("2026-11-23_10-00-00_custom")
+
+    def select(pattern=".*"):
+        return tracking_checkpoint_path(tmp_path, task, motion, pattern, r"model_\d+\.pt")
+
+    assert select() == old
+    new = run("2026-11-24_10-00-00_" + task + "_custom")
+    dance2 = run("2026-11-24_11-00-00_" + other)
+    (tmp_path / ("2026-11-25_10-00-00_" + task)).mkdir()
+    assert select() == new
+    assert select(dance2.parent.name) == dance2
+    with pytest.raises(ValueError, match="No matching checkpoint"):
+        select("2026-11-23.*")
+
+
 if __name__ == "__main__":
     unittest.main()

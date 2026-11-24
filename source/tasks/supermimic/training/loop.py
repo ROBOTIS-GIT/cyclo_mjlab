@@ -23,7 +23,9 @@ Collection and learner updates remain upstream methods; no upstream edits.
 
 import os
 import time
+from copy import copy
 from concurrent.futures import Future, ThreadPoolExecutor
+from pathlib import Path
 
 import torch
 import wandb
@@ -31,10 +33,44 @@ from supermimic.envs.world_model_env import sample_start
 from supermimic.runners.supermimic_runner import (
     Ratio,
     export_actor_as_onnx,
-    log_model_artifact,
 )
 
 from source.utils.wandb_models import model_upload_requested
+
+
+def log_model_artifact(files, run_dir):
+    """Publish the run-relative paths with SuperMimic's model version retention."""
+    run = wandb.run
+    name = f"model-{run.id}"
+    try:
+        artifact = wandb.Artifact(name, type="model")
+        root = Path(run_dir).resolve()
+        for file in files:
+            artifact.add_file(file, name=Path(file).resolve().relative_to(root).as_posix())
+        run.log_artifact(artifact)
+        collection = f"{run.entity}/{run.project}/{name}"
+        versions = sorted(wandb.Api().artifacts("model", collection), key=lambda a: int(a.version[1:]))
+        for stale in versions[:-5]:
+            if int(stale.version[1:]) % 25 and not stale.aliases:
+                stale.delete()
+    except Exception as error:
+        print(f"[WARN] Checkpoint artifact log/prune failed: {error}")
+
+
+def export_training_policies(runner, log_dir, run_name):
+    if runner._representation.actor_obs_mode != "proprio" or runner.motion.time_step_total > 15_000:
+        return []
+    # The native exporter enumerates task_specs, including for velocity replay.
+    # Share the weights and limit the export view to trained slots.
+    actor = copy(runner.policy_learner.actor)
+    actor.task_specs = runner._active_task_specs
+    return export_actor_as_onnx(
+        actor=actor,
+        env=runner.env.unwrapped,
+        path=str(log_dir),
+        run_name=run_name,
+        term_widths=runner._representation.proprio_term_widths(runner._num_actions),
+    )
 
 
 def run_training_loop(runner, start_iteration=0) -> None:
@@ -150,23 +186,10 @@ def run_training_loop(runner, start_iteration=0) -> None:
                     critic_path = str(log_dir / "critic.pt")
                     torch.save(critic.state_dict(), critic_path)
                     checkpoint_files.append(critic_path)
-                # Skip ONNX export on huge datasets.
-                if (
-                    runner._representation.actor_obs_mode == "proprio"
-                    and runner.motion.time_step_total <= 15_000
-                ):
-                    checkpoint_files += export_actor_as_onnx(
-                        actor=runner.policy_learner.actor,
-                        env=runner.env.unwrapped,
-                        path=str(log_dir),
-                        run_name=wandb.run.name,
-                        term_widths=runner._representation.proprio_term_widths(
-                            runner._num_actions
-                        ),
-                    )
+                checkpoint_files += export_training_policies(runner, log_dir, wandb.run.name)
                 if uploader is not None:
                     upload = uploader.submit(
-                        log_model_artifact, checkpoint_files
+                        log_model_artifact, checkpoint_files, log_dir
                     )
 
         if upload is not None:

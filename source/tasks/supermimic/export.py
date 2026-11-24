@@ -44,9 +44,9 @@ from source.utils.export_notices import (
 )
 
 from . import LOG_ROOT, REPO_ROOT
-from .training.checkpoint.manifest import json_value, read_bundle
+from .training.checkpoint.manifest import read_bundle, robot_contract
 from .training.checkpoint.archive import load_checkpoint
-from .config import TASKS
+from .config import TASKS, select_trained_encoder
 from .config.sim2real import (
     observation_config,
     observation_terms,
@@ -88,27 +88,24 @@ def nominal_action_contract(cfg, joint_names):
     )
 
 
-def validate_saved_action(wm, action):
+def saved_action_transform(wm, joint_count):
     # These are the actual affine buffers used by the trained dynamics model.
     if not isinstance(wm, dict) or not isinstance(wm.get("dynamics"), dict):
         raise ValueError(
             "Expected a native world_model.pt dynamics dictionary"
         )
-    for key, expected in (
-        ("action_scale", action["scale"]),
-        ("action_offset", action["offset"]),
-    ):
-        saved = wm.get("dynamics", {}).get(key)
+    transform = {}
+    for field in ("scale", "offset"):
+        key = f"action_{field}"
+        saved = wm["dynamics"].get(key)
         if (
             not isinstance(saved, torch.Tensor)
-            or saved.numel() != len(action["scale"])
-            or not torch.equal(
-                saved.reshape(-1), torch.tensor(expected, dtype=torch.float32)
-            )
+            or saved.numel() != joint_count
+            or not torch.isfinite(saved).all()
         ):
-            raise ValueError(
-                f"Saved dynamics {key} differs from the native action contract"
-            )
+            raise ValueError(f"Invalid saved dynamics tensor: {key}")
+        transform[field] = saved.reshape(-1).tolist()
+    return transform
 
 
 def validate_actor_state(state):
@@ -137,17 +134,22 @@ def load_policy_bundle(directory, task):
     checkpoint = load_checkpoint(directory)
     manifest = checkpoint.manifest
     cfg, rcfg = read_bundle(checkpoint, task)
-    # The generic loader supports old partial configs; export must not guess
-    # them.
-    if json_value(rcfg) != manifest.get("runner_cfg"):
-        raise ValueError(
-            "Export requires a complete, recognized saved runner_cfg"
-        )
+    # Reconstruct the policy and its deployment metadata from recorded settings.
+    saved = manifest["runner_cfg"]
+    required = {"representation", "actor_obs", "history_length", "latent_dim", "actor_hidden_dims", "slot_mix"}
+    missing = required.difference(saved)
+    if missing:
+        raise ValueError(f"Missing checkpoint policy settings: {', '.join(sorted(missing))}")
     validate_policy_config(cfg, rcfg, task)
     names = manifest["robot"]["joint_order"]
     action = nominal_action_contract(cfg, names)
-    validate_saved_action(checkpoint.world_model, action)
+    action.update(saved_action_transform(checkpoint.world_model, len(names)))
     j = len(names)
+    for name in ("q0", "qdot0"):
+        action[name] = manifest.get(name, action[name])
+        values = torch.tensor(action[name], dtype=torch.float32)
+        if values.shape != (j,) or not torch.isfinite(values).all():
+            raise ValueError(f"Expected one finite {name} per policy joint")
     bodies = len(cfg.commands["motion"].body_names)
     rep = create_representation(
         rcfg.representation,
@@ -226,6 +228,10 @@ def policy_contract(bundle, encoder):
     spec = next((ts for ts in actor.task_specs if ts.name == encoder), None)
     if spec is None:
         raise ValueError(f"Unknown policy encoder: {encoder}")
+    if encoder == "velocity":
+        recorded = bundle.manifest["runner_cfg"].get("tasks", {}).get("velocity", {})
+        if not {"lin_vel_x_range", "lin_vel_y_range", "ang_vel_z_range"} <= recorded.keys():
+            raise ValueError("Missing checkpoint velocity command ranges")
     j = len(bundle.action["joint_order"])
     h = rcfg.history_length
     terms = observation_terms(bundle.env_cfg, rcfg, bundle.representation, j)
@@ -287,7 +293,11 @@ def policy_contract(bundle, encoder):
             name="actions",
             dtype="float32",
             shape=[1, j],
-            meaning="raw decoder output; no clamp or reference-action skip",
+            meaning=(
+                "Raw policy action without clipping or reference-action addition. "
+                "After ONNX inference, ai_sapiens applies the scale and offset "
+                "from sim2real.yaml to compute joint position targets."
+            ),
         ),
         normalization=dict(
             formula="(x-saved_mean)/(saved_std+eps)",
@@ -311,7 +321,7 @@ def policy_contract(bundle, encoder):
         control_dt=bundle.env_cfg.sim.mujoco.timestep
         * bundle.env_cfg.decimation,
         body_order=list(bundle.env_cfg.commands["motion"].body_names),
-        robot=bundle.manifest["robot"],
+        robot=robot_contract(bundle.env_cfg),
         motion_goal=(
             dict(
                 frames=NUM_GOAL_FRAMES,
@@ -378,10 +388,15 @@ def policy_contract(bundle, encoder):
 
 
 def export_policy(
-    directory, task, output_dir, *, encoder="motion", overwrite=False
+    directory, task, output_dir, *, encoder=None, overwrite=False
 ):
     checkpoint = load_checkpoint(directory)
     bundle = load_policy_bundle(checkpoint, task)
+    encoder = select_trained_encoder(bundle.runner_cfg.slot_mix, encoder)
+    if output_dir is None:
+        output_dir = checkpoint.export_directory
+        if encoder != "motion":
+            output_dir /= encoder
     return export_encoder(
         checkpoint, bundle, output_dir, encoder=encoder, overwrite=overwrite
     )
@@ -478,25 +493,21 @@ def main(argv=None):
     source.add_argument("--checkpoint", type=Path)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
-        "--encoder", choices=("motion", "velocity"), default="motion"
+        "--encoder", choices=("motion", "velocity"), help="Defaults to the first trained encoder"
     )
     args = parser.parse_args(argv)
     selected = (
         args.checkpoint if args.checkpoint is not None else args.checkpoint_dir
     )
     if selected is None:
-        from .play import latest_checkpoint_directory
+        from .play import latest_playback_checkpoint
 
-        selected = latest_checkpoint_directory(LOG_ROOT, args.task)
-    checkpoint = load_checkpoint(selected)
-    output = args.output_dir or checkpoint.export_directory
-    if args.output_dir is None and args.encoder != "motion":
-        output /= args.encoder
+        selected = latest_playback_checkpoint(LOG_ROOT, args.task)
     print(
         export_policy(
-            checkpoint,
+            selected,
             args.task,
-            output,
+            args.output_dir,
             encoder=args.encoder,
         )
     )

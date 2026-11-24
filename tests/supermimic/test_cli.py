@@ -45,7 +45,11 @@ def test_direct_body_reference_is_adapted_before_upstream(
 
     env_cfg = task_001.make_env_cfg()
     env_cfg.commands["motion"].motion_file = [str(reference)]
-    monkeypatch.setattr(registry, "load_env_cfg", lambda task: env_cfg)
+    def load_env_cfg(task, *, play):
+        assert play == (action == "play")
+        return env_cfg
+
+    monkeypatch.setattr(registry, "load_env_cfg", load_env_cfg)
     module_name = (
         "source.tasks.supermimic.train"
         if action == "train"

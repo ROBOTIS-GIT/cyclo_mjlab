@@ -18,25 +18,20 @@
 Versioned local inference bundles; never deserialize Python configuration code.
 """
 
-import copy
 import dataclasses
 import enum
-import hashlib
 import math
 from functools import partial
 from pathlib import Path
 
-import mjlab
 import numpy as np
-import tyro
 from mjlab.tasks.registry import load_env_cfg
 from supermimic.runners.run_config import load_runner_cfg
 
-from .archive import load_checkpoint
+from .archive import check_motion_contract, load_checkpoint
 from ...reference.motion import model_joint_names
-from source.assets.robots.ai_sapiens.k1_rev1 import K1_REV1_XML_PATH
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def validate_control_rate(env_cfg):
@@ -104,30 +99,41 @@ def json_value(value):
     )
 
 
-def environment_options(arguments):
-    """Retain only declarative tyro environment overrides and their values."""
-    result, keep = [], False
-    for token in arguments:
-        if token.startswith("runner.") and ":" in token:
-            keep = False
-        if token.startswith("--"):
-            keep = token.startswith("--env.")
-        if keep:
-            result.append(token)
-    return result
+def effective_observation_group(group):
+    """Ignore term noise disabled by MJLab, while retaining the recorded config."""
+    if group is None or group.get("enable_corruption") is not False:
+        return group
+    terms = {
+        name: {key: value for key, value in term.items() if key != "noise"}
+        for name, term in group["terms"].items()
+    }
+    return {**group, "terms": terms}
 
 
-def environment_contract(cfg):
-    cfg = copy.deepcopy(cfg)
-    # Playback chooses its local input and one environment; all physical,
-    # action, observation and substep settings remain part of the contract.
-    cfg.scene.num_envs = 1
-    cfg.commands["motion"].motion_file = "<validated-local-reference>"
-    return json_value(cfg)
+def check_actor_observations(saved, current):
+    saved = effective_observation_group(saved)
+    current = effective_observation_group(current)
+    if (
+        saved is None or current is None or saved != current
+        or list(saved["terms"]) != list(current["terms"])
+    ):
+        raise ValueError("Checkpoint actor observation configuration differs from the target")
+
+
+def motion_contract(cfg):
+    motion = cfg.commands["motion"]
+    return {"body_names": list(motion.body_names), "anchor_body_name": motion.anchor_body_name}
+
+
+def observation_contract(cfg):
+    return {
+        "commands": {"motion": motion_contract(cfg)},
+        "observations": json_value(cfg.observations),
+    }
 
 
 def robot_contract(cfg):
-    from source.assets.robots.ai_sapiens.k1_rev2 import K1_REV2_XML_PATH, load_k1_rev2_spec
+    from source.assets.robots.ai_sapiens.k1_rev2 import load_k1_rev2_spec
 
     from mjlab.entity import Entity
     from mjlab.envs.mdp.actions import JointPositionActionCfg
@@ -155,54 +161,22 @@ def robot_contract(cfg):
             " representation joints; reordering and subselection are"
             " unsupported"
         )
-    physical = hashlib.sha256()
-    for attribute in (
-        "body_pos",
-        "body_quat",
-        "body_mass",
-        "body_inertia",
-        "body_ipos",
-        "body_iquat",
-        "jnt_axis",
-        "jnt_pos",
-        "jnt_range",
-        "dof_armature",
-        "dof_damping",
-        "geom_type",
-        "geom_size",
-        "geom_pos",
-        "geom_quat",
-        "geom_friction",
-        "mesh_vert",
-        "mesh_face",
-        "actuator_gear",
-        "actuator_gainprm",
-        "actuator_biasprm",
-    ):
-        physical.update(np.asarray(getattr(model, attribute)).tobytes())
     rev2 = cfg.scene.entities["robot"].spec_fn is load_k1_rev2_spec
-    xml = K1_REV2_XML_PATH if rev2 else K1_REV1_XML_PATH
     return {
         "name": "K1-Rev2" if rev2 else "K1-Rev1",
-        "xml_sha256": (
-            hashlib.sha256(xml.read_bytes()).hexdigest()
-        ),
         "joint_order": names,
         "action_joint_order": action_names,
-        "physical_model_sha256": physical.hexdigest(),
-        "action_config": json_value(cfg.actions),
     }
 
 
-def make_manifest(task, cfg, runner_cfg, options):
+def make_manifest(task, cfg, runner_cfg):
     return {
         "schema_version": SCHEMA_VERSION,
         "task_id": task,
         "representation": runner_cfg.representation,
         "actor_obs": runner_cfg.actor_obs,
         "runner_cfg": json_value(runner_cfg),
-        "environment_options": options,
-        "environment": environment_contract(cfg),
+        "environment": observation_contract(cfg),
         "robot": robot_contract(cfg),
     }
 
@@ -210,17 +184,14 @@ def make_manifest(task, cfg, runner_cfg, options):
 def validate_manifest(manifest, task, *, for_resume=False):
     from ...config import TASKS, check_representation_matches
 
-    if manifest.get("schema_version") != SCHEMA_VERSION:
+    if manifest.get("schema_version") not in (1, SCHEMA_VERSION):
         raise ValueError("Unsupported local checkpoint manifest version")
     source_task = manifest.get("task_id")
-    if source_task not in TASKS or task not in TASKS or (
-        source_task != task and not for_resume
-    ):
+    if task not in TASKS or (not for_resume and source_task != task):
         raise ValueError(
             "Checkpoint task identity does not match the selected K1 task"
         )
     rcfg = load_runner_cfg(manifest)
-    check_representation_matches(source_task, rcfg.representation)
     check_representation_matches(task, rcfg.representation)
     if (
         manifest.get("representation") != rcfg.representation
@@ -231,44 +202,24 @@ def validate_manifest(manifest, task, *, for_resume=False):
             "Checkpoint representation/actor observation contract is"
             " inconsistent"
         )
-    options = manifest.get("environment_options")
-    if not isinstance(options, list) or not all(
-        isinstance(v, str) for v in options
-    ):
-        raise ValueError("Invalid environment override list")
-    if environment_options(options) != options:
-        raise ValueError(
-            "Checkpoint permits only declarative --env.* overrides"
-        )
-    defaults = load_env_cfg(task)
-    cfg = tyro.cli(
-        type(defaults),
-        args=[
-            (
-                "--" + token[len("--env."):]
-                if token.startswith("--env.")
-                else token
-            )
-            for token in options
-        ],
-        default=defaults,
-        config=mjlab.TYRO_FLAGS,
-    )
+    cfg = load_env_cfg(task)
     cfg.commands["motion"].sampling_mode = (
         "external" if rcfg.sampling_mode == "return" else rcfg.sampling_mode
     )
     validate_control_rate(cfg)
-    if environment_contract(cfg) != manifest.get("environment"):
-        raise ValueError(
-            "Checkpoint environment differs from this checkout or saved"
-            " overrides"
-        )
-    if robot_contract(cfg) != manifest.get("robot"):
-        raise ValueError(
-            "Checkpoint robot/action/joint-order contract differs from this"
-            " checkout"
-        )
-    cfg.scene.num_envs = 1
+    if not for_resume:
+        robot = robot_contract(cfg)
+        for key in ("joint_order", "action_joint_order"):
+            if manifest.get("robot", {}).get(key) != robot[key]:
+                raise ValueError(f"Checkpoint {key} differs from the export task")
+        saved_env = manifest["environment"]
+        if "commands" not in saved_env:
+            raise ValueError("Missing checkpoint motion configuration")
+        check_motion_contract(saved_env["commands"]["motion"], motion_contract(cfg))
+        if rcfg.actor_obs == "proprio":
+            check_actor_observations(
+                saved_env["observations"].get("actor"), json_value(cfg.observations["actor"])
+            )
     return cfg, rcfg
 
 
