@@ -380,6 +380,8 @@ def resolve_training_resume(args, extra, resume_path):
     effective_recipe, removed_systems_flags = execution_recipe(
         args.execution, training_arguments(saved)
     )
+    if "--wm_structured" in recipe():
+        effective_recipe.append("--wm_structured")
     iterations_parser = argparse.ArgumentParser(add_help=False)
     iterations_parser.add_argument(
         "--iterations", type=int, default=saved["args"]["iterations"]

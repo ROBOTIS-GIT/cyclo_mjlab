@@ -307,6 +307,7 @@ def test_saved_training_arguments_are_authoritative():
             resume="old.pt",
             log_dir="old",
             ckpt_light=True,
+            wm_structured=True,
         )
     }
     assert training_arguments(saved) == [
@@ -316,6 +317,19 @@ def test_saved_training_arguments_are_authoritative():
         "0.004",
         "--no_sync",
     ]
+
+
+@pytest.mark.parametrize("current", [True, False])
+def test_resume_uses_current_structured_dynamics_recipe(monkeypatch, current):
+    from source.tasks.blinkmimic import cli
+    from source.tasks.blinkmimic.training.checkpoint import resume
+
+    saved = dict(args=dict(wm_structured=not current, iterations=100), iteration=10)
+    monkeypatch.setattr(resume, "read_resume_checkpoint", lambda path: saved)
+    monkeypatch.setattr(cli, "recipe", lambda: ["--wm_structured"] if current else [])
+    args = SimpleNamespace(execution="official")
+    flags, _, _ = cli.resolve_training_resume(args, [], "last.pt")
+    assert ("--wm_structured" in flags) is current
 
 
 def test_training_launcher_forwards_resume_and_saved_arguments(

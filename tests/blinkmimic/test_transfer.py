@@ -240,9 +240,11 @@ def test_world_model_only_initialization(tmp_path):
     assert torch.equal(actor.weight, expected_actor.weight)
     fresh, _ = fresh_models()
     assert not torch.equal(fresh.net[0].weight, model.net[0].weight)
-    with pytest.raises(ValueError, match="representation"):
-        with initialize_world_model(path):
-            WorldModel(2, 3, hidden=(8,), structured=False)
+    with initialize_world_model(path):
+        unstructured = WorldModel(2, 3, hidden=(8,), structured=False)
+    assert unstructured.structured is False
+    for key, value in original.state_dict().items():
+        torch.testing.assert_close(value, unstructured.state_dict()[key])
 
 
 @pytest.mark.parametrize("src_rev,dst_rev,has_sampler", [(1, 1, False), (1, 2, True), (2, 1, True)])

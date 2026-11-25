@@ -63,7 +63,7 @@ def read_resume_checkpoint(path):
 
 def training_arguments(saved):
     settings = saved["args"]
-    ignored = {"resume", "log_dir", "motion_dir", "num_envs", "robot", "ckpt_light"}
+    ignored = {"resume", "log_dir", "motion_dir", "num_envs", "robot", "ckpt_light", "wm_structured"}
     arguments = []
     for name, value in settings.items():
         if name in ignored or value is None or value is False:
@@ -182,7 +182,6 @@ def initialize_world_model(checkpoint):
     from blinkmimic import networks
 
     saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    settings = saved.get("args", {})
     if "wm" not in saved:
         raise ValueError(
             "Expected a BlinkMimic world model for the target robot"
@@ -193,10 +192,6 @@ def initialize_world_model(checkpoint):
 
     def initialize(model, *args, **kwargs):
         native_init(model, *args, **kwargs)
-        if model.structured != settings.get("wm_structured", False):
-            raise ValueError(
-                "World model representation differs from the checkpoint"
-            )
         model.load_state_dict(weights, strict=True)
         print(f"[INFO] Initialized world model from {checkpoint}", flush=True)
 
