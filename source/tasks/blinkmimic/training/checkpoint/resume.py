@@ -25,8 +25,19 @@ from unittest.mock import patch
 import torch
 
 
+def check_resume_models(saved):
+    if "pi" in saved and "wm" not in saved:
+        raise ValueError(
+            "Cannot resume from a policy-only (--ckpt_light) checkpoint: "
+            "world model, critic and optimizer states are absent. "
+            "Use the full last.pt saved at the end of training. "
+            "Light checkpoints can still be used for play and export."
+        )
+
+
 def read_resume_checkpoint(path):
     saved = torch.load(path, map_location="cpu", weights_only=True)
+    check_resume_models(saved)
     required = (
         "args",
         "pi",
@@ -50,11 +61,9 @@ def read_resume_checkpoint(path):
     return saved
 
 
-def training_arguments(saved, robot_name):
+def training_arguments(saved):
     settings = saved["args"]
-    if settings.get("robot") != robot_name:
-        raise ValueError("Resume checkpoint belongs to a different robot")
-    ignored = {"resume", "log_dir", "motion_dir", "robot", "ckpt_light"}
+    ignored = {"resume", "log_dir", "motion_dir", "num_envs", "robot", "ckpt_light", "wm_structured"}
     arguments = []
     for name, value in settings.items():
         if name in ignored or value is None or value is False:
@@ -65,19 +74,56 @@ def training_arguments(saved, robot_name):
     return arguments
 
 
+def policy_state_for_robot(state, robot, *, prefix=""):
+    """Use the target's reference-action transform, retaining the learned correction."""
+    result = state
+    for name, values in (("ref_q0", robot.default_joint_pos_list()), ("ref_alpha", robot.action_scale_list())):
+        key = prefix + name
+        buffer = state.get(key)
+        if not isinstance(buffer, torch.Tensor) or buffer.shape != (len(values),):
+            raise ValueError(f"Checkpoint {key} shape differs from the target robot")
+        target = buffer.new_tensor(values)
+        if not torch.equal(buffer, target):
+            if result is state:
+                result = state.copy()
+            result[key] = target
+    return result
+
+
+def prepare_resume_state(saved, target_clips, target_robot, history):
+    """Adapt reference buffers and sampler state before native model loading."""
+    saved = saved.copy()
+    if target_robot is not None and saved.get("args", {}).get("pi_ref_skip"):
+        for key, prefix in (("pi", ""), ("pi_live", ""), ("pi_avg", "module.")):
+            if saved.get(key) is not None:
+                saved[key] = policy_state_for_robot(saved[key], target_robot, prefix=prefix)
+    for clip, bins in saved.pop("inactive_sampler", {}).items():
+        history[clip] = {key: value.cpu() for key, value in bins.items()}
+    control = saved.get("ctrl")
+    if control is not None and target_clips is not None:
+        from .sampler import transfer_sampler
+
+        saved["ctrl"] = transfer_sampler(
+            control, control.get("clips"), target_clips, history,
+        )
+    return saved
+
+
 @contextmanager
-def allow_model_only_resume(
-    checkpoint, source=None, target=None, *, allow_removed=False
+def native_training_resume(
+    checkpoint, target_clips=None, *, target_robot=None
 ):
     """
-    Scope the upstream optimizer fallback to this worker and this input file.
+    Connect checkpoint adaptation to the native loader in this worker only.
 
-    Native resume handles full last.pt files unchanged. Numbered snapshots omit
+    Native resume restores the learned parameters. Numbered snapshots omit
     optimizer state: their explicit marker keeps the newly created optimizers.
-    No module globals or training frames are inspected to obtain live objects.
+    The load hook applies only to the selected checkpoint; all hooks are restored
+    on exit. No training frames are inspected to obtain live objects.
     """
+    history = {}
     if checkpoint is None:
-        yield
+        yield history
         return
     from blinkmimic.optim import MuonAdam
 
@@ -93,13 +139,8 @@ def allow_model_only_resume(
             isinstance(file, (str, Path))
             and Path(file).resolve() == Path(checkpoint).resolve()
         ):
-            if source is not None:
-                from .sampler import transfer_sampler
-
-                saved["ctrl"] = transfer_sampler(
-                    saved.get("ctrl"), source, target,
-                    allow_removed=allow_removed,
-                )
+            check_resume_models(saved)
+            saved = prepare_resume_state(saved, target_clips, target_robot, history)
             keys = {"opt_pi", "opt_wm", "opt_v"}
             if not keys.intersection(saved):
                 saved = dict(saved, **{key: marker for key in keys})
@@ -125,7 +166,7 @@ def allow_model_only_resume(
     for cls, original in optimizer_loaders:
         cls.load_state_dict = loader(original)
     try:
-        yield
+        yield history
     finally:
         torch.load = original_load
         for cls, original in optimizer_loaders:
@@ -133,7 +174,7 @@ def allow_model_only_resume(
 
 
 @contextmanager
-def initialize_world_model(checkpoint, robot_name):
+def initialize_world_model(checkpoint):
     """Seed the native world model before optimizer construction."""
     if checkpoint is None:
         yield
@@ -141,8 +182,7 @@ def initialize_world_model(checkpoint, robot_name):
     from blinkmimic import networks
 
     saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    settings = saved.get("args", {})
-    if settings.get("robot") != robot_name or "wm" not in saved:
+    if "wm" not in saved:
         raise ValueError(
             "Expected a BlinkMimic world model for the target robot"
         )
@@ -152,10 +192,6 @@ def initialize_world_model(checkpoint, robot_name):
 
     def initialize(model, *args, **kwargs):
         native_init(model, *args, **kwargs)
-        if model.structured != settings.get("wm_structured", False):
-            raise ValueError(
-                "World model representation differs from the checkpoint"
-            )
         model.load_state_dict(weights, strict=True)
         print(f"[INFO] Initialized world model from {checkpoint}", flush=True)
 

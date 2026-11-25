@@ -31,13 +31,13 @@ def optional_git_metadata(repo: Path, *args: str) -> str | None:
     if not (repo / ".git").exists():
       return None
     return subprocess.check_output(
-      ["git", *args], cwd=repo, text=True, stderr=subprocess.DEVNULL
+      ["git", *args], cwd=repo, text=True, errors="replace", stderr=subprocess.DEVNULL
     ).rstrip("\n")
   except (OSError, subprocess.CalledProcessError):
     return None
 
 
-def _run_git(repo_path: Path, *args: str) -> str:
+def _run_git(repo_path: Path, *args: str) -> bytes:
   env = os.environ.copy()
   env["GIT_DISCOVERY_ACROSS_FILESYSTEM"] = "1"
   return subprocess.check_output(
@@ -50,21 +50,20 @@ def _run_git(repo_path: Path, *args: str) -> str:
       *args,
     ],
     env=env,
-    stderr=subprocess.STDOUT,
-    text=True,
-  ).strip()
+    stderr=subprocess.PIPE,
+  )
 
 
 def _repo_root(repo_path: str | os.PathLike[str]) -> Path:
   start_path = Path(repo_path).resolve()
   if start_path.is_file():
     start_path = start_path.parent
-  return Path(_run_git(start_path, "rev-parse", "--show-toplevel"))
+  return Path(os.fsdecode(_run_git(start_path, "rev-parse", "--show-toplevel").rstrip(b"\n")))
 
 
 def _format_git_state(repo_path: Path) -> str:
-  branch = _run_git(repo_path, "branch", "--show-current") or "HEAD"
-  commit_log = _run_git(repo_path, "log", "-1", "--decorate", "--date=iso")
+  branch = _run_git(repo_path, "branch", "--show-current").decode(errors="replace").rstrip("\n") or "HEAD"
+  commit_log = _run_git(repo_path, "log", "-1", "--decorate", "--date=iso").decode(errors="replace").rstrip("\n")
   return f"branch: {branch}\n\n{commit_log}\n"
 
 
@@ -79,21 +78,17 @@ def export_git_state(
 
   try:
     resolved_repo_path = _repo_root(repo_path)
-    state_path.write_text(_format_git_state(resolved_repo_path))
-    diff_path.write_text(
-      _run_git(
-        resolved_repo_path, "diff", "--binary", "HEAD", "--submodule=diff"
-      )
-    )
-  except (subprocess.CalledProcessError, RuntimeError) as error:
-    error_message = (
-      error.output.strip()
-      if isinstance(error, subprocess.CalledProcessError)
-      else str(error)
-    )
-    state_path.write_text(f"Git state export failed.\n\n{error_message}\n")
-    diff_path.write_text("")
-    print(f"[WARNING]: Skipping Git state export: {error_message}")
+    state = _format_git_state(resolved_repo_path)
+    diff = _run_git(resolved_repo_path, "diff", "--binary", "HEAD", "--submodule=diff")
+  except (OSError, subprocess.CalledProcessError) as error:
+    message = str(error)
+    if isinstance(error, subprocess.CalledProcessError) and error.stderr:
+      message = error.stderr.decode(errors="replace").strip()
+    state_path.write_text(f"Git state export failed.\n\n{message}\n", encoding="utf-8")
+    diff_path.write_bytes(b"")
+    print(f"[WARNING]: Skipping Git state export: {message}")
     return
 
+  state_path.write_text(state, encoding="utf-8")
+  diff_path.write_bytes(diff)
   print(f"[INFO]: Exported Git state to {state_path} and {diff_path}")

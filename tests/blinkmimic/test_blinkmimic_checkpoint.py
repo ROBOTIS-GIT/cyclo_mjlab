@@ -3,6 +3,8 @@ Verify checkpoint contents against the upstream trainer's actual save block.
 """
 
 import ast
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 import os
 import textwrap
 from types import SimpleNamespace
@@ -29,7 +31,8 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
         textwrap.dedent(source[start:end]), "upstream_save_block", "exec"
     )
     original_save = torch.save
-    with include_critic_in_snapshots():
+    clips = [("dance2", "digest2", 50), ("dance1", "digest1", 80)]
+    with include_critic_in_snapshots(clips=clips):
         for iteration in (1000, 2000):
             ck = {
                 key: {"weight": torch.tensor([iteration + offset])}
@@ -37,6 +40,7 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
             }
             ck.update(
                 iteration=iteration,
+                ctrl={"decay_at": 10},
                 wall_time=1,
                 sim_steps=10,
                 args={},
@@ -60,6 +64,8 @@ def test_upstream_saves_critic_in_models_and_optimizers_in_last(
                 tmp_path / f"model_{iteration}.pt", weights_only=True
             )
             last = torch.load(tmp_path / "last.pt", weights_only=True)
+            assert last["ctrl"] == model["ctrl"] == {"decay_at": 10, "clips": clips}
+            assert "joint_order" not in last and "joint_order" not in model
             for key in ("pi", "pi_live", "wm", "critic"):
                 assert torch.equal(model[key]["weight"], ck[key]["weight"])
             for key in ("opt_pi", "opt_v", "opt_wm"):
@@ -82,6 +88,91 @@ def test_missing_or_mismatched_critic_is_not_saved(tmp_path):
     assert not (tmp_path / "ckpt_002000.pt.tmp").exists()
 
 
+@pytest.mark.parametrize("time_limit", [False, True])
+def test_native_light_saves_and_final_full_resume(tmp_path, time_limit):
+    from source.tasks.blinkmimic.training.checkpoint.resume import read_resume_checkpoint
+
+    source = (VENDOR / "src/blinkmimic/train.py").read_text()
+    tree = ast.parse(source)
+    helpers = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+               and node.name in ("_save_atomic", "ckpt_wait")]
+    start = source.index("    if args.ckpt_light and not final_ck")
+    end = source.index("    if out_of_time:", start)
+    save_block = compile(textwrap.dedent(source[start:end]), "native_light_save", "exec")
+    model = torch.nn.Linear(2, 2)
+    optimizer = torch.optim.Adam(model.parameters())
+    clips = [("dance1", "digest", 50)]
+    original_save = torch.save
+
+    for adapted in (False, True):
+        directory = tmp_path / str(adapted)
+        directory.mkdir()
+        args = SimpleNamespace(log_dir=str(directory), ckpt_light=True,
+                               ckpt_every=1, iterations=3)
+        env = SimpleNamespace(focus_q=None, focus_static=False, focus_share=0.,
+                              bin_G=torch.ones(1), bin_fail=torch.zeros(1),
+                              bin_w_avg=torch.ones(1))
+        scope = dict(torch=torch, os=os, args=args, pi=model,
+                     pi_avg=SimpleNamespace(module=model, state_dict=lambda: {}),
+                     pi_live=model, wm=model, critic=model,
+                     opt_wm=optimizer, opt_pi=optimizer, opt_v=optimizer,
+                     env=env, DECAY_AT=[None], EPROBE=False,
+                     time=SimpleNamespace(time=lambda: 1., strftime=lambda _: "now"),
+                     t_start=0., sim_steps=100, CKPT_PENDING=[], timed=False)
+        exec(compile(ast.Module(body=helpers, type_ignores=[]), "native_save_helpers", "exec"), scope)
+        context = include_critic_in_snapshots(history={"old": {}}, clips=clips) if adapted else nullcontext()
+        with context, ThreadPoolExecutor(max_workers=1) as pool:
+            scope.update(CKPT_POOL=pool, it=0, final_ck=False, out_of_time=False)
+            exec(save_block, scope)
+            scope["ckpt_wait"](drain=True)
+            assert not (directory / "last.pt").exists()
+            light = torch.load(directory / "ckpt_000001.pt", weights_only=True)
+            assert set(light) == {"pi", "iteration", "wall_time", "sim_steps", "args", "saved_at"}
+            torch.testing.assert_close(light["pi"], model.state_dict())
+
+            # Both a completed run and --max_hours produce a full final save.
+            iteration = 2 if time_limit else 3
+            scope.update(it=iteration - 1, final_ck=True, out_of_time=time_limit)
+            exec(save_block, scope)
+            scope["ckpt_wait"](drain=True)
+        last = read_resume_checkpoint(directory / "last.pt")
+        assert last["iteration"] == iteration
+        assert last["args"]["ckpt_light"] is True
+        for key in ("wm", "critic", "opt_wm", "opt_pi", "opt_v"):
+            assert key in last
+        if adapted:
+            assert last["ctrl"]["clips"] == clips
+            assert last["inactive_sampler"] == {"old": {}}
+        # Final full saving must not add training state to the earlier light file.
+        assert set(torch.load(directory / "ckpt_000001.pt", weights_only=True)) == set(light)
+    assert torch.save is original_save
+    original = torch.load(tmp_path / "False/ckpt_000001.pt", weights_only=True)
+    adapted = torch.load(tmp_path / "True/ckpt_000001.pt", weights_only=True)
+    original["args"].pop("log_dir")
+    adapted["args"].pop("log_dir")
+    torch.testing.assert_close(adapted.pop("pi"), original.pop("pi"), rtol=0, atol=0)
+    assert adapted == original
+
+
+@pytest.mark.parametrize("through_worker", [False, True])
+def test_light_checkpoint_reports_resume_error(tmp_path, through_worker):
+    from source.tasks.blinkmimic.training.checkpoint.resume import (
+        native_training_resume, read_resume_checkpoint,
+    )
+
+    path = tmp_path / "model_100.pt"
+    torch.save(dict(pi={}, args={"ckpt_light": True}, iteration=100,
+                    wall_time=1., sim_steps=10), path)
+    original_load = torch.load
+    with pytest.raises(ValueError, match=r"policy-only.*last\.pt"):
+        if through_worker:
+            with native_training_resume(path):
+                torch.load(path, weights_only=True)
+        else:
+            read_resume_checkpoint(path)
+    assert torch.load is original_load
+
+
 @pytest.mark.parametrize("with_optimizers", [False, True])
 @pytest.mark.parametrize("optimizer_kind", ["adam", "muon"])
 def test_native_resume_restores_models_and_next_update(
@@ -92,7 +183,7 @@ def test_native_resume_restores_models_and_next_update(
     prepare()
     from blinkmimic.optim import MuonAdam
     from source.tasks.blinkmimic.training.checkpoint.resume import (
-        allow_model_only_resume,
+        native_training_resume,
         read_resume_checkpoint,
     )
 
@@ -159,7 +250,7 @@ def test_native_resume_restores_models_and_next_update(
     scope.update(zip(("wm", "pi", "critic"), restored_models))
     scope.update(zip(("opt_wm", "opt_pi", "opt_v"), restored_optimizers))
     original_load, original_adam = torch.load, torch.optim.Adam.load_state_dict
-    with allow_model_only_resume(path):
+    with native_training_resume(path):
         exec(compile(restore_block, "native_resume", "exec"), scope)
     assert (
         torch.load is original_load
@@ -189,13 +280,13 @@ def test_native_resume_restores_models_and_next_update(
 
 
 def test_resume_adapter_restores_hooks_on_failure(tmp_path):
-    from source.tasks.blinkmimic.training.checkpoint.resume import allow_model_only_resume
+    from source.tasks.blinkmimic.training.checkpoint.resume import native_training_resume
 
     original_load, original_adam = torch.load, torch.optim.Adam.load_state_dict
     path = tmp_path / "broken.pt"
     torch.save({"opt_pi": {}}, path)
     with pytest.raises(ValueError, match="Incomplete optimizer"):
-        with allow_model_only_resume(path):
+        with native_training_resume(path):
             torch.load(path, weights_only=True)
     assert (
         torch.load is original_load
@@ -216,17 +307,29 @@ def test_saved_training_arguments_are_authoritative():
             resume="old.pt",
             log_dir="old",
             ckpt_light=True,
+            wm_structured=True,
         )
     }
-    assert training_arguments(saved, "k1") == [
+    assert training_arguments(saved) == [
         "--hist",
         "7",
         "--lr",
         "0.004",
         "--no_sync",
     ]
-    with pytest.raises(ValueError, match="robot"):
-        training_arguments(saved, "other")
+
+
+@pytest.mark.parametrize("current", [True, False])
+def test_resume_uses_current_structured_dynamics_recipe(monkeypatch, current):
+    from source.tasks.blinkmimic import cli
+    from source.tasks.blinkmimic.training.checkpoint import resume
+
+    saved = dict(args=dict(wm_structured=not current, iterations=100), iteration=10)
+    monkeypatch.setattr(resume, "read_resume_checkpoint", lambda path: saved)
+    monkeypatch.setattr(cli, "recipe", lambda: ["--wm_structured"] if current else [])
+    args = SimpleNamespace(execution="official")
+    flags, _, _ = cli.resolve_training_resume(args, [], "last.pt")
+    assert ("--wm_structured" in flags) is current
 
 
 def test_training_launcher_forwards_resume_and_saved_arguments(
@@ -270,10 +373,11 @@ def test_training_launcher_forwards_resume_and_saved_arguments(
         "TASKS",
         {
             task: SimpleNamespace(
-                robot_factory=lambda: SimpleNamespace(name="k1")
+                robot_factory=lambda: SimpleNamespace(name="k1", joint_names=["a"])
             )
         },
     )
+    monkeypatch.setattr(cli, "prepare_task_motions", lambda task, directory: directory)
     received = []
     monkeypatch.setattr(
         cli, "run_worker", lambda args, **kw: received.append((args, kw))
@@ -289,6 +393,6 @@ def test_training_launcher_forwards_resume_and_saved_arguments(
     flags = kw["flags"]
     assert flags[flags.index("--resume") + 1] == str(run / "last.pt")
     assert flags[flags.index("--hist") + 1] == "7"
-    assert forwarded.motion_dir == motions
+    assert forwarded.motion_dir == forwarded.run_dir / "motions"
     assert forwarded.run_dir != run
     assert (run / "last.pt").read_bytes() == original

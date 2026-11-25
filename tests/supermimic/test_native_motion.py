@@ -26,6 +26,7 @@ pytestmark = pytest.mark.skipif(
 )
 def test_native_partial_reset_and_multiclip_replay(representation, velocity_only, tmp_path):
     cfg = make_env_cfg(representation)
+    cfg.scene.entities["robot"].init_state.joint_vel = {".*": 0.125}
     source = REPO_ROOT / "source/assets/motions/K1_rev1"
     paths = [source / name / f"{name}.npz" for name in ("dance1", "dance2")]
     originals = [p.read_bytes() for p in paths]
@@ -95,6 +96,7 @@ def test_native_partial_reset_and_multiclip_replay(representation, velocity_only
         raw = torch.linspace(-1.7, 1.4, 23).repeat(3, 1)
         action = native.action_manager.get_term("joint_pos")
         exported = nominal_action_contract(cfg, list(native.scene["robot"].joint_names))
+        assert runner.manifest["qdot0"] == exported["qdot0"] == [0.125] * 23
         for field, actual in (("scale", action.scale), ("offset", action._offset)):
             torch.testing.assert_close(
                 torch.tensor(exported[field]).expand_as(actual), actual, rtol=0, atol=0
@@ -140,6 +142,18 @@ def test_native_partial_reset_and_multiclip_replay(representation, velocity_only
         torch.testing.assert_close(
             cmd._external_probs, probabilities / probabilities.sum()
         )
+        if velocity_only:
+            from source.tasks.supermimic.play import headless_play
+
+            actor = runner.policy_learner.actor.eval()
+            commands = []
+            # This test reuses the inference tensors produced by runner.step().
+            with torch.inference_mode(), actor.register_forward_pre_hook(
+                lambda _, inputs: commands.append(inputs[0]["goal_velocity"].clone())
+            ):
+                headless_play(env, runner._wm, actor, 3, "velocity")
+            assert len(commands) == 3
+            assert all(torch.equal(command, torch.zeros(3, 3)) for command in commands)
     finally:
         env.close()
     assert [p.read_bytes() for p in paths] == originals

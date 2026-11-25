@@ -17,6 +17,8 @@
 """Private subprocess boundary for upstream MJLab performance patches."""
 
 import argparse
+from dataclasses import asdict
+from enum import Enum
 import json
 import runpy
 import sys
@@ -25,6 +27,19 @@ from pathlib import Path
 
 from .runtime import install_robot, prepare
 from .config import TASKS
+
+
+def plain_env_config(value):
+    """Represent configuration values as portable YAML data."""
+    if isinstance(value, dict):
+        return {key: plain_env_config(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [plain_env_config(item) for item in value]
+    if isinstance(value, Enum):
+        return value.value
+    if callable(value):
+        return f"{value.__module__}.{value.__qualname__}"
+    return value
 
 
 def record_training_failure(error):
@@ -65,13 +80,14 @@ def main():
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("mode", choices=("train", "evaluate", "play"))
     parser.add_argument("--task", choices=tuple(TASKS), required=True)
+    parser.add_argument("--log_dir", type=Path)
     parser.add_argument("--resume")
     parser.add_argument("--world-model-checkpoint", type=Path)
-    parser.add_argument("--resume-source-library", type=Path)
-    parser.add_argument("--allow-removed-clips", action="store_true")
     parser.add_argument("--motion_dir", type=Path)
     args, remaining = parser.parse_known_args()
     sys.argv = [sys.argv[0], *remaining]
+    if args.log_dir:
+        sys.argv.extend(["--log_dir", str(args.log_dir)])
     if args.motion_dir:
         sys.argv.extend(["--motion_dir", str(args.motion_dir)])
     if args.resume:
@@ -87,27 +103,37 @@ def main():
         elif args.mode == "train":
             from .training.checkpoint.snapshots import include_critic_in_snapshots
 
-            if "--ckpt_light" in remaining:
-                raise ValueError(
-                    "--ckpt_light is incompatible with critic snapshots"
-                )
-            from .training.checkpoint.resume import allow_model_only_resume, initialize_world_model
+            from .training.checkpoint.resume import native_training_resume, initialize_world_model
 
+            if args.log_dir is not None:
+                from blinkmimic.env import DECIMATION, make_sim
+                import yaml
+
+                env_cfg = {
+                    "decimation": DECIMATION,
+                    "sim": asdict(make_sim(robot)),
+                    "robot": {**asdict(robot), "robot_cfg": asdict(robot.robot_cfg())},
+                }
+                path = args.log_dir / "params/env.yaml"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("w", encoding="utf-8") as stream:
+                    yaml.safe_dump(plain_env_config(env_cfg), stream, sort_keys=False)
+
+            from .training.checkpoint.sampler import sampler_clips
+
+            clips = sampler_clips(args.motion_dir) if args.motion_dir else None
             with (
-                include_critic_in_snapshots(),
-                allow_model_only_resume(
+                native_training_resume(
                     args.resume,
-                    args.resume_source_library,
-                    args.motion_dir,
-                    allow_removed=args.allow_removed_clips,
-                ),
-                initialize_world_model(
-                    args.world_model_checkpoint, robot.name
-                ),
+                    clips,
+                    target_robot=robot,
+                ) as history,
+                include_critic_in_snapshots(history, clips),
+                initialize_world_model(args.world_model_checkpoint),
             ):
                 runpy.run_module("blinkmimic.train", run_name="__main__")
         else:
-            runpy.run_module(f"blinkmimic.{args.mode}", run_name="__main__")
+            runpy.run_module("blinkmimic.evaluate", run_name="__main__")
     except BaseException as error:
         record_training_failure(error)
         raise

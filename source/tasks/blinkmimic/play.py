@@ -127,11 +127,10 @@ def main(argv=None, *, robot=None):
         robot = TASKS[args.task].robot_factory()
 
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
-    wrapper = load_policy(checkpoint, robot)
     policy_args = checkpoint["args"]
-    path = export_loaded_policy(
-        args.checkpoint.parent, robot, checkpoint, wrapper, overwrite=True
-    )
+    output_dir = args.checkpoint.parent
+    wrapper = load_policy(checkpoint, robot)
+    path = export_loaded_policy(output_dir, robot, checkpoint, wrapper, overwrite=True)
     print(f"[INFO] Exported policy: {path}", flush=True)
     del checkpoint
     torch.backends.cuda.matmul.allow_tf32 = True

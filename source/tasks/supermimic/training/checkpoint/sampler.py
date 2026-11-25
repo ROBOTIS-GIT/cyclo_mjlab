@@ -140,7 +140,11 @@ def restore_sampler(runner, saved):
         return
     current = sampler_snapshot(runner)
     if current is None or current["mode"] != saved["mode"]:
-        raise ValueError("Reset sampler mode differs from the checkpoint")
+        print(
+            "[INFO] Reset sampler mode changed; starting with the current"
+            " task's fresh sampler statistics."
+        )
+        return
     restored = remap_bins(saved, current)
     command = runner.motion_cmd
     if saved["mode"] == "adaptive":

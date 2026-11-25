@@ -47,14 +47,15 @@ import tyro
 
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
 from mjlab.rl import MjlabOnPolicyRunner, RslRlBaseRunnerCfg, RslRlVecEnvWrapper
-from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
+from mjlab.tasks.registry import list_tasks, load_env_cfg, load_runner_cls
 from mjlab.utils.gpu import select_gpus
 from mjlab.utils.os import dump_yaml, get_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
-from source.utils import export_sim2real_cfg
+from source.utils import export_git_state, export_sim2real_cfg
+from scripts.reinforcement_learning.cli import load_rl_cfg
 
 
 @dataclass(frozen=True)
@@ -125,6 +126,7 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   if rank == 0:
     print(f"[INFO] Logging experiment in directory: {log_dir}")
+    export_git_state(log_dir, PROJECT_ROOT)
 
   env = ManagerBasedRlEnv(
     cfg=cfg.env, device=device, render_mode="rgb_array" if cfg.video else None
@@ -139,10 +141,9 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   resume_path: Path | None = None
   if cfg.agent.resume:
-      # Load checkpoint from local filesystem.
-      resume_path = get_checkpoint_path(
-        log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint
-      )
+    resume_path = get_checkpoint_path(
+      log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint
+    )
 
   # Only record videos on rank 0 to avoid multiple workers writing to the same files.
   if cfg.video and rank == 0:

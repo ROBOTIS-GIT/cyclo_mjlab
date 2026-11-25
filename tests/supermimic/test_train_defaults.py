@@ -11,6 +11,21 @@ from source.tasks.supermimic.config import TASKS, register_tasks
 from source.tasks.supermimic.train import training_defaults
 
 
+def test_training_cli_has_no_motion_registry_option(capsys):
+    from source.tasks.supermimic.train import TrainConfig as LocalTrainConfig
+
+    default = training_defaults("Cyclo-SuperMimic-GenCoord-K1-Rev2-001")
+    assert default.registry_name is None
+    with pytest.raises(SystemExit) as result:
+        tyro.cli(LocalTrainConfig, args=["--help"], default=default, config=mjlab.TYRO_FLAGS)
+    assert result.value.code == 0
+    assert "--registry-name" not in capsys.readouterr().out
+    for option in ("--registry-name", "--registry_name"):
+        with pytest.raises(SystemExit) as result:
+            tyro.cli(LocalTrainConfig, args=[option, "remote/motion"], default=default, config=mjlab.TYRO_FLAGS)
+        assert result.value.code == 2
+
+
 @pytest.mark.parametrize("task", TASKS)
 def test_training_defaults_only_change_observation_and_task_representation(task):
     from mjlab.tasks.registry import list_tasks

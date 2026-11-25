@@ -61,7 +61,7 @@ def load_checkpoint(source):
         source = source / "last.pt"
     if source.is_dir():
         return _load_split_checkpoint(source)
-    return _load_archive_checkpoint(source)
+    return _archive_checkpoint(source, torch.load(source, map_location="cpu", weights_only=True))
 
 
 def _load_split_checkpoint(source):
@@ -80,8 +80,7 @@ def _load_split_checkpoint(source):
     )
 
 
-def _load_archive_checkpoint(source):
-    saved = torch.load(source, map_location="cpu", weights_only=True)
+def _archive_checkpoint(source, saved):
     if (
         not isinstance(saved, dict)
         or saved.get("format") != "cyclo.supermimic.checkpoint.v1"
@@ -113,46 +112,55 @@ def _load_archive_checkpoint(source):
     )
 
 
-def load_world_model(path, target):
-    """Read native split or combined weights, checking the dynamics contract."""
-    if path.is_dir() and not (path / "last.pt").exists():
-        path = path / "world_model.pt"
-    if path.name == "world_model.pt":
-        source = json.loads((path.parent / "manifest.json").read_text())
-        weights = torch.load(path, map_location="cpu", weights_only=True)
+def load_world_model(path):
+    """Read world-model weights without depending on manifest or policy metadata."""
+    if path.is_dir():
+        path = path / ("last.pt" if (path / "last.pt").is_file() else "world_model.pt")
+    saved = torch.load(path, map_location="cpu", weights_only=True)
+    if isinstance(saved, dict) and saved.get("format") == "cyclo.supermimic.checkpoint.v1":
+        weights = saved.get("world_model")
     else:
-        checkpoint = load_checkpoint(path)
-        source, weights = checkpoint.manifest, checkpoint.world_model
+        weights = saved
 
-    for key in ("schema_version", "representation", "robot"):
-        if source[key] != target[key]:
-            raise ValueError(f"World model {key} differs from the target")
-
-    def dynamics_config(manifest):
-        env = manifest["environment"]
-        motion = env["commands"]["motion"]
-        return (
-            env["sim"]["mujoco"],
-            env["decimation"],
-            env["events"],
-            env["actions"],
-            env["observations"],
-            env["scene"]["entities"],
-            motion["body_names"],
-            motion["anchor_body_name"],
-            manifest["runner_cfg"]["dynamics_hidden_dims"],
-        )
-
-    if dynamics_config(source) != dynamics_config(target):
-        raise ValueError(
-            "World model dynamics configuration differs from the target"
-        )
     if (
         not isinstance(weights, dict)
-        or not {"dynamics", "sim_context"} <= weights.keys()
+        or not all(isinstance(weights.get(key), dict) for key in ("dynamics", "sim_context"))
     ):
         raise ValueError("Expected a SuperMimic world-model bundle")
     return weights
+
+
+def check_motion_contract(old, new):
+    if old["anchor_body_name"] != new["anchor_body_name"]:
+        raise ValueError("Checkpoint motion anchor_body_name differs from the target")
+    if old["body_names"] != new["body_names"]:
+        raise ValueError("Checkpoint motion body_names differs from the target")
+
+
+def check_training_contract(source, target):
+    """Check representation and motion semantics for full training resume."""
+    if source.get("schema_version") not in (1, 2):
+        raise ValueError("Unsupported checkpoint manifest version")
+    if source["representation"] != target["representation"]:
+        raise ValueError("Checkpoint representation differs from the target")
+
+    old, new = source["environment"], target["environment"]
+    if "commands" not in old:
+        raise ValueError("Missing checkpoint motion configuration")
+    check_motion_contract(old["commands"]["motion"], new["commands"]["motion"])
+
+
+def initialize_world_model(model, weights):
+    """Restore learned weights and normalization with the current action mapping."""
+    state = dict(weights)
+    state["dynamics"] = dict(weights["dynamics"])
+    # Match the simulator's commands, while preserving the network's learned input basis.
+    for name in ("action_scale", "action_offset"):
+        target = getattr(model.dynamics, name)
+        if state["dynamics"][name].shape != target.shape:
+            raise ValueError(f"World model dynamics.{name} shape differs from the target")
+        state["dynamics"][name] = target
+    model.load_bundle(state)
 
 
 def save_checkpoint(
@@ -168,7 +176,7 @@ def save_checkpoint(
 ):
     """Save model history and latest optimizer state, then apply retention."""
     directory = Path(directory)
-    target = directory / "checkpoints" / f"model_{step}.pt"
+    target = directory / f"model_{step}.pt"
     saved = dict(
         format="cyclo.supermimic.checkpoint.v1",
         step=step,

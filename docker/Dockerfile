@@ -3,7 +3,7 @@
 ARG PYTHON_BASE_IMAGE=python:3.12-slim-bookworm
 FROM ${PYTHON_BASE_IMAGE}
 
-LABEL version="1.1.0"
+LABEL version="1.1.1"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 

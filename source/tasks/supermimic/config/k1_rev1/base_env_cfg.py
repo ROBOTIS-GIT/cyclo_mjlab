@@ -80,4 +80,7 @@ def make_env_cfg(representation="gencoord", play=False):
     cfg.sim.nconmax = 128
     cfg.sim.njmax = 300
     cfg.scene.num_envs = 1 if play else 4096
+    if play:
+        # Match upstream playback; training adds noise in the representation.
+        cfg.observations["actor"].enable_corruption = True
     return cfg

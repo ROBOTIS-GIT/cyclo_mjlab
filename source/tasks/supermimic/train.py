@@ -39,20 +39,20 @@ from source.utils.training_resume import (
     select_resume_checkpoint,
 )
 from . import LOG_ROOT
-from .training.checkpoint.archive import load_checkpoint, load_world_model
+from .training.checkpoint.archive import initialize_world_model, load_checkpoint, load_world_model
 from .training.checkpoint.resume import restore_training_state, validate_resume_configuration
 from .config import TASKS, check_representation_matches
 from .training.runner import LocalBundleRunner as SuperMimicRunner
 from .training.checkpoint.manifest import (
-    environment_options,
     make_manifest,
     validate_control_rate,
-    validate_manifest,
+    manifest_configuration,
 )
 
 
 @dataclass
 class TrainConfig(NativeTrainConfig):
+    registry_name: tyro.conf.Suppress[None] = None
     agent: ResumeOptions = field(default_factory=ResumeOptions)
     world_model_checkpoint: Path | None = None
     """Start at iteration zero with the world model from a local checkpoint."""
@@ -83,35 +83,22 @@ def parse_training_configuration(argv):
         LOG_ROOT / chosen_task, options
     )
     checkpoint = load_checkpoint(resume_path) if resume_path else None
-    saved_environment_options = []
     if checkpoint is not None:
-        default.env, default.runner = validate_manifest(
+        default.env, default.runner = manifest_configuration(
             checkpoint.manifest, chosen_task, for_resume=True
         )
         default.runner.wandb_run_path = None
-        default.num_envs = checkpoint.manifest.get(
-            "num_envs", default.num_envs
-        )
-        saved_environment_options = checkpoint.manifest["environment_options"]
     args = tyro.cli(
         TrainConfig,
         args=remaining_args,
         default=default,
         config=mjlab.TYRO_FLAGS,
     )
-    return (
-        chosen_task,
-        args,
-        checkpoint,
-        saved_environment_options,
-        remaining_args,
-    )
+    return chosen_task, args, checkpoint
 
 
 def main(argv=None):
-    chosen_task, args, checkpoint, saved_options, arguments = (
-        parse_training_configuration(argv)
-    )
+    chosen_task, args, checkpoint = parse_training_configuration(argv)
     check_representation_matches(chosen_task, args.runner.representation)
     validate_control_rate(args.env)
     if not args.motion_file:
@@ -124,37 +111,34 @@ def main(argv=None):
         if "," in args.motion_file
         else os.path.expanduser(args.motion_file)
     )
-    args.registry_name = None
     print(f"[INFO] Using local motion file: {args.motion_file}")
     args.env.commands["motion"].sampling_mode = (
         "external"
         if args.runner.sampling_mode == "return"
         else args.runner.sampling_mode
     )
-    manifest = make_manifest(
-        chosen_task,
-        args.env,
-        args.runner,
-        [*saved_options, *environment_options(arguments)],
-    )
-    manifest["num_envs"] = args.num_envs
-    validate_manifest(manifest, chosen_task)
-    local_model = None
+    wandb_path = args.runner.wandb_run_path
+    if sum(value is not None for value in (checkpoint, args.world_model_checkpoint, wandb_path)) > 1:
+        raise ValueError(
+            "Choose one of --world-model-checkpoint, --agent.resume, or --runner.wandb-run-path"
+        )
+    # Cyclo initializes both transfer sources after constructing the target model.
+    args.runner.wandb_run_path = None
+    manifest = make_manifest(chosen_task, args.env, args.runner)
+    transfer_weights = None
     if args.world_model_checkpoint is not None:
-        if checkpoint is not None or args.runner.wandb_run_path is not None:
-            raise ValueError(
-                "Choose one of --world-model-checkpoint, --agent.resume,"
-                " or --runner.wandb-run-path"
-            )
         path = args.world_model_checkpoint.expanduser().resolve()
-        local_model = load_world_model(path, manifest)
+        transfer_weights = load_world_model(path)
         manifest["world_model_from"] = str(path)
+    elif wandb_path is not None:
+        import wandb
+        from supermimic.utils.wandb_artifacts import download_model_dir
+
+        path = download_model_dir(wandb.Api().run(wandb_path)) / "world_model.pt"
+        transfer_weights = load_world_model(path)
+        manifest["world_model_from"] = wandb_path
     if checkpoint is not None:
         validate_resume_configuration(checkpoint, manifest)
-        if args.runner.wandb_run_path is not None:
-            raise ValueError(
-                "Do not combine --agent.resume with world-model-only loading"
-            )
         if args.runner.max_iterations <= checkpoint.step + 1:
             raise ValueError(
                 "--runner.max-iterations must exceed the saved completed"
@@ -174,9 +158,9 @@ def main(argv=None):
         )
         if checkpoint is not None:
             restore_training_state(runner, checkpoint)
-        elif local_model is not None:
-            runner._wm.load_bundle(local_model)
-            del local_model
+        elif transfer_weights is not None:
+            initialize_world_model(runner._wm, transfer_weights)
+            del transfer_weights
             print(f"[INFO] Initialized world model from {path}")
         runner.run()
     finally:

@@ -99,17 +99,13 @@ def validate_policy_state(state, args, robot):
         or (scale == 0).any()
     ):
         raise ValueError("Invalid robot nominal pose/action scale")
-    if args["pi_ref_skip"]:
-        for name, expected in (("ref_q0", q0), ("ref_alpha", scale)):
-            if name not in state or not torch.equal(state[name], expected):
-                raise ValueError(
-                    f"Checkpoint {name} differs from the robot contract"
-                )
     for name, value in state.items():
         if not isinstance(value, torch.Tensor) or value.dtype != torch.float32:
             raise ValueError(f"Expected FP32 policy tensor: {name}")
         if not torch.isfinite(value).all():
             raise ValueError(f"Nonfinite policy tensor: {name}")
+        if args["pi_ref_skip"] and name == "ref_alpha" and (value == 0).any():
+            raise ValueError("Zero reference action scale")
         if name.endswith(".var") and (value < 0).any():
             raise ValueError(f"Negative normalizer variance: {name}")
 
@@ -271,7 +267,7 @@ def contract(wrapper, checkpoint, robot):
         reference_skip=dict(
             enabled=wrapper.policy.ref_off is not None,
             raw_goal_offset=wrapper.policy.ref_off,
-            formula="(q_ref[f+1]-q0)/action_scale + decoder_residual",
+            formula="(q_ref[f+1]-ref_q0)/ref_alpha + decoder_residual",
         ),
         action=dict(
             joint_order=list(robot.joint_names),
