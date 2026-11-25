@@ -2,6 +2,18 @@
 Changelog for package cyclo_mjlab
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.1.1 (2026-11-25)
+------------------
+* Improved BlinkMimic and SuperMimic checkpoint resume, world-model transfer, and playback
+  to use the selected task environment without depending on historical run paths or physics metadata.
+* Improved sampler statistics restoration when motion clips are added, removed, or updated.
+* Corrected policy export metadata and preserved configured RSL-RL action clipping in ONNX exports.
+* Made checkpoint discovery consistent across playback and resume, skipping incomplete runs and evaluation links.
+* Separated BeyondMimic logs by task ID. Select older runs explicitly when resuming from the previous log layout.
+* Saved training configurations and Git provenance for BlinkMimic and SuperMimic,
+  and preserved complete Git diffs while allowing training without readable repository metadata.
+* Contributors: Kiwoong Park
+
 1.1.0 (2026-11-23)
 ------------------
 * Added SuperMimic support for world-model training and motion tracking with GenCoord and MaxCoord policies.
