@@ -44,13 +44,14 @@ import tyro
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
 from mjlab.rl.exporter_utils import attach_metadata_to_onnx, get_base_metadata
-from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
+from mjlab.tasks.registry import list_tasks, load_env_cfg, load_runner_cls
 from mjlab.utils.os import get_checkpoint_path, get_wandb_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
+from scripts.reinforcement_learning.cli import load_rl_cfg
 
 
 @dataclass(frozen=True)

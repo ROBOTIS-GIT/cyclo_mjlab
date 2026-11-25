@@ -17,6 +17,7 @@
 """Command-line options and task selection shared by train and play."""
 
 import argparse
+import re
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
@@ -25,6 +26,16 @@ TASK_PREFIXES = {
     "beyondmimic": "Cyclo-BeyondMimic-",
     "supermimic": "Cyclo-SuperMimic-",
 }
+
+
+def load_rl_cfg(task_id):
+    """Load MJLab's runner config with Cyclo's task-based experiment default."""
+    from mjlab.tasks.registry import load_rl_cfg as load_registered_cfg
+
+    cfg = load_registered_cfg(task_id)
+    if not cfg.experiment_name:
+        cfg.experiment_name = re.sub(r"_v\d+$", "", task_id.split(":")[-1].lower().replace("-", "_"))
+    return cfg
 
 
 def task_names(family):

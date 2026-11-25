@@ -59,7 +59,7 @@ def k1_rev2_mimic_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    experiment_name="k1_rev2_mimic",
+    experiment_name="",
     logger="tensorboard",
     save_interval=500,
     num_steps_per_env=24,
