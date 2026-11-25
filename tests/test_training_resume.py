@@ -81,3 +81,43 @@ def test_missing_explicit_run_is_not_replaced(tmp_path):
     with pytest.raises(ValueError, match="requires --agent.resume"):
         select_resume_checkpoint(tmp_path, ResumeOptions(False, "other"))
     assert select_resume_checkpoint(tmp_path, ResumeOptions()) is None
+
+
+def test_wide_pattern_only_selects_resumable_models(tmp_path):
+    run = tmp_path / "run"
+    models = run / "checkpoints"
+    models.mkdir(parents=True)
+    for path in (run / "world_model.pt", run / "actor.pt", models / "model_20.pt"):
+        path.touch()
+    options = ResumeOptions(True, load_checkpoint=r".*\.pt")
+    assert select_resume_checkpoint(tmp_path, options) == models / "model_20.pt"
+    (run / "last.pt").touch()
+    assert select_resume_checkpoint(tmp_path, options) == run / "last.pt"
+
+
+def test_blinkmimic_play_and_resume_choose_the_same_custom_run(tmp_path):
+    import os
+    from source.tasks.blinkmimic.cli import latest_training_checkpoint, training_run_order
+
+    for run, time in (("aaa_new", 20), ("zzz_old", 10)):
+        checkpoint = tmp_path / "task" / run / "last.pt"
+        checkpoint.parent.mkdir(parents=True)
+        checkpoint.touch()
+        os.utime(checkpoint, (time, time))
+    resume = select_resume_checkpoint(tmp_path / "task", ResumeOptions(True), run_sort_key=training_run_order)
+    assert latest_training_checkpoint(tmp_path, "task") == resume == tmp_path / "task/aaa_new/last.pt"
+
+def test_blinkmimic_discovers_training_files_and_honors_explicit_links(tmp_path):
+    old = tmp_path / "2026-01/last.pt"
+    new = tmp_path / "2026-02/last.pt"
+    link = tmp_path / "zz-eval/last.pt"
+    for file in (old, new, link):
+        file.parent.mkdir()
+    old.touch()
+    new.touch()
+    link.symlink_to(old)
+    for selector in ("last.pt", r"last.*"):
+        automatic = ResumeOptions(True, load_checkpoint=selector)
+        assert select_resume_checkpoint(tmp_path, automatic, skip_discovered_symlinks=True) == new
+    for explicit in (ResumeOptions(True, "zz-eval"), ResumeOptions(True, load_checkpoint=str(link))):
+        assert select_resume_checkpoint(tmp_path, explicit, skip_discovered_symlinks=True) == old

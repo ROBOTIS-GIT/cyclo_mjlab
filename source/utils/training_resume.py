@@ -45,13 +45,13 @@ def add_resume_arguments(parser):
         help="Resume saved models and available optimizer state in a new run",
     )
     parser.add_argument(
-        "--agent.load-run",
+        "--agent.load-run", "--agent.load_run",
         dest="load_run",
         default=".*",
         help="Run directory or regex under the task log directory",
     )
     parser.add_argument(
-        "--agent.load-checkpoint",
+        "--agent.load-checkpoint", "--agent.load_checkpoint",
         dest="load_checkpoint",
         default="last.pt",
         help="Checkpoint path or filename regex (default: last.pt)",
@@ -65,7 +65,7 @@ def parse_resume_options(arguments):
     return ResumeOptions(**vars(options))
 
 
-def select_resume_checkpoint(log_root, options):
+def select_resume_checkpoint(log_root, options, *, skip_discovered_symlinks=False, run_sort_key=None):
     if not options.resume:
         if options.load_run != ".*" or options.load_checkpoint != "last.pt":
             raise ValueError("Checkpoint selection requires --agent.resume")
@@ -80,7 +80,8 @@ def select_resume_checkpoint(log_root, options):
     explicit = Path(options.load_run).expanduser()
     if not explicit.is_absolute():
         explicit = root / explicit
-    if explicit.is_dir():
+    explicit_run = explicit.is_dir()
+    if explicit_run:
         runs = [explicit]
     else:
         pattern = re.compile(options.load_run)
@@ -90,24 +91,30 @@ def select_resume_checkpoint(log_root, options):
                 for p in root.glob("*")
                 if p.is_dir() and pattern.match(p.name)
             ),
+            key=run_sort_key,
             reverse=True,
         )
+    def eligible(path):
+        return path.is_file() and (
+            not skip_discovered_symlinks or explicit_run or not path.is_symlink()
+        )
+
     pattern = re.compile(options.load_checkpoint)
     for run in runs:
         exact = run / checkpoint
-        if exact.is_file():
+        if eligible(exact):
             return exact.resolve()
-        candidates = [
-            p
-            for directory in (run, run / "checkpoints")
-            for p in directory.glob("*.pt")
-            if pattern.fullmatch(p.name)
-        ]
+        candidates = []
+        for directory in (run, run / "checkpoints"):
+            for path in directory.glob("*.pt"):
+                number = re.fullmatch(r"(?:model|ckpt)_([0-9]+)\.pt", path.name)
+                if path.name != "last.pt" and not number:
+                    continue
+                if pattern.fullmatch(path.name) and eligible(path):
+                    # The latest full checkpoint includes the optimizer state.
+                    candidates.append((path.name == "last.pt", int(number[1]) if number else 0, path))
         if candidates:
-            # model_10000.pt must sort after model_9000.pt.
-            return max(
-                candidates, key=lambda p: (len(p.stem), p.name)
-            ).resolve()
+            return max(candidates)[2].resolve()
     raise ValueError(
         f"No resume checkpoint {options.load_checkpoint!r} in "
         f"{root} (run={options.load_run!r})"
