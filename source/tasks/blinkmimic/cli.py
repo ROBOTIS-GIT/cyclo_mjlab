@@ -239,6 +239,7 @@ def create_parser():
         description="K1 Rev.1 motion-only official BlinkMimic"
     )
     parser.add_argument("task", choices=tuple(TASKS))
+    parser.add_argument("--num-envs", "--num_envs", type=int)
     parser.add_argument(
         "--motion-dir",
         type=Path,
@@ -314,6 +315,8 @@ def resolve_playback_inputs(args):
 
 def parse_arguments(parser, action, argv):
     args, extra = parser.parse_known_args(argv)
+    if args.num_envs is not None:
+        extra.extend(["--num_envs", str(args.num_envs)])
     if action == "train" and (args.checkpoint is not None or args.checkpoint_dir is not None):
         parser.error(
             "--checkpoint and --checkpoint-dir are only for play. "

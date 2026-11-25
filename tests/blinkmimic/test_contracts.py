@@ -211,8 +211,9 @@ def test_normalization_and_raw_goal_reference_skip_contract():
 
 
 @pytest.mark.parametrize("light", [False, True])
+@pytest.mark.parametrize("num_envs_option", ["--num-envs", "--num_envs"])
 def test_task_launcher_keeps_training_and_evaluation_isolated(
-    tmp_path, monkeypatch, light
+    tmp_path, monkeypatch, light, num_envs_option
 ):
     from types import SimpleNamespace
     from source.tasks.blinkmimic import cli
@@ -270,7 +271,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
                 str(data),
                 "--run-dir",
                 str(train),
-                "--num_envs",
+                num_envs_option,
                 "2048",
                 *(["--ckpt_light"] if light else []),
             ],
