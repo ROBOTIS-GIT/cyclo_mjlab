@@ -1,6 +1,7 @@
 """Synthetic full-width policy export; no dataset, trained checkpoint or simulator."""
 
 import copy
+from dataclasses import replace
 import json
 
 import numpy as np
@@ -62,6 +63,9 @@ def test_full_width_onnx_matches_original_policy(tmp_path, synthetic_policy, ref
         }
         original = copy.deepcopy(original)
         original.ref_off = None
+    # A different playback robot must not rewrite the saved policy buffers.
+    robot = replace(robot, default_joint_pos={".*": 0.125},
+                    action_scale=dict.fromkeys(robot.joint_names, 0.375))
     source = tmp_path / "synthetic.pt"
     torch.save(checkpoint, source)
     destination = tmp_path / "export"
@@ -144,7 +148,7 @@ def test_incompatible_checkpoints_are_rejected(synthetic_policy, failure):
     elif failure in ("missing_pi", "pi_live_only"):
         del ck["pi"]
     elif failure == "ref_scale":
-        ck["pi"]["ref_alpha"] = ck["pi"]["ref_alpha"] * 2
+        ck["pi"]["ref_alpha"] = torch.zeros_like(ck["pi"]["ref_alpha"])
     elif failure == "negative_var":
         ck["pi"]["obs_norm.var"] = -torch.ones(81)
     elif failure == "nonfinite":

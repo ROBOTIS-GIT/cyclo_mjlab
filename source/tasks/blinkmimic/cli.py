@@ -32,13 +32,14 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-from source.utils.export_git_state import optional_git_metadata
+from source.utils.export_git_state import export_git_state, optional_git_metadata
 
 from .runtime import ROOT, UPSTREAM_REVISION, VENDOR
 from .config import TASKS
 from .prepare import resolve_motion_files
 from .training.checkpoint.selection import (
     checkpoint_recipe,
+    directory_checkpoint,
     link_evaluation_checkpoint,
     publish_completed_snapshots,
     select_checkpoint,
@@ -48,22 +49,27 @@ from .training.checkpoint.selection import (
 LOG_ROOT = Path("logs/blinkmimic")
 
 
+def training_run_order(directory, checkpoint=None):
+    try:
+        started = datetime.datetime.strptime(directory.name[:19], "%Y-%m-%d_%H-%M-%S").timestamp()
+    except ValueError:
+        # For a custom --run-dir, play and resume use the same training snapshot's time.
+        if checkpoint is None:
+            checkpoint = directory_checkpoint(directory, include_symlinks=False)
+        started = checkpoint.stat().st_mtime if checkpoint else float("-inf")
+    return started, directory.name
+
+
 def latest_training_checkpoint(log_root, task):
     candidates = []
-    for record_path in (log_root / task).glob("*/run-record.json"):
-        try:
-            record = json.loads(record_path.read_text())
-            if record["task"] != task or record["action"] != "train":
-                continue
-            started_at = datetime.datetime.fromisoformat(
-                record["started_at"]
-            ).timestamp()
-            checkpoint = select_checkpoint(None, record_path.parent)
-        except (OSError, ValueError, KeyError, TypeError):
-            # In-progress records and runs without a checkpoint are not
-            # playable yet.
+    for directory in (log_root / task).glob("*"):
+        if not directory.is_dir():
             continue
-        candidates.append((started_at, checkpoint))
+        # Headless evaluations link their input checkpoint into the output directory.
+        checkpoint = directory_checkpoint(directory, include_symlinks=False)
+        if checkpoint is None:
+            continue
+        candidates.append((training_run_order(directory, checkpoint), checkpoint.resolve()))
     if not candidates:
         raise ValueError(
             f"No saved training checkpoints for {task} in {log_root}; use"
@@ -71,23 +77,6 @@ def latest_training_checkpoint(log_root, task):
             " directory"
         )
     return max(candidates)[1]
-
-
-def training_motion_directory(checkpoint):
-    record_path = checkpoint.parent / "run-record.json"
-    try:
-        record = json.loads(record_path.read_text())
-        motion_dir = Path(record["manifest"]).parent
-        if not motion_dir.is_dir():
-            # Host and container share the checkout but mount it at different
-            # paths.
-            motion_dir = ROOT / motion_dir.relative_to(record["cwd"])
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        raise ValueError(
-            f"Cannot recover training motion directory from {record_path}; use"
-            " --motion-dir"
-        ) from error
-    return motion_dir
 
 
 def export_training_config_when_ready(child, run_dir, robot):
@@ -119,6 +108,9 @@ def export_training_config_when_ready(child, run_dir, robot):
         raise ValueError(
             "Training robot does not match the deployment configuration"
         )
+    from mjlab.utils.os import dump_yaml
+
+    dump_yaml(run_dir / "params/agent.yaml", settings)
     return export_sim2real_cfg(run_dir, SimpleNamespace(**settings), robot)
 
 
@@ -250,10 +242,7 @@ def create_parser():
     parser.add_argument(
         "--motion-dir",
         type=Path,
-        help=(
-            "Override the task motions with a prepared library; play defaults"
-            " to recorded motions"
-        ),
+        help="Override the selected task's motions with a prepared motion library",
     )
     parser.add_argument(
         "--run-dir",
@@ -314,12 +303,6 @@ def resolve_playback_inputs(args):
         args.checkpoint = select_checkpoint(
             args.checkpoint, args.checkpoint_dir
         )
-    if args.motion_dir is None:
-        record = args.checkpoint.parent / "run-record.json"
-        if record.is_file():
-            source_task = json.loads(record.read_text()).get("task")
-            if source_task in (None, args.task):
-                args.motion_dir = training_motion_directory(args.checkpoint)
     if args.num_steps is not None and args.num_steps < 1:
         raise ValueError("--num-steps must be positive")
     if not 1 <= args.port <= 65535:
@@ -331,6 +314,13 @@ def resolve_playback_inputs(args):
 
 def parse_arguments(parser, action, argv):
     args, extra = parser.parse_known_args(argv)
+    if action == "train" and (args.checkpoint is not None or args.checkpoint_dir is not None):
+        parser.error(
+            "--checkpoint and --checkpoint-dir are only for play. "
+            "To resume training, use --agent.resume True with "
+            "--agent.load-checkpoint /path/to/model.pt or --agent.load-run /path/to/run. "
+            "To load only the world model, use --world-model-checkpoint."
+        )
     if args.world_model_checkpoint is not None:
         if action != "train" or args.resume:
             parser.error("--world-model-checkpoint requires fresh training")
@@ -338,11 +328,6 @@ def parse_arguments(parser, action, argv):
         if not path.is_file():
             parser.error(f"Missing world model checkpoint: {path}")
         args.world_model_checkpoint = path
-    if action == "train" and "--ckpt_light" in extra:
-        parser.error(
-            "--ckpt_light omits world model and critic; full checkpoints are"
-            " required"
-        )
     if action not in ("train", "play"):
         parser.error("Supported actions are train and play")
     # Recipe overrides remain explicit and recorded, with no implicit resource
@@ -352,8 +337,6 @@ def parse_arguments(parser, action, argv):
         "--motion_dir",
         "--log_dir",
         "--run_dir",
-        "--resume-source-library",
-        "--allow-removed-clips",
         "--ckpt",
         "--resume",
     }
@@ -390,54 +373,12 @@ def prepare_run_inputs(action, args, extra):
             )
 
 
-def resume_motion_arguments(args, resume_path):
-    record = json.loads((resume_path.parent / "run-record.json").read_text())
-    source_task = record["task"]
-    cross_task = source_task != args.task
-    if cross_task and (
-        source_task not in TASKS
-        or TASKS[source_task].robot_factory
-        is not TASKS[args.task].robot_factory
-    ):
-        raise ValueError(
-            "Cross-task resume requires the same robot configuration"
-        )
-    original_motion_dir = training_motion_directory(resume_path)
-    manifest = original_motion_dir / "manifest.json"
-    recorded_hash = record.get("manifest_sha256")
-    if (
-        recorded_hash
-        and hashlib.sha256(manifest.read_bytes()).hexdigest() != recorded_hash
-    ):
-        raise ValueError(
-            "The source run's recorded motion manifest has changed"
-        )
-    # For older runs, task motions were prepared inside the run directory.
-    source = record.get("motion_source") or (
-        "task"
-        if original_motion_dir.resolve() == resume_path.parent / "motions"
-        else "explicit"
-    )
-    if not cross_task and args.motion_dir is None and source == "explicit":
-        args.motion_dir = original_motion_dir
-        args.motion_source = source
-    flags = [
-        "--resume",
-        str(resume_path),
-        "--resume-source-library",
-        str(original_motion_dir),
-    ]
-    if cross_task:
-        flags.append("--allow-removed-clips")
-    return flags
-
-
-def resolve_training_resume(args, extra, robot, resume_path):
+def resolve_training_resume(args, extra, resume_path):
     from .training.checkpoint.resume import read_resume_checkpoint, training_arguments
 
     saved = read_resume_checkpoint(resume_path)
     effective_recipe, removed_systems_flags = execution_recipe(
-        args.execution, training_arguments(saved, robot.name)
+        args.execution, training_arguments(saved)
     )
     iterations_parser = argparse.ArgumentParser(add_help=False)
     iterations_parser.add_argument(
@@ -448,24 +389,24 @@ def resolve_training_resume(args, extra, robot, resume_path):
         raise ValueError(
             "--iterations must exceed the saved completed iterations"
         )
-    extra = [*extra, *resume_motion_arguments(args, resume_path)]
+    extra = [*extra, "--resume", str(resume_path)]
     print(
         f"[INFO] Resuming {resume_path} at iteration {saved['iteration']}; "
         "simulation and replay buffer restart",
         flush=True,
     )
     args.resume_checkpoint = resume_path
+    args.resume_iteration = saved["iteration"]
     return effective_recipe, removed_systems_flags, extra
 
 
-def copy_training_log_header(previous_run, new_run):
-    """The native trainer only writes a CSV header on iteration zero."""
-    previous_log = previous_run / "train_log.csv"
-    if previous_log.is_file():
-        with previous_log.open() as stream:
-            header = stream.readline()
-        if header.startswith("iteration,"):
-            (new_run / "train_log.csv").write_text(header)
+def initialize_resume_log(new_run):
+    """The pinned native trainer writes this header only at iteration zero."""
+    (new_run / "train_log.csv").write_text(
+        "iteration,wall_h,sim_steps,wm_loss,wm_err8,pi_loss,v_loss,imag_rew,"
+        "pi_gradnorm,imag_survival,sim_rew,ep_len,ep_ret_norm,term_frac,it_per_s,lr,"
+        "pi_lr,pi_mult,nonfinite\n"
+    )
 
 
 def run_training(args, extra):
@@ -481,16 +422,20 @@ def run_training(args, extra):
     from source.utils.training_resume import select_resume_checkpoint
 
     args.motion_source = "task" if args.motion_dir is None else "explicit"
-    resume_path = select_resume_checkpoint(ROOT / LOG_ROOT / args.task, args)
+    resume_path = select_resume_checkpoint(
+        ROOT / LOG_ROOT / args.task, args,
+        skip_discovered_symlinks=True, run_sort_key=training_run_order,
+    )
     if resume_path is not None:
         effective_recipe, removed_systems_flags, extra = (
-            resolve_training_resume(args, extra, robot, resume_path)
+            resolve_training_resume(args, extra, resume_path)
         )
     out.mkdir(parents=True, exist_ok=False)
+    export_git_state(out, ROOT)
     if args.motion_dir is None:
         args.motion_dir = prepare_task_motions(args.task, out / "motions")
-    if resume_path:
-        copy_training_log_header(resume_path.parent, out)
+    if resume_path and args.resume_iteration > 0:
+        initialize_resume_log(out)
     if args.world_model_checkpoint:
         extra = [
             *extra,
@@ -538,7 +483,6 @@ def run_playback(args, extra):
     out.mkdir(parents=True, exist_ok=False)
     if args.motion_dir is None:
         args.motion_dir = prepare_task_motions(args.task, out / "motions")
-    link_evaluation_checkpoint(args.checkpoint, out)
     flags = [
         *extra,
         "--robot",
@@ -548,6 +492,13 @@ def run_playback(args, extra):
         "--run_dir",
         str(out),
     ]
+    if args.checkpoint.name == "last.pt":
+        # The upstream single-file evaluator writes optional results beside its input.
+        local_checkpoint = out / "last.pt"
+        local_checkpoint.symlink_to(args.checkpoint)
+        flags.extend(["--ckpt", str(local_checkpoint)])
+    else:
+        link_evaluation_checkpoint(args.checkpoint, out)
     print(f"[INFO] Playback log: {out / 'console.log'}", flush=True)
     return run_worker(
         args,

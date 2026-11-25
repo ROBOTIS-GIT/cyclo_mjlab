@@ -31,6 +31,24 @@ from source.tasks.blinkmimic.config.k1_rev1.robot_spec import (  # noqa: E402
 TEST_TASK = "Cyclo-BlinkMimic-K1-Rev1-001"
 
 
+@pytest.mark.parametrize("option", ["--checkpoint", "--checkpoint-dir"])
+@pytest.mark.parametrize("resume", [False, True])
+def test_training_rejects_play_checkpoint_options(option, resume, capsys):
+    from source.tasks.blinkmimic.cli import create_parser, parse_arguments
+
+    arguments = [TEST_TASK, option, "/unused/checkpoint"]
+    if resume:
+        arguments.extend(["--agent.resume", "True"])
+    with pytest.raises(SystemExit) as error:
+        parse_arguments(create_parser(), "train", arguments)
+    assert error.value.code == 2
+    message = capsys.readouterr().err
+    assert "only for play" in message
+    assert "--agent.resume True" in message
+    assert "--agent.load-checkpoint" in message
+    assert "--world-model-checkpoint" in message
+
+
 def test_released_recipe():
     flags = recipe()
     for flag, value in {
@@ -192,8 +210,9 @@ def test_normalization_and_raw_goal_reference_skip_contract():
     )
 
 
+@pytest.mark.parametrize("light", [False, True])
 def test_task_launcher_keeps_training_and_evaluation_isolated(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, light
 ):
     from types import SimpleNamespace
     from source.tasks.blinkmimic import cli
@@ -232,7 +251,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
             return 0
 
     monkeypatch.setattr(
-        cli.subprocess, "check_output", lambda *a, **k: "test-source"
+        cli.subprocess, "check_output", lambda *a, **k: "test-source" if k.get("text") else b"test-source"
     )
     monkeypatch.setattr(cli.subprocess, "Popen", Child)
     monkeypatch.setattr(
@@ -241,7 +260,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     data = tmp_path / "data"
     data.mkdir()
     (data / "manifest.json").write_text("{}")
-    train = tmp_path / "logs" / "blinkmimic" / TEST_TASK / "train"
+    train = tmp_path / "logs" / "blinkmimic" / TEST_TASK / "2020-01-01_00-00-00"
     with pytest.raises(SystemExit) as result:
         cli.main(
             "train",
@@ -253,6 +272,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
                 str(train),
                 "--num_envs",
                 "2048",
+                *(["--ckpt_light"] if light else []),
             ],
         )
     assert result.value.code == 0
@@ -265,7 +285,7 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     assert commands[-1][commands[-1].index("--num_envs") + 1] == "2048"
     assert commands[-1][commands[-1].index("--ckpt_every") + 1] == "1000"
     assert commands[-1][commands[-1].index("--ckpt_minutes") + 1] == "0"
-    assert "--ckpt_light" not in commands[-1]
+    assert ("--ckpt_light" in commands[-1]) is light
     assert (
         "--enc_hidden" not in commands[-1]
         and "--dec_hidden" not in commands[-1]
@@ -299,6 +319,16 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
     assert (evaluation / "ckpt_000100.pt").resolve() == ckpt
     assert ckpt.read_bytes() == original_checkpoint
 
+    last = train / "last.pt"
+    last.write_bytes(original_checkpoint)
+    single = tmp_path / "eval-last"
+    with pytest.raises(SystemExit) as result:
+        cli.main("play", [TEST_TASK, "--checkpoint", str(last), "--viewer", "headless",
+                          "--motion-dir", str(data), "--run-dir", str(single)])
+    assert result.value.code == 0
+    assert commands[-1][commands[-1].index("--ckpt") + 1] == str(single / "last.pt")
+    assert (single / "last.pt").resolve() == last
+
     monkeypatch.setattr(cli, "ROOT", tmp_path)
 
     def run_gui(command, **kwargs):
@@ -309,18 +339,6 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
 
     monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setattr(cli.subprocess, "run", run_gui)
-    record = (train / "run-record.json").read_bytes()
-    with pytest.raises(SystemExit) as result:
-        cli.main("play", [TEST_TASK])
-    assert result.value.code == 0
-    assert commands[-1][4] == "play"
-    assert commands[-1][commands[-1].index("--task") + 1] == TEST_TASK
-    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(ckpt)
-    assert commands[-1][commands[-1].index("--motion-dir") + 1] == str(data)
-    assert config_exports == [train]
-    assert not (train / "play").exists()
-    assert (train / "run-record.json").read_bytes() == record
-
     prepared = []
 
     def prepare_task(task, output):
@@ -331,11 +349,28 @@ def test_task_launcher_keeps_training_and_evaluation_isolated(
         return output
 
     monkeypatch.setattr(cli, "prepare_task_motions", prepare_task)
+    record = (train / "run-record.json").read_bytes()
+    with pytest.raises(SystemExit) as result:
+        cli.main("play", [TEST_TASK])
+    assert result.value.code == 0
+    assert commands[-1][4] == "play"
+    assert commands[-1][commands[-1].index("--task") + 1] == TEST_TASK
+    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(ckpt)
+    assert commands[-1][commands[-1].index("--motion-dir") + 1] == str(prepared[-1][1])
+    assert prepared[-1][0] == TEST_TASK
+    assert config_exports == [train]
+    assert not (train / "play").exists()
+    assert (train / "run-record.json").read_bytes() == record
+    with pytest.raises(SystemExit) as result:
+        cli.main("play", [TEST_TASK, "--checkpoint", str(last)])
+    assert result.value.code == 0
+    assert commands[-1][commands[-1].index("--checkpoint") + 1] == str(last)
+
     default_run = tmp_path / "task-defaults"
     with pytest.raises(SystemExit) as result:
         cli.main("train", [TEST_TASK, "--run-dir", str(default_run)])
     assert result.value.code == 0
-    assert prepared == [(TEST_TASK, default_run / "motions")]
+    assert prepared[-1] == (TEST_TASK, default_run / "motions")
     assert commands[-1][commands[-1].index("--motion_dir") + 1] == str(
         default_run / "motions"
     )
@@ -374,67 +409,25 @@ def test_task_motion_paths_support_files_directories_and_globs(tmp_path):
         resolve_motion_files(())
 
 
-def test_latest_training_run_uses_task_and_start_time(tmp_path):
+def test_latest_training_run_without_records(tmp_path):
     from source.tasks.blinkmimic.cli import latest_training_checkpoint
 
-    def run(
-        name, started_at, *, task=TEST_TASK, action="train", iteration=100
-    ):
-        directory = tmp_path / TEST_TASK / name
+    def run(task, name):
+        directory = tmp_path / task / name
         directory.mkdir(parents=True)
-        (directory / "run-record.json").write_text(
-            json.dumps(
-                dict(
-                    task=task,
-                    action=action,
-                    started_at=started_at,
-                )
-            )
-        )
-        checkpoint = directory / f"model_{iteration}.pt"
-        if iteration:
-            checkpoint.touch()
-        return checkpoint
+        return directory
 
-    # Run names, modification times, and iteration counts do not define run
-    # recency.
-    expected = run("a_new", "2026-11-17T07:00:00+00:00")
-    run("z_old", "2026-11-17T06:00:00+00:00", iteration=900)
-    run("starting", "2026-11-17T08:00:00+00:00", iteration=0)
-    run("different_task", "2026-11-17T09:00:00+00:00", task="other")
-    run("evaluation", "2026-11-17T09:00:00+00:00", action="play")
-    run("a_new/play/viewer", "2026-11-17T09:00:00+00:00", action="play")
-    incomplete = tmp_path / TEST_TASK / "incomplete"
-    incomplete.mkdir()
-    (incomplete / "run-record.json").write_text('{"task":')
-    assert latest_training_checkpoint(tmp_path, TEST_TASK) == expected
+    old = run(TEST_TASK, "2026-01-01_10-00-00") / "model_900.pt"
+    old.touch()
+    newest = run(TEST_TASK, "2026-01-02_10-00-00_named") / "last.pt"
+    newest.touch()
+    (newest.parent / "run-record.json").write_text('{"task":')
+    (run(TEST_TASK, "2026-01-03_10-00-00") / "last.pt.tmp").touch()
+    (run(TEST_TASK, "evaluation") / "ckpt_000900.pt").symlink_to(old)
+    (run("other", "2026-01-04_10-00-00") / "last.pt").touch()
+    assert latest_training_checkpoint(tmp_path, TEST_TASK) == newest
     with pytest.raises(ValueError, match="No saved training checkpoints"):
         latest_training_checkpoint(tmp_path / "missing", TEST_TASK)
-
-
-def test_training_motion_directory_supports_host_and_container_paths(
-    tmp_path, monkeypatch
-):
-    from source.tasks.blinkmimic import cli
-
-    checkpoint = tmp_path / "model_100.pt"
-    record_path = tmp_path / "run-record.json"
-    data = tmp_path / ".blinkmimic-data/dances"
-    data.mkdir(parents=True)
-    monkeypatch.setattr(cli, "ROOT", tmp_path)
-    for root in (str(tmp_path), "/different/container/checkout"):
-        record_path.write_text(
-            json.dumps(
-                dict(
-                    cwd=root,
-                    manifest=f"{root}/.blinkmimic-data/dances/manifest.json",
-                )
-            )
-        )
-        assert cli.training_motion_directory(checkpoint) == data
-    record_path.unlink()
-    with pytest.raises(ValueError, match="use --motion-dir"):
-        cli.training_motion_directory(checkpoint)
 
 
 def test_checkpoint_selection_uses_iteration_and_explicit_override(tmp_path):
@@ -463,14 +456,17 @@ def test_checkpoint_selection_reports_missing_or_invalid_inputs(tmp_path):
         select_checkpoint(None, tmp_path)
     with pytest.raises(ValueError, match="requires"):
         select_checkpoint(None, None)
-    invalid = tmp_path / "last.pt"
+    invalid = tmp_path / "last.pt.tmp"
     invalid.touch()
     with pytest.raises(ValueError, match="Expected"):
         select_checkpoint(invalid, tmp_path)
 
 
-@pytest.mark.parametrize("mode", ["train", "evaluate", "play"])
-def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode):
+@pytest.mark.parametrize("mode,extra", [
+    ("train", ["--test-option"]), ("train", ["--ckpt_light"]),
+    ("evaluate", ["--test-option"]), ("play", ["--test-option"]),
+])
+def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode, extra):
     from dataclasses import replace
     import sys
 
@@ -498,7 +494,7 @@ def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode):
         blinkmimic.motion, "MotionLib", blinkmimic.motion.MotionLib
     )
     monkeypatch.setattr(
-        sys, "argv", ["worker", mode, "--task", task, "--test-option"]
+        sys, "argv", ["worker", mode, "--task", task, *extra]
     )
     calls = []
     monkeypatch.setattr(
@@ -510,7 +506,7 @@ def test_worker_uses_task_robot_for_each_entry_point(monkeypatch, mode):
 
     assert get_robot(robot.name) is robot
     assert calls == ([robot] if mode == "play" else [f"blinkmimic.{mode}"])
-    assert sys.argv == ["worker", "--test-option"]
+    assert sys.argv == ["worker", *extra]
 
 
 def test_worker_environment_preserves_explicit_resources(monkeypatch):

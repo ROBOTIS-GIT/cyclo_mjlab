@@ -17,8 +17,6 @@
 """Incrementally mirror upstream CSV metrics without changing the learner."""
 
 import csv
-import datetime
-import json
 import math
 from pathlib import Path
 
@@ -57,10 +55,6 @@ class BlinkMimicTensorBoard:
             " return. Episode return cannot be reconstructed exactly from the"
             " aggregated CSV.",
         )
-        record = json.loads((self.run_dir / "run-record.json").read_text())
-        self.started_at = datetime.datetime.fromisoformat(
-            record["started_at"]
-        ).timestamp()
         self.offset = 0
         self.fields = None
         self.last_iteration = -1
@@ -84,14 +78,11 @@ class BlinkMimicTensorBoard:
                 iteration = int(row["iteration"])
                 if iteration <= self.last_iteration:
                     continue
-                walltime = self.started_at + float(row["wall_h"]) * 3600
                 for column, tag in SCALAR_TAGS.items():
                     if column in row and math.isfinite(
                         value := float(row[column])
                     ):
-                        self.writer.add_scalar(
-                            tag, value, iteration, walltime=walltime
-                        )
+                        self.writer.add_scalar(tag, value, iteration)
                 self.last_iteration = iteration
         self.writer.flush()
 
