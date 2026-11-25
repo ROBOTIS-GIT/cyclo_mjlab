@@ -176,7 +176,7 @@ def save_checkpoint(
 ):
     """Save model history and latest optimizer state, then apply retention."""
     directory = Path(directory)
-    target = directory / "checkpoints" / f"model_{step}.pt"
+    target = directory / f"model_{step}.pt"
     saved = dict(
         format="cyclo.supermimic.checkpoint.v1",
         step=step,

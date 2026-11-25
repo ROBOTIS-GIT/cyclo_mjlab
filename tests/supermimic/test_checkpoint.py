@@ -334,7 +334,7 @@ def test_real_runner_loop_saves_final_parameters(
         from source.tasks.supermimic.training.checkpoint.archive import load_checkpoint
 
         snapshot = load_checkpoint(
-            tmp_path / "checkpoints" / f"model_{iterations - 1}.pt"
+            tmp_path / f"model_{iterations - 1}.pt"
         )
         assert snapshot.optimizers is None
         last = load_checkpoint(tmp_path)
@@ -346,7 +346,7 @@ def test_real_runner_loop_saves_final_parameters(
             (last.world_model, dynamics),
         ]:
             assert torch.equal(state["weight"], model.weight)
-        first = load_checkpoint(tmp_path / "checkpoints/model_0.pt")
+        first = load_checkpoint(tmp_path / "model_0.pt")
         assert first.actor["weight"].item() == 0
         assert first.critic["weight"].item() == 0
         assert first.optimizers is None
@@ -518,8 +518,9 @@ def test_archive_retention_and_preserves_existing_file_on_failure(
         save_checkpoint(
             tmp_path, step=step, manifest={}, actor={}, world_model={}
         )
-    directory = tmp_path / "checkpoints"
-    assert {p.name for p in directory.glob("*.pt")} == {
+    directory = tmp_path
+    assert not (tmp_path / "checkpoints").exists()
+    assert {p.name for p in directory.glob("model_*.pt")} == {
         f"model_{step}.pt"
         for step in (0, 10000, 11000, 12000, 13000, 14000, 15000)
     }
@@ -727,7 +728,7 @@ def test_cross_task_resume_keeps_target_clips_and_checks_contract(
 
 
 @pytest.mark.parametrize(
-    "file", [".", "last.pt", "checkpoints/model_1000.pt", "world_model.pt", "wm_100k.pt"]
+    "file", [".", "last.pt", "model_1000.pt", "checkpoints/model_1000.pt", "world_model.pt", "wm_100k.pt"]
 )
 @pytest.mark.parametrize("manifest_text", [None, '{"clips": []}', '{"schema_version": 99}', '{broken'])
 def test_local_world_model_ignores_adjacent_manifest(tmp_path, file, manifest_text):
@@ -740,6 +741,9 @@ def test_local_world_model_ignores_adjacent_manifest(tmp_path, file, manifest_te
     save_checkpoint(
         tmp_path, step=1000, manifest={}, actor={}, world_model=weights
     )
+    # Older runs keep numbered snapshots in a checkpoints subdirectory.
+    (tmp_path / "checkpoints").mkdir()
+    (tmp_path / "checkpoints/model_1000.pt").hardlink_to(tmp_path / "model_1000.pt")
     torch.save(weights, tmp_path / "world_model.pt")
     (tmp_path / "wm_100k.pt").hardlink_to(tmp_path / "world_model.pt")
     if manifest_text is not None:

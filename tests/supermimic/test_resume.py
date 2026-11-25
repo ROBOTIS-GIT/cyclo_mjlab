@@ -98,7 +98,7 @@ def test_resume_restores_all_three_models_and_optimizer_updates(
             name: [opt.state_dict()] for name, opt in optimizers.items()
         },
     )
-    path = tmp_path / ("last.pt" if full else "checkpoints/model_1000.pt")
+    path = tmp_path / ("last.pt" if full else "model_1000.pt")
     checkpoint = load_checkpoint(path)
     restored, restored_models, restored_opts = make_runner(
         optimizer_type, lr=0.004
@@ -287,9 +287,9 @@ def test_resumed_loop_continues_global_iteration_and_saves(
     assert collected == logged == [1000, 1001, 1002]
     assert cleaned == [True]
     assert load_checkpoint(tmp_path).step == 1002
-    assert (tmp_path / "checkpoints/model_1000.pt").is_file()
-    assert (tmp_path / "checkpoints/model_1002.pt").is_file()
-    assert not (tmp_path / "checkpoints/model_0.pt").exists()
+    assert (tmp_path / "model_1000.pt").is_file()
+    assert (tmp_path / "model_1002.pt").is_file()
+    assert not (tmp_path / "model_0.pt").exists()
 
 
 def test_sampler_remaps_concatenated_clip_bins_and_keeps_new_bins_fresh():
