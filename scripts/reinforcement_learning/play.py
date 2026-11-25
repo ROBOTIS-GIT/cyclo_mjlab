@@ -51,6 +51,7 @@ from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 from source.tasks.beyondmimic.mdp import ReferenceTrajectoryCommandCfg
+from source.utils.onnx_action_clipping import clip_onnx_actions
 from scripts.reinforcement_learning.cli import load_rl_cfg
 
 
@@ -443,6 +444,7 @@ def run_play(task_id: str, cfg: PlayConfig):
       onnx_path = export_model_dir / "policy.onnx"
       jit_path = export_model_dir / "policy.pt"
       runner.export_policy_to_onnx(str(export_model_dir), onnx_path.name)
+      clip_onnx_actions(onnx_path, agent_cfg.clip_actions)
       runner.export_policy_to_jit(str(export_model_dir), jit_path.name)
       metadata = get_base_metadata(manager_env, log_dir.name)
       attach_metadata_to_onnx(str(onnx_path), metadata)
