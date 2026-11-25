@@ -5,6 +5,46 @@ import pytest
 from source.tasks.supermimic import cli
 
 
+@pytest.mark.parametrize("requested,display,wayland,expected", [
+    ("auto", ":0", None, "native"),
+    ("auto", None, "wayland-0", "native"),
+    ("auto", None, None, "viser"),
+    ("auto", "", "", "viser"),
+    ("viser", ":0", None, "viser"),
+    ("native", None, None, "native"),
+])
+def test_play_viewer_selection_matches_upstream(monkeypatch, tmp_path, requested, display, wayland, expected):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    import tyro
+    from supermimic.scripts import viewers
+    from source.tasks.supermimic import play, viewer
+
+    for name, value in (("DISPLAY", display), ("WAYLAND_DISPLAY", wayland)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+    motion = tmp_path / "dance1.npz"
+    motion.touch()
+    cfg = tyro.cli(play.PlayConfig, args=["--motion-file", str(motion), "--viewer", requested])
+    constructors = {name: Mock() for name in ("native", "viser")}
+    monkeypatch.setattr(viewers, "SuperMimicNativeViewer", constructors["native"])
+    monkeypatch.setattr(viewer, "ClipPlaybackViewer", constructors["viser"])
+    monkeypatch.setattr(viewer, "adapt_ghost_visualizer", Mock())
+    monkeypatch.setattr(viewers, "create_wm_vis_model", lambda model: model)
+    env = SimpleNamespace(unwrapped=SimpleNamespace(sim=SimpleNamespace(mj_model=object())))
+    wm = SimpleNamespace(dynamics=object(), representation=object(), sim_context=object())
+    actor = SimpleNamespace(task_specs=[SimpleNamespace(name="motion")])
+    play.run_interactive_playback(env, wm, actor, cfg, {"motion": 1.0}, "motion")
+    constructors[expected].assert_called_once()
+    constructors[expected].return_value.run.assert_called_once_with()
+    constructors["viser" if expected == "native" else "native"].assert_not_called()
+    options = constructors[expected].call_args.kwargs
+    assert options.get("motion_names") == (["dance1"] if expected == "viser" else None)
+
+
 @pytest.mark.parametrize("revision, options", [
     ("K1_rev1", ["--robot", "k1_rev1"]),
     ("K1_rev2", ["--robot", "k1_rev2"]),
@@ -45,7 +85,11 @@ def test_direct_body_reference_is_adapted_before_upstream(
 
     env_cfg = task_001.make_env_cfg()
     env_cfg.commands["motion"].motion_file = [str(reference)]
-    monkeypatch.setattr(registry, "load_env_cfg", lambda task: env_cfg)
+    def load_env_cfg(task, *, play):
+        assert play == (action == "play")
+        return env_cfg
+
+    monkeypatch.setattr(registry, "load_env_cfg", load_env_cfg)
     module_name = (
         "source.tasks.supermimic.train"
         if action == "train"

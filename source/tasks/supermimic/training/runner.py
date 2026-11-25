@@ -21,7 +21,9 @@ from datetime import datetime
 
 from supermimic.runners.supermimic_runner import SuperMimicRunner
 
-from .. import LOG_ROOT
+from source.utils.export_git_state import export_git_state
+
+from .. import LOG_ROOT, REPO_ROOT
 from .checkpoint.archive import save_checkpoint
 from .checkpoint.resume import optimizer_groups
 from .checkpoint.sampler import sampler_snapshot
@@ -32,10 +34,15 @@ class LocalBundleRunner(SuperMimicRunner):
     """Official learner with local, declarative inference metadata."""
 
     def __init__(self, *, manifest, **kwargs):
-        self.manifest = manifest
         self._deployment_files = []
         self._checkpoint_step = -1
         super().__init__(**kwargs)
+        robot = self.env.unwrapped.scene["robot"]
+        self.manifest = {
+            **manifest,
+            "q0": robot.data.default_joint_pos[0].tolist(),
+            "qdot0": robot.data.default_joint_vel[0].tolist(),
+        }
 
     def _init_policy(self):
         if self.cfg.slot_mix.get("motion", 0) > 0:
@@ -110,11 +117,17 @@ class LocalBundleRunner(SuperMimicRunner):
         directory = LOG_ROOT.joinpath(self.task_id, *parts, stamp)
         directory.mkdir(parents=True, exist_ok=False)
         print(f"[INFO] Logging to {directory}")
+        export_git_state(directory, REPO_ROOT)
         temporary = directory / "manifest.json.tmp"
         temporary.write_text(
             json.dumps(self.manifest, indent=2, allow_nan=False) + "\n"
         )
         temporary.replace(directory / "manifest.json")
+        from mjlab.utils.os import dump_yaml
+        from .checkpoint.manifest import json_value
+
+        dump_yaml(directory / "params/env.yaml", json_value(self.env.unwrapped.cfg))
+        dump_yaml(directory / "params/agent.yaml", json_value(self.cfg))
         self._export_deployment_configs(directory)
         from .tensorboard import SuperMimicTensorBoardLogger
 

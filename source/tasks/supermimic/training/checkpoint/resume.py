@@ -19,33 +19,60 @@ Restore training models and optimizer states before the first learner update.
 """
 
 
+from supermimic.learners.policy_learner import ActorCriticPolicyLearnerCfg
+from supermimic.runners.run_config import load_runner_cfg
+
+from .archive import check_training_contract, initialize_world_model
+from .manifest import check_actor_observations
+
+
 def validate_resume_configuration(checkpoint, manifest):
     if checkpoint.step is None:
         raise ValueError(
             "Training resume requires last.pt or a numbered combined"
             " checkpoint"
         )
-    for name in ("environment", "robot"):
-        if checkpoint.manifest[name] != manifest[name]:
-            raise ValueError(f"Resume {name} differs from the checkpoint")
-    # Logging cadence and the total iteration target may change. Architecture,
-    # losses and optimizer settings remain those of the saved training run.
+    check_training_contract(checkpoint.manifest, manifest)
     saved, current = (
-        dict(value["runner_cfg"]) for value in (checkpoint.manifest, manifest)
+        load_runner_cfg(value) for value in (checkpoint.manifest, manifest)
     )
-    for name in (
-        "max_iterations",
-        "run_name",
-        "log_interval",
-        "save_interval",
-        "wandb_run_path",
-    ):
-        saved.pop(name, None)
-        current.pop(name, None)
-    if saved != current:
-        raise ValueError(
-            "Resume learner configuration differs from the checkpoint"
+    if saved.actor_obs == "proprio":
+        check_actor_observations(
+            checkpoint.manifest["environment"].get("observations", {}).get("actor"),
+            manifest["environment"]["observations"].get("actor"),
         )
+    # Compare model/input compatibility explicitly. Training hyperparameters
+    # (losses, sampling, rollout sizes, command ranges) use the current config.
+    fields = (
+        "representation", "actor_obs", "history_length", "latent_dim",
+        "dynamics_hidden_dims", "actor_hidden_dims",
+    )
+    differences = [
+        name for name in fields if getattr(saved, name) != getattr(current, name)
+    ]
+    if type(saved.policy) is not type(current.policy):
+        differences.append("policy type")
+    if (
+        isinstance(saved.policy, ActorCriticPolicyLearnerCfg)
+        and saved.critic_hidden_dims != current.critic_hidden_dims
+    ):
+        differences.append("critic_hidden_dims")
+    if differences:
+        raise ValueError(
+            "Resume learner configuration differs from the checkpoint: "
+            + ", ".join(differences)
+        )
+    # Full optimizer restoration also restores LR/betas. Reject conflicting
+    # requests rather than silently overriding them. Model-only resumes use
+    # freshly constructed optimizers and may change these settings.
+    if getattr(checkpoint, "optimizers", None) is not None:
+        for group, names in (("wm", ("lr",)), ("policy", ("lr", "beta2"))):
+            old_optimizer, new_optimizer = getattr(saved, group), getattr(current, group)
+            for name in names:
+                if getattr(old_optimizer, name) != getattr(new_optimizer, name):
+                    raise ValueError(
+                        f"Resume optimizer setting {group}.{name} differs from the checkpoint"
+                    )
 
 
 def optimizer_groups(runner):
@@ -75,7 +102,7 @@ def restore_training_state(runner, checkpoint):
                 raise ValueError(
                     f"Checkpoint {name} optimizer count does not match"
                 )
-    runner._wm.load_bundle(checkpoint.world_model)
+    initialize_world_model(runner._wm, checkpoint.world_model)
     runner.policy_learner.actor.load_state_dict(checkpoint.actor)
     if critic is not None:
         critic.load_state_dict(checkpoint.critic)

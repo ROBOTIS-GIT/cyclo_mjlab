@@ -41,6 +41,15 @@ def register_tasks():
 register_tasks()
 
 
+def select_trained_encoder(slot_mix, requested=None):
+    active = [name for name in ("motion", "velocity") if slot_mix.get(name, 0) > 0]
+    if not active:
+        raise ValueError("Checkpoint has no active policy encoder")
+    if requested is not None and requested not in active:
+        raise ValueError(f"Encoder {requested!r} had no training slots. Available: {', '.join(active)}")
+    return requested or active[0]
+
+
 def check_representation_matches(task_id, representation):
     expected, _ = TASKS[task_id]
     if representation != expected:
