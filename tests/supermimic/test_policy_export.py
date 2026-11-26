@@ -794,7 +794,7 @@ def test_historical_archive_exports_saved_actor_without_split_files(
     path.rename(moved)
     expected = export_policy(directory, task, tmp_path / "expected")
     outputs = export_play_policies(moved, task)
-    assert outputs[0] == tmp_path / "moved/exported/model_1000/policy.onnx"
+    assert outputs[0] == tmp_path / "moved/exported/policy.onnx"
     assert not (tmp_path / "actor.pt").exists()
     a = ort.InferenceSession(str(expected), providers=["CPUExecutionProvider"])
     b = ort.InferenceSession(
