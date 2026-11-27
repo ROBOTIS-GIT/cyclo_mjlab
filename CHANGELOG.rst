@@ -5,6 +5,7 @@ Changelog for package cyclo_mjlab
 1.1.2 (2026-11-26)
 ------------------
 * Save SuperMimic ONNX policies to ``exported/policy.onnx``.
+* Increased solver iteration limits for SuperMimic and line-search limits for BeyondMimic.
 * Contributors: Kiwoong Park
 
 1.1.1 (2026-11-25)
