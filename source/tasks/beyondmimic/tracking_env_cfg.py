@@ -311,7 +311,7 @@ def make_mimic_env_cfg() -> ManagerBasedRlEnvCfg:
       mujoco=MujocoCfg(
         timestep=0.005,
         iterations=10,
-        ls_iterations=20,
+        ls_iterations=50,
       ),
     ),
     decimation=4,

@@ -47,7 +47,7 @@ class ModelCheckpoint:
         parent = self.source.parent
         if parent.name == "checkpoints":
             parent = parent.parent
-        return parent / "exported" / self.source.stem
+        return parent / "exported"
 
 
 def load_checkpoint(source):
