@@ -79,6 +79,8 @@ def make_env_cfg(representation="gencoord", play=False):
     cfg.viewer.body_name = "torso_link"
     cfg.sim.nconmax = 128
     cfg.sim.njmax = 300
+    cfg.sim.mujoco.iterations = 100
+    cfg.sim.mujoco.ls_iterations = 50
     cfg.scene.num_envs = 1 if play else 4096
     if play:
         # Match upstream playback; training adds noise in the representation.
